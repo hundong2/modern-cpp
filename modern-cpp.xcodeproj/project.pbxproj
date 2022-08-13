@@ -8,10 +8,20 @@
 
 /* Begin PBXBuildFile section */
 		0EECE0B728A722C700D533F7 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0EECE0B628A722C700D533F7 /* main.cpp */; };
+		0EECE0C528A727C800D533F7 /* cor_broker.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0EECE0C428A727C800D533F7 /* cor_broker.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
 		0EECE0B128A722C700D533F7 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = /usr/share/man/man1/;
+			dstSubfolderSpec = 0;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 1;
+		};
+		0EECE0C028A727C800D533F7 /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
 			dstPath = /usr/share/man/man1/;
@@ -25,10 +35,20 @@
 /* Begin PBXFileReference section */
 		0EECE0B328A722C700D533F7 /* modern-cpp */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "modern-cpp"; sourceTree = BUILT_PRODUCTS_DIR; };
 		0EECE0B628A722C700D533F7 /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
+		0EECE0BD28A7256500D533F7 /* Behavioral */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Behavioral; sourceTree = "<group>"; };
+		0EECE0C228A727C800D533F7 /* ChainOfResponsibility */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = ChainOfResponsibility; sourceTree = BUILT_PRODUCTS_DIR; };
+		0EECE0C428A727C800D533F7 /* cor_broker.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = cor_broker.cpp; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		0EECE0B028A722C700D533F7 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		0EECE0BF28A727C800D533F7 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -41,7 +61,9 @@
 		0EECE0AA28A722C700D533F7 = {
 			isa = PBXGroup;
 			children = (
+				0EECE0BD28A7256500D533F7 /* Behavioral */,
 				0EECE0B528A722C700D533F7 /* modern-cpp */,
+				0EECE0C328A727C800D533F7 /* ChainOfResponsibility */,
 				0EECE0B428A722C700D533F7 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -50,6 +72,7 @@
 			isa = PBXGroup;
 			children = (
 				0EECE0B328A722C700D533F7 /* modern-cpp */,
+				0EECE0C228A727C800D533F7 /* ChainOfResponsibility */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -60,6 +83,14 @@
 				0EECE0B628A722C700D533F7 /* main.cpp */,
 			);
 			path = "modern-cpp";
+			sourceTree = "<group>";
+		};
+		0EECE0C328A727C800D533F7 /* ChainOfResponsibility */ = {
+			isa = PBXGroup;
+			children = (
+				0EECE0C428A727C800D533F7 /* cor_broker.cpp */,
+			);
+			path = ChainOfResponsibility;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -82,6 +113,23 @@
 			productReference = 0EECE0B328A722C700D533F7 /* modern-cpp */;
 			productType = "com.apple.product-type.tool";
 		};
+		0EECE0C128A727C800D533F7 /* ChainOfResponsibility */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 0EECE0C628A727C800D533F7 /* Build configuration list for PBXNativeTarget "ChainOfResponsibility" */;
+			buildPhases = (
+				0EECE0BE28A727C800D533F7 /* Sources */,
+				0EECE0BF28A727C800D533F7 /* Frameworks */,
+				0EECE0C028A727C800D533F7 /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = ChainOfResponsibility;
+			productName = ChainOfResponsibility;
+			productReference = 0EECE0C228A727C800D533F7 /* ChainOfResponsibility */;
+			productType = "com.apple.product-type.tool";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -92,6 +140,9 @@
 				LastUpgradeCheck = 1340;
 				TargetAttributes = {
 					0EECE0B228A722C700D533F7 = {
+						CreatedOnToolsVersion = 13.4.1;
+					};
+					0EECE0C128A727C800D533F7 = {
 						CreatedOnToolsVersion = 13.4.1;
 					};
 				};
@@ -110,6 +161,7 @@
 			projectRoot = "";
 			targets = (
 				0EECE0B228A722C700D533F7 /* modern-cpp */,
+				0EECE0C128A727C800D533F7 /* ChainOfResponsibility */,
 			);
 		};
 /* End PBXProject section */
@@ -120,6 +172,14 @@
 			buildActionMask = 2147483647;
 			files = (
 				0EECE0B728A722C700D533F7 /* main.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		0EECE0BE28A727C800D533F7 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0EECE0C528A727C800D533F7 /* cor_broker.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -239,6 +299,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
+				"HEADER_SEARCH_PATHS[arch=*]" = /opt/homebrew/Cellar/boost/1.79.0_1/include;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Debug;
@@ -247,6 +308,25 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
+				"HEADER_SEARCH_PATHS[arch=*]" = /opt/homebrew/Cellar/boost/1.79.0_1/include;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
+		0EECE0C728A727C800D533F7 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				"HEADER_SEARCH_PATHS[arch=*]" = /opt/homebrew/Cellar/boost/1.79.0_1/include;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		0EECE0C828A727C800D533F7 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				"HEADER_SEARCH_PATHS[arch=*]" = /opt/homebrew/Cellar/boost/1.79.0_1/include;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Release;
@@ -268,6 +348,15 @@
 			buildConfigurations = (
 				0EECE0BB28A722C700D533F7 /* Debug */,
 				0EECE0BC28A722C700D533F7 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		0EECE0C628A727C800D533F7 /* Build configuration list for PBXNativeTarget "ChainOfResponsibility" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				0EECE0C728A727C800D533F7 /* Debug */,
+				0EECE0C828A727C800D533F7 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
