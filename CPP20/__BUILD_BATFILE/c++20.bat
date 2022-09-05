@@ -1,6 +1,6 @@
 cls
 
-@echo [101mg++ %* -std=c++20 -o gout.exe [0m
+@echo [101mg++ %* -std=c++2a -o gout.exe [0m
 @g++ %* -std=c++20 -o gout.exe
 
 @IF %ERRORLEVEL% EQU 0 (
