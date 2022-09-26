@@ -28,7 +28,7 @@ class Generator
             }
             auto initial_suspend() { return std::suspend_always{}; }
             auto return_void() { return std::suspend_never{}; }
-            auto final_suspend() { return std::suspend_always{}; }
+            auto final_suspend() noexcept { return std::suspend_always{}; }
             auto unhandled_exception() { std::exit(1); }
         };
         using promise_type = Promise;
