@@ -1,6 +1,7 @@
 #include <iostream>
 #include <vector>
 #include <ranges>
+#include <coroutine>
 
 template<typename R> class take_view
 {
