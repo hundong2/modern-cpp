@@ -17,14 +17,27 @@
 #include <iostream>
 #include <coroutine>
 
+template<typename T>
 class Generator
 {
     public:
         struct Promise
         {
+            private:
+                T value;
+            public:
+                int getValue() const
+                {
+                    return value;
+                }
             Generator get_return_object()
             {
                 return Generator{ std::coroutine_handle<Promise>::from_promise(*this)};
+            }
+            auto yield_value(T n)
+            {
+                value = n;
+                return std::suspend_always{};
             }
             auto initial_suspend() { return std::suspend_always{}; }
             auto return_void() { return std::suspend_never{}; }
@@ -39,23 +52,36 @@ class Generator
         ~Generator() { if(coro) coro.destroy(); }
 };
 
-Generator foo()
+Generator<int> foo()
 {
     std::cout << "Run1" << std::endl;
-    co_await std::suspend_always {};
+    //co_await std::suspend_always {};
+    co_yield 10; //co_await pro.yeild_value(10);
     std::cout << "Run2" << std::endl;
+    co_yield 20;
+    std::cout << "Run2" << std::endl;
+    
 }
 
+Generator<int> Gen(int first, int last)
+{
+    for(int i = first; i <= last; i++)
+        co_yield i;
+}
 int main()
 {
-    Generator g = foo();
+    Generator<int> g = Gen(10,20);
 
-    std::cout << "\tmain1" << std::endl;
-    g.coro.resume();
-    //g.coro.promise_type();
-    std::cout << "\tmain1" << std::endl;
-    g.coro.resume();
-
-    std::cout << "\tmain1" << std::endl;
+    
+    for(auto n : g)
+        std::cout << n << std::endl;
+/*
+    while(1)
+    {
+        g.coro.resume();
+        if( g.coro.done() ) break;
+        std::cout << g.coro.promise().getValue() << std::endl;
+    }
+    */
 
 }
