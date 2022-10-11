@@ -12,7 +12,9 @@ class B {
   void b() { std::cout << "I am B" << std::endl; }
 };
 
-std::variant<A, B> GetDataFromDB(bool is_a) {
+
+//monostate : 아무것도 안들어 있거나, A, B
+std::variant<std::monostate, A, B> GetDataFromDB(bool is_a) {
   if (is_a) {
     return A();
   }
@@ -25,5 +27,5 @@ int main() {
   std::cout << v.index() << std::endl;
   std::get<A>(v).a();  // 혹은 std::get<0>(v).a()
 	
-	std::get<B>(v).b(); //'std::bad_variant_access'
+	//std::get<B>(v).b(); //'std::bad_variant_access'
 }
