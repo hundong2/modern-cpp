@@ -20,6 +20,8 @@ int main() {
       std::optional<std::reference_wrapper<A>> maybe_a = std::ref(a);
 
       maybe_a->get().data = 3;
+      //or 
+      (*maybe_a).get().data = 4;
     
 
       // 실제로 a 객체의 data 가 바뀐 것을 알 수 있다.
