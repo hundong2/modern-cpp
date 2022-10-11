@@ -1,6 +1,7 @@
 #include <iostream>
 #include <string>
 #include <tuple>
+#include <map>
 
 std::tuple<int, std::string, bool> GetStudent(int id)
 {
@@ -11,6 +12,16 @@ std::tuple<int, std::string, bool> GetStudent(int id)
     else
     {
         return std::make_tuple(28,"woman", false);
+    }
+}
+
+//struct binding for map
+void structBindingCoutEx()
+{
+    std::map<int, std::string> m = {{3, "hi"}, {5, "hello"}};
+    for (auto& [key, val] : m) 
+    {
+        std::cout << "Key : " << key << " value : " << val << std::endl;
     }
 }
 int main() 
@@ -41,4 +52,7 @@ auto [age1, name1, is_male1 ] = student;
    std::cout << "name : " << name1 << std::endl;
     std::cout << "age : " << age1 << std::endl;
     std::cout << "male : " << std::boolalpha << is_male1 << std::endl;
+
+    structBindingCoutEx();
+
 }
