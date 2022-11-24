@@ -6,3 +6,9 @@
 //
 
 #include <stdio.h>
+
+
+int main()
+{
+    std::cout << "helpo" << std::endl;
+}

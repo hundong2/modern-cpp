@@ -7,7 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		0EECE0B728A722C700D533F7 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0EECE0B628A722C700D533F7 /* main.cpp */; };
 		0EECE0C528A727C800D533F7 /* cor_broker.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0EECE0C428A727C800D533F7 /* cor_broker.cpp */; };
 /* End PBXBuildFile section */
 
@@ -33,8 +32,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		0EA686832929E7F000004E5E /* ex_string.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; name = ex_string.cpp; path = modoo_code/xcode/ex_string.cpp; sourceTree = "<group>"; };
 		0EECE0B328A722C700D533F7 /* modern-cpp */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "modern-cpp"; sourceTree = BUILT_PRODUCTS_DIR; };
-		0EECE0B628A722C700D533F7 /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
 		0EECE0BD28A7256500D533F7 /* Behavioral */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Behavioral; sourceTree = "<group>"; };
 		0EECE0C228A727C800D533F7 /* ChainOfResponsibility */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = ChainOfResponsibility; sourceTree = BUILT_PRODUCTS_DIR; };
 		0EECE0C428A727C800D533F7 /* cor_broker.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = cor_broker.cpp; sourceTree = "<group>"; };
@@ -61,8 +60,8 @@
 		0EECE0AA28A722C700D533F7 = {
 			isa = PBXGroup;
 			children = (
+				0EA686832929E7F000004E5E /* ex_string.cpp */,
 				0EECE0BD28A7256500D533F7 /* Behavioral */,
-				0EECE0B528A722C700D533F7 /* modern-cpp */,
 				0EECE0C328A727C800D533F7 /* ChainOfResponsibility */,
 				0EECE0B428A722C700D533F7 /* Products */,
 			);
@@ -75,14 +74,6 @@
 				0EECE0C228A727C800D533F7 /* ChainOfResponsibility */,
 			);
 			name = Products;
-			sourceTree = "<group>";
-		};
-		0EECE0B528A722C700D533F7 /* modern-cpp */ = {
-			isa = PBXGroup;
-			children = (
-				0EECE0B628A722C700D533F7 /* main.cpp */,
-			);
-			path = "modern-cpp";
 			sourceTree = "<group>";
 		};
 		0EECE0C328A727C800D533F7 /* ChainOfResponsibility */ = {
@@ -171,7 +162,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				0EECE0B728A722C700D533F7 /* main.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
