@@ -2,6 +2,8 @@
 #include <boost/algorithm/algorithm.hpp>
 #include "reference.hpp"
 #include "LRValue.hpp"
+#include "Modern20.hpp"
+#include "Literal.hpp"
 
 using namespace reference;
 int main()
@@ -21,4 +23,12 @@ int main()
 
 	std::cout << "LRValueTest2" << std::endl;
 	LRValueTest2();
+
+	std::cout << "format expression" << std::endl;
+	namespace myformat = print::expression::format;
+	myformat::formatExpression();
+
+	std::cout << "format expression" << std::endl;
+	namespace myliteral = literal::chapter113;
+	myliteral::Test();
 }
