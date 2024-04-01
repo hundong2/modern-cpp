@@ -128,10 +128,15 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="EmployeeModule.ixx" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Test.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="array.hpp" />
+    <ClInclude Include="Compare.hpp" />
+    <ClInclude Include="Enum.hpp" />
+    <ClInclude Include="function.hpp" />
     <ClInclude Include="Literal.hpp" />
     <ClInclude Include="LRValue.hpp" />
     <ClInclude Include="Modern20.hpp" />

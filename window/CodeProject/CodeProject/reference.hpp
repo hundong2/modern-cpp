@@ -64,7 +64,7 @@ namespace reference
 		return a;
 	}
 
-	//dangling reference 
+	//dangling reference C4172 warning region variable 
 	int& ReferenceReturn2()
 	{
 		int b = 3;
