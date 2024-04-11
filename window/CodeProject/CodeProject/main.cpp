@@ -11,6 +11,7 @@
 #include "pair.hpp"
 #include "optional.hpp"
 #include "structurebinding.hpp"
+#include "loop.hpp"
 
 using namespace reference;
 int main()
@@ -80,5 +81,10 @@ int main()
 	example::structurebinding::TestPair();
 	example::structurebinding::TestStaticStructBinding();
 	example::structurebinding::TestStruct();
+
+	//loop 
+	example::loop::TestRange();
+	example::loop::TestRange20();
+
 
 }

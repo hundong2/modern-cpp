@@ -138,6 +138,7 @@
     <ClInclude Include="Enum.hpp" />
     <ClInclude Include="function.hpp" />
     <ClInclude Include="Literal.hpp" />
+    <ClInclude Include="loop.hpp" />
     <ClInclude Include="LRValue.hpp" />
     <ClInclude Include="Modern20.hpp" />
     <ClInclude Include="optional.hpp" />
