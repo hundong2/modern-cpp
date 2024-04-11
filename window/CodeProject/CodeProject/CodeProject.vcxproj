@@ -137,6 +137,7 @@
     <ClInclude Include="Compare.hpp" />
     <ClInclude Include="Enum.hpp" />
     <ClInclude Include="function.hpp" />
+    <ClInclude Include="initialize_list.hpp" />
     <ClInclude Include="Literal.hpp" />
     <ClInclude Include="loop.hpp" />
     <ClInclude Include="LRValue.hpp" />

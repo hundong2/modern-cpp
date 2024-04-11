@@ -12,6 +12,7 @@
 #include "optional.hpp"
 #include "structurebinding.hpp"
 #include "loop.hpp"
+#include "initialize_list.hpp"
 
 using namespace reference;
 int main()
@@ -85,6 +86,9 @@ int main()
 	//loop 
 	example::loop::TestRange();
 	example::loop::TestRange20();
+
+	//initialize list
+	example::initialize::list::TestMain();
 
 
 }

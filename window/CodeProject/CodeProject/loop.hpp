@@ -14,13 +14,15 @@ namespace example::loop
 		std::array arr{ 1,2,3,4,5 };
 		for (auto i : arr) 
 		{
-			std::cout << i << std::endl;
+			std::cout << i << " ";
 		}
+		std::cout << std::endl;
 
 		std::vector vec{ 1,2,3,4,5 };
 		for (auto i : vec) {
-			std::cout << i << std::endl;
+			std::cout << i << " ";
 		}
+		std::cout <<  std::endl;
 	}
 
 	/// <summary>
@@ -31,7 +33,8 @@ namespace example::loop
 	{
 		for (std::array arr{ 1,2,3,4,5 }; auto i: arr)
 		{
-			std::cout << i << std::endl;
+			std::cout << i << " ";
 		}
+		std::cout << std::endl;
 	}
 }
