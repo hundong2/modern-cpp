@@ -38,6 +38,6 @@ namespace example::testarray
 		std::vector<std::string> strVector{ "hello", "world" };
 		strVector.push_back("my");
 		strVector.push_back("is test function");
-		std::cout << std::format("1st element : {}", strVector[0]);
+		std::cout << std::format("1st element : {}", strVector[0]) << std::endl;
 	}
 }

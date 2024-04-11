@@ -8,6 +8,9 @@
 #include "Compare.hpp"
 #include "function.hpp"
 #include "array.hpp"
+#include "pair.hpp"
+#include "optional.hpp"
+#include "structurebinding.hpp"
 
 using namespace reference;
 int main()
@@ -65,5 +68,17 @@ int main()
 	myArray::TestArrayStandard();
 	myArray::TestVector();
 
+
+	namespace myUtility = example::utility;
+	myUtility::TestPair();
+	
+	//optional 
+	example::optional::TestOptional2();
+
+	//Structure Biniding 
+	example::structurebinding::TestBinding();
+	example::structurebinding::TestPair();
+	example::structurebinding::TestStaticStructBinding();
+	example::structurebinding::TestStruct();
 
 }

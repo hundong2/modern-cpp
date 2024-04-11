@@ -140,7 +140,10 @@
     <ClInclude Include="Literal.hpp" />
     <ClInclude Include="LRValue.hpp" />
     <ClInclude Include="Modern20.hpp" />
+    <ClInclude Include="optional.hpp" />
+    <ClInclude Include="pair.hpp" />
     <ClInclude Include="reference.hpp" />
+    <ClInclude Include="structurebinding.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

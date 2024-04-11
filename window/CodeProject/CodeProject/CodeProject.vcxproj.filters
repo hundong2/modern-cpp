@@ -50,5 +50,14 @@
     <ClInclude Include="array.hpp">
       <Filter>헤더 파일</Filter>
     </ClInclude>
+    <ClInclude Include="pair.hpp">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="optional.hpp">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="structurebinding.hpp">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
