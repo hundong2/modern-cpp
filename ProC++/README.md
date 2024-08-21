@@ -8,6 +8,19 @@ cmake ..
 make
 ```
 
+## docker build 
+
+```sh
+docker build -t my_cpp_project . 
+```
+
+## docker run
+
+```sh
+docker run --rm my_cpp_project
+```
+
+
 ## stduy project 
 
 ```sh
