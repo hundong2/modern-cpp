@@ -47,3 +47,14 @@ myOptional.value() = 42
 *myOptional = 42 
 myOptional2.value_or(100) = 100
 ```
+
+## Example Initialize List 
+
+- `std::initializer_list`
+- it's type safety.
+
+- [Example code for initializer list](./ExampleInitList.cpp)  
+  
+```sh
+a = 15, b = 55
+```

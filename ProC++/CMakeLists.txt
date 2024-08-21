@@ -13,6 +13,9 @@ file(GLOB_RECURSE SOURCES "*.cpp")
 # 실행 파일 생성
 #add_executable(ProC++ ${SOURCES})
 add_executable(ExampleArray2 ExampleArray2.cpp)
+add_executable(ExampleOptional ExampleOptional.cpp)
+add_executable(ExampleFor ExampleFor.cpp)
+add_executable(ExampleInitList ExampleInitList.cpp)
 # g++ 컴파일러 사용 설정
 set(CMAKE_CXX_COMPILER "g++")
 

@@ -15,7 +15,7 @@ int main()
 {
 	auto myOptional = getOptional(true);
 	auto myOptional2 = getOptional(false);
-
+	std::cout << "Example Optional" << std::endl;
 	std::cout << std::format("has value() : myoptional {}", myOptional.has_value() ) << std::endl;
 	std::cout << std::format("has value() : myoptional2 {}", myOptional2.has_value() ) << std::endl;
 

@@ -24,3 +24,4 @@ RUN make
 
 # 실행 파일을 기본 명령어로 설정
 CMD ["/app/build/ExampleArray2"]
+#CMD ["/app/build/ExampleOptional"]
