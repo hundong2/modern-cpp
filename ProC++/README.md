@@ -35,4 +35,15 @@ docker run --rm my_cpp_project
 
 [using std::array](./ExampleArray2.cpp)  
 
+## Example std::optional 
 
+- [optional example code](./ExampleOptional.cpp)  
+- result stdout  
+
+```sh
+has value() : myoptional true
+has value() : myoptional2 false
+myOptional.value() = 42 
+*myOptional = 42 
+myOptional2.value_or(100) = 100
+```
