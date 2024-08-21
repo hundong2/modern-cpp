@@ -1,5 +1,13 @@
 # this page for that books named C++ for professional.
 
+## cmake 
+
+```sh
+cd build 
+cmake ..
+make
+```
+
 ## stduy project 
 
 ```sh
@@ -13,4 +21,5 @@
 ### page 98 ( array example )
 
 [using std::array](./ExampleArray2.cpp)  
+
 
