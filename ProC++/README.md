@@ -58,3 +58,7 @@ myOptional2.value_or(100) = 100
 ```sh
 a = 15, b = 55
 ```
+## Designated Initializer 
+
+- [Example code header](./ExampleDesignated.h)  
+- [Example Execute code](./ExampleInit.cpp)  

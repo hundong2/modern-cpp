@@ -1,7 +1,9 @@
 #include "ExampleInit.h"
+#include "ExampleDesignated.h"
 #include <iostream>
 #include <format>
 #include <ranges>
+#include <vector>
 
 
 void func(int i)
@@ -60,5 +62,23 @@ int main()
     delete[] pArray;
     delete[] mArray2;
 
+    std::vector vec {1, 2, 3, 4, 5};
+
+    for( auto i : vec )
+    {
+        std::cout << i << " ";
+    }
+
+    //Initialize Designated Initializer
+    //Old aggregate type 
+    Employee emp1 = {'A', 'B', 1, 100'000};
+    //New designated initializer
+    Employee emp2 { 
+        .firstInitial = 'A', 
+        .lastInitial = 'B',
+        //.employeeNumber = 1, 
+        //.salary = 100'000
+        };
+    std::cout << std::format("emp2 : {}", emp2.toString()) << std::endl;    
     return 0;
 }
