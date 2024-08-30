@@ -115,3 +115,6 @@ bool isValidSalary { (anEmployee != nullptr && anEmployee->salary > 0 )};
 
 [example code](./ExampleAllocateArray.cpp)  
 
+## const 
+
+- abbreviation of const : `constant`

@@ -11,6 +11,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 file(GLOB_RECURSE SOURCES "*.cpp")
 
 add_library(ExampleAllocateArrayLib ExampleAllocateArray.cpp)
+add_library(ExampleConstLib ExampleConst.cpp)
 # 실행 파일 생성
 #add_executable(ProC++ ${SOURCES})
 add_executable(ExampleArray2 ExampleArray2.cpp)
@@ -21,6 +22,7 @@ add_executable(ExampleInit ExampleInit.cpp)
 add_executable(ExampleMain ExampleMain.cpp)
 
 target_link_libraries(ExampleMain PRIVATE ExampleAllocateArrayLib)
+target_link_libraries(ExampleMain PRIVATE ExampleConstLib)
 # g++ 컴파일러 사용 설정
 set(CMAKE_CXX_COMPILER "g++")
 
