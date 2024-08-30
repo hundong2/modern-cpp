@@ -149,3 +149,16 @@ const int* const ip { nullptr };
 
 ```
 
+### constexpr keyword
+
+```c++
+const int getArraySize() { return 32; }
+int main()
+{
+    int myArray[getArraySize()]; //error 
+}
+```
+
+- `constexpr` keyword is compile time setting 
+
+[constexpr](./ExampleConst.cpp)  
