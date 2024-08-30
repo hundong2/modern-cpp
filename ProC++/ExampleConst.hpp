@@ -14,6 +14,10 @@ class ExampleConst
         const int versionNumverMinor { 1 };
         const std::string productName { "Super hyper Net Modulator"};
         const double PI { 3.141592653 };
+        
+        // This is a const member function, 
+        //if you try to modify any member variable, the compiler will throw an error
+        std::string getProductName() const; 
 };
 
 #endif // EXAMPLECONST_HPP

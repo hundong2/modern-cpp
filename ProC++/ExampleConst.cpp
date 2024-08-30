@@ -11,3 +11,10 @@ ExampleConst::~ExampleConst()
 {
     std::cout << "Example Const Deleted" << std::endl;
 }
+
+std::string ExampleConst::getProductName() const
+{
+    // This will throw an error
+    // productName = "New Product";
+    return productName;
+}
