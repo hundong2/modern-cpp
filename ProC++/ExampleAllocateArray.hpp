@@ -1,6 +1,6 @@
 #ifndef EXAMPLE_ALLOCATE_ARRAY_HPP
 #define EXAMPLE_ALLOCATE_ARRAY_HPP
-
+#include <iostream>
 // Include any necessary headers here
 class ExampleAllocateArray
 {

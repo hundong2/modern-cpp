@@ -111,3 +111,7 @@ bool isValidSalary { ( anEmployee && anEmployee->salary > 0)};
 ```c++
 bool isValidSalary { (anEmployee != nullptr && anEmployee->salary > 0 )};
 ```
+## Example Initialize array using Pointer 
+
+[example code](./ExampleAllocateArray.cpp)  
+
