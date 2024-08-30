@@ -33,3 +33,22 @@ constexpr void ExampleConst::SetConstExpr()
     int myArray[r.getArea()];
     std::cout << "Array Size: " << r.getArea() << std::endl;
 }
+constexpr double ExampleConst::inchToMm(double inch)
+{
+    return inch * 25.4;
+}
+constexpr void ExampleConst::ExampleConstexpr() 
+{
+    //constexpr 
+    constexpr double const_inch { 6.0 };
+    constexpr double mm1 { inchToMm(const_inch)}; //compile time evaluation
+
+    //dynamic evaluation
+    constexpr double dynamic_inch { 8.0 };
+    double mm2 { inchToMm(dynamic_inch)}; //execute at runtime
+
+}
+consteval double ExampleConst::inchToMmConsteval(double inch)
+{
+    return inch * 25.4;
+}

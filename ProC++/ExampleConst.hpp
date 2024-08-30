@@ -31,6 +31,9 @@ class ExampleConst
         std::string getProductName() const; 
         constexpr int getArraySize();
         constexpr void SetConstExpr();
+        static constexpr void ExampleConstexpr();
+        static constexpr double inchToMm(double inch);
+        consteval double inchToMmConsteval(double inch);
 };
 
 #endif // EXAMPLECONST_HPP
