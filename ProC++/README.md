@@ -118,3 +118,34 @@ bool isValidSalary { (anEmployee != nullptr && anEmployee->salary > 0 )};
 ## const 
 
 - abbreviation of const : `constant`
+
+```c++
+const int* ip;
+ip = new int[10];
+ip[4] = 5; // compile error
+
+int* const ip;
+ip = new int[10];
+ip[4] = 5; //compile error
+
+int* const ip { nullptr };
+ip = new int[10]; //compile error 
+ip[4] = 5; //error nullptr dereferecne
+```
+
+- using initialize with pointer
+
+```c++
+int* const ip { new int[10] };
+ip[4] = 5;
+```
+
+- make all pointed-to values const 
+
+```c++
+int const* const ip { nullptr };
+or 
+const int* const ip { nullptr };
+
+```
+
