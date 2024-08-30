@@ -66,6 +66,11 @@
         "system_error": "cpp",
         "type_traits": "cpp",
         "utility": "cpp",
-        "format": "cpp"
+        "format": "cpp",
+        "__tree": "cpp",
+        "list": "cpp",
+        "map": "cpp",
+        "set": "cpp",
+        "ranges": "cpp"
     }
 }

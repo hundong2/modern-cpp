@@ -62,3 +62,52 @@ a = 15, b = 55
 
 - [Example code header](./ExampleDesignated.h)  
 - [Example Execute code](./ExampleInit.cpp)  
+
+## Pointer
+
+```c++
+int* myIntegerPointer { nullptr };
+myIntegerPointer = new int; 
+```
+
+- if you want access to value, using dereference 
+
+```c++
+*myIntegerPointer = 8;
+```
+
+- refresh memory of pointer 
+
+```c++
+delete myIntegerPointer;
+myIntegerPointer = nullptr;
+```
+
+- using reference ( & ) for initialize pointer
+
+```c++
+int i { 8 };
+int* myIntegerPointer { &i };
+```
+
+- struct pointer 
+
+```c++
+Employee* anEmployee { getEmployee() };
+std::cout << (*anEmployee).salary << std::cout;
+```
+
+```c++
+Employee* anEmployee { getEmployee() };
+std::cout << anEmployee->salary << std::endl;
+```
+
+- using short-circuiting logic for pointer 
+
+```c++
+bool isValidSalary { ( anEmployee && anEmployee->salary > 0)};
+```
+
+```c++
+bool isValidSalary { (anEmployee != nullptr && anEmployee->salary > 0 )};
+```
