@@ -218,4 +218,32 @@ int&*
 
  [Example cast](./ExampleCasting.cpp)  
  [Reference of as_const](https://en.cppreference.com/w/cpp/utility/as_const)  
- 
+
+## type alias
+
+- Type alias is a way to provide a new name for an existing type.
+- It can make code more readable and easier to maintain.
+- In C++, you can create a type alias using the `using` keyword or the `typedef` keyword.
+
+### Using `using` keyword
+
+```cpp
+using Integer = int;
+using String = std::string;
+using string = basic_string<char>
+```
+
+## type inference
+
+- Type inference is a feature in C++ that allows the compiler to automatically deduce the type of a variable from its initializer.
+- This can make code more concise and easier to read.
+- The `auto` keyword is used for type inference.
+
+### Example of type inference using `auto`
+
+```cpp
+auto x = 10; // x is deduced to be of type int
+auto y = 3.14; // y is deduced to be of type double
+auto str = "Hello, World!"; // str is deduced to be of type const char*
+```
+
