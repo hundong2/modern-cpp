@@ -23,5 +23,7 @@ int main()
     exampleRef->exampleReference3();
     exampleRef->exampleReference4();
     exampleRef->exampleReference5();
+    exampleRef->exampleReference6();
+    exampleRef->exampleReference7();
     return 0;
 }

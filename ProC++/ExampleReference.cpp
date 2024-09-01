@@ -87,3 +87,53 @@ void ExampleReference::exampleReference5()
     int x { 8 };
     MyClass myClass { x };
 }
+
+void ExampleReference::exampleReference6()
+{
+    std::string someString { "Hello World" };
+    printString(someString);
+    printString("Hello World"); //literal string is rvalue OK 
+}
+
+/**
+ * @brief print string
+ */
+void ExampleReference::printString(const std::string& str)
+{
+    std::cout << "printString: " << str << std::endl;
+}
+
+ExampleReference::OddAndEvens ExampleReference::seperateOddsAndEvens(const std::vector<int>& numbers)
+{
+    std::vector<int> odds, evens;
+    for( int i : numbers )
+    {
+        if( i % 2 == 0 )
+        {
+            odds.push_back(i);
+        }
+        else
+        {
+            evens.push_back(i);
+        }
+    }
+    return ExampleReference::OddAndEvens { .odds = odds, .evens = evens };
+}
+
+void ExampleReference::exampleReference7()
+{
+    std::vector<int> numbers { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
+    auto oddAndEven { seperateOddsAndEvens(numbers) };
+    std::cout << "Odds: ";
+    for( int i : oddAndEven.odds )
+    {
+        std::cout << i << " ";
+    }
+    std::cout << std::endl;
+    std::cout << "Evens: ";
+    for( int i : oddAndEven.evens )
+    {
+        std::cout << i << " ";
+    }
+    std::cout << std::endl;
+}
