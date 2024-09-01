@@ -22,5 +22,6 @@ int main()
     std::cout << "const std::string& " << str << std::endl;
     exampleRef->exampleReference3();
     exampleRef->exampleReference4();
+    exampleRef->exampleReference5();
     return 0;
 }

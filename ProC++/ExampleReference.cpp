@@ -52,7 +52,9 @@ void ExampleReference::exampleReference3()
     std::cout << "intP: " << *intP << std::endl;
 }
 
-
+/**
+ * @brief reference to reference
+ */
 void ExampleReference::exampleReference4()
 {
     int x { 3 };
@@ -61,4 +63,27 @@ void ExampleReference::exampleReference4()
     std::cout << "xPtr: " << *xPtr << " -> ";
     *xPtr = 100;
     std::cout << "xPtr: " << *xPtr << std::endl;
+}
+
+/**
+ * @brief reference of struct binding to reference
+ * @details reference of struct binding to reference
+ */
+void ExampleReference::exampleReference5()
+{
+    std::pair myPair { "hello", 5 };
+    auto [ theString, theInt ] { myPair };
+
+    auto& [theStringRef, theIntRef] { myPair };
+    const auto& [theStringRefConst, theIntRefConst] { myPair };
+
+    std::cout << "theStringRef: " << theStringRef << std::endl;
+    std::cout << "theIntRef: " << theIntRef << std::endl;
+
+    theStringRef = "world";
+    std::cout << "theStringRef: " << theStringRef << std::endl;
+    //theStringRefConst = "error"; //compile error, error: assignment of read-only reference ‘theStringRefConst’
+
+    int x { 8 };
+    MyClass myClass { x };
 }
