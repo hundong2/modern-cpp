@@ -2,6 +2,7 @@
 #include "ExampleAllocateArray.hpp"
 #include "ExampleConst.hpp"
 #include "ExampleReference.hpp"
+#include "ExampleCasting.hpp"
 
 int main()
 {
@@ -25,5 +26,8 @@ int main()
     exampleRef->exampleReference5();
     exampleRef->exampleReference6();
     exampleRef->exampleReference7();
+
+    auto* exampleCast = new ExampleCasting();
+    exampleCast->exampleCasting1();
     return 0;
 }

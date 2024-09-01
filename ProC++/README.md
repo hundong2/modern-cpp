@@ -199,3 +199,23 @@ int& &
 or
 int&*
 ```
+
+## Example casting
+
+`const_cast()`, `static_cast()`, `reinterpret_cast()`, `dynamic_cast()`, `std::bit_cast() (C++20)`  
+[Example casting](./ExampleCasting.cpp)  
+
+- `const_cast()`
+  - const attribute delete method, const attribute adding method.   
+  - it's contained `<utility>` library. 
+    - change reference parameter to const reference.  
+ 
+ ```sh
+ as_const(obj) 
+ =
+ const_cast<const T&>(str)
+ ```
+
+ [Example cast](./ExampleCasting.cpp)  
+ [Reference of as_const](https://en.cppreference.com/w/cpp/utility/as_const)  
+ 
