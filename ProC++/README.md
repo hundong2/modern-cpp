@@ -1,5 +1,24 @@
 # this page for that books named C++ for professional.
 
+## current ubuntu version check 
+
+```sh
+lsb_release -a
+```
+
+## update g++ version
+
+```sh
+sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
+sudo apt install -y g++-13
+```
+
+- symbolic link setting 
+
+```sh
+sudo ln -fs /usr/bin/g++-13 /usr/bin/g++
+```
+
 ## cmake 
 
 ```sh
@@ -20,6 +39,11 @@ docker build -t my_cpp_project .
 docker run --rm my_cpp_project
 ```
 
+## docker exec 
+
+```sh
+ docker run -it my_cpp_project /bin/bash
+```
 
 ## stduy project 
 
