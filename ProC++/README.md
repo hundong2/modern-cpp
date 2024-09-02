@@ -247,3 +247,6 @@ auto y = 3.14; // y is deduced to be of type double
 auto str = "Hello, World!"; // str is deduced to be of type const char*
 ```
 
+## cmake exmaple
+
+[example cmake information](https://gist.github.com/luncliff/6e2d4eb7ca29a0afd5b592f72b80cb5c)  
