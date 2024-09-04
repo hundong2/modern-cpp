@@ -2,7 +2,7 @@
 
 ## Main Reference ( book information )
 
-[book information](https://www.wiley.com/en-kr/Professional+C%2B%2B%2C+5th+Edition-p-9781119695547)  
+[book information - Code/Exercises code reference](https://www.wiley.com/en-kr/Professional+C%2B%2B%2C+5th+Edition-p-9781119695547)  
 
 
 ## current ubuntu version check 
