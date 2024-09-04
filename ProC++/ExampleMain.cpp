@@ -3,7 +3,21 @@
 #include "ExampleConst.hpp"
 #include "ExampleReference.hpp"
 #include "ExampleCasting.hpp"
+#include "Employee.hpp"
 
+void ExampleEmployee()
+{
+    std::cout << "Testing the Employee class." << std::endl;
+    Records::Employee emp { "Jane", "Doe" };
+    emp.setEmployeeNumber(71);
+    emp.setSalary(50'000);
+    emp.setFirstName("John");
+    emp.setLastName("Doe");
+    emp.promote();
+    emp.promote(50);
+    emp.hire();
+    emp.display();
+}
 int main()
 {
     auto *exampleAllocateArray = new ExampleAllocateArray();
@@ -29,5 +43,6 @@ int main()
 
     auto* exampleCast = new ExampleCasting();
     exampleCast->exampleCasting1();
+    ExampleEmployee();
     return 0;
 }

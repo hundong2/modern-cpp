@@ -1,5 +1,10 @@
 # this page for that books named C++ for professional.
 
+## Main Reference ( book information )
+
+[book information](https://www.wiley.com/en-kr/Professional+C%2B%2B%2C+5th+Edition-p-9781119695547)  
+
+
 ## current ubuntu version check 
 
 ```sh
