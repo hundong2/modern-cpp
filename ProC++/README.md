@@ -255,3 +255,9 @@ auto str = "Hello, World!"; // str is deduced to be of type const char*
 ## cmake exmaple
 
 [example cmake information](https://gist.github.com/luncliff/6e2d4eb7ca29a0afd5b592f72b80cb5c)  
+
+## Example String 
+
+- `#include <cstring>` : c type calculator  
+- [C type string array](./ExampleString.cpp)  
+- `strcpy_s()`, `strcat_s()` secure C Library, it defined `ISO/IEC TR 24731`  

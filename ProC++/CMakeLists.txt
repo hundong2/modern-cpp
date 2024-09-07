@@ -15,6 +15,7 @@ add_library(ExampleConstLib ExampleConst.cpp)
 add_library(ExampleRefLib ExampleReference.cpp)
 add_library(ExampleCastLib ExampleCasting.cpp)
 add_library(EampleEmployeeLib Employee.cpp)
+add_library(ExampleStringLib ExampleString.cpp)
 #add_library(EmployeeLib Employee.cpp)
 # 실행 파일 생성
 #add_executable(ProC++ ${SOURCES})
@@ -31,6 +32,7 @@ target_link_libraries(ExampleMain PRIVATE ExampleConstLib)
 target_link_libraries(ExampleMain PRIVATE ExampleRefLib)
 target_link_libraries(ExampleMain PRIVATE ExampleCastLib)
 target_link_libraries(ExampleMain PRIVATE EampleEmployeeLib)
+target_link_libraries(ExampleMain PRIVATE ExampleStringLib)
 # g++ 컴파일러 사용 설정
 set(CMAKE_CXX_COMPILER "g++")
 

@@ -4,6 +4,7 @@
 #include "ExampleReference.hpp"
 #include "ExampleCasting.hpp"
 #include "Employee.hpp"
+#include "ExampleString.hpp"
 
 void ExampleEmployee()
 {
@@ -44,5 +45,11 @@ int main()
     auto* exampleCast = new ExampleCasting();
     exampleCast->exampleCasting1();
     ExampleEmployee();
+
+
+    //ExampleString();
+    std::cout << "Example String Library"  << std::endl;
+    exampleString();
+    exampleString2();
     return 0;
 }
