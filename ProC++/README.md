@@ -261,3 +261,52 @@ auto str = "Hello, World!"; // str is deduced to be of type const char*
 - `#include <cstring>` : c type calculator  
 - [C type string array](./ExampleString.cpp)  
 - `strcpy_s()`, `strcat_s()` secure C Library, it defined `ISO/IEC TR 24731`  
+
+### string literal 
+
+- string literal is saved in memory ( readonly area )  
+- compiler using same literal coding in the same memory area. 
+- `literal pooling` : using literal that name of `hello` called 500 numbers, but it saved just one memory area.  
+
+- don't predict result. 
+
+```c++
+char *ptr { "hello" };
+ptr[1] = 'a';
+```
+
+- using const literal   
+
+```c++
+const char* ptr { "hello" };
+prt[1] = 'a' //occur error!!! 
+```
+
+### raw string literal 
+
+- Raw string literals in C++ allow you to include characters that would otherwise need to be escaped, such as quotes or backslashes. They are particularly useful for including multi-line strings or strings with special characters.  
+
+```c++
+const char* str { "Hello "world"!"}; //occur error 
+
+const char* str { "Hello \"world\"!" }; //is OK
+
+const char* str { R"(Hello "World"!)"}; //is OK
+```
+
+- escape sequence ( `\n` )
+
+```c++
+const char* str { "Line 1\nLine 2" };
+
+smae 
+
+const char* str { R"(Line 1
+Line 2)"};
+```
+
+```c++
+const char* str { R"(Is the following a tab character? \t)" };
+//Is the following a tab character? \t
+```
+
