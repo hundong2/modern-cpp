@@ -327,3 +327,27 @@ const char* str { R"(Is the following a tab character? \t)" };
 - `starts_with(str)/end_with(str)` : if matching start/ end substring with str parameter, then returns true values.  
 
 [ExampleString.cpp exampleString5()](./ExampleString.cpp)   
+
+### string literal 
+
+```c++
+auto string1 { "Hello World" }; //string1 type is const char* 
+auto string2 { "Hello World"s }; //string2 type is std::string -> using namespace std::literals::string_literals
+```
+
+#### inline namespace 
+
+```c++
+using namespace std::string_literals;
+using namespace std::literals::string_literals;
+```
+
+```c++
+namespace std {
+  inline namespace literals {
+    inline namespace string_literals {
+      //...
+    }
+  }
+}
+```
