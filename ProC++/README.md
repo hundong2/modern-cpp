@@ -351,3 +351,24 @@ namespace std {
   }
 }
 ```
+
+#### std::vector with CTAD ( Class Template Argument deduction, after c++17 )  
+
+```c++
+vector names { "John", "Sam", "Joe" }; //vector<const char*>
+
+vector names { "John"s, "Sam"s, "Joe"s }; //vector<std::string>
+```
+
+#### changing numeric to string 
+
+```c++
+string to_string(T val);
+```
+
+- example long double to string 
+
+```c++
+long double d { 3.14L };
+string s { to_string(d) };
+```
