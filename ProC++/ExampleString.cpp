@@ -66,3 +66,100 @@ void exampleString5()
     }
     std::cout << strHello << std::endl; //result : "Hellold...O"
 }
+
+void exampleString6()
+{
+    const std::string toParse { " 123USD" };
+    size_t index { 0 };
+    int value { std::stoi(toParse, &index) };
+    std::cout << std::format("Parsed value: {}", value) << std::endl;
+    std::cout << std::format("First non-parsed charater: '{}'", toParse[index]) << std::endl;
+}
+
+void exampleString7()
+{
+    std::cout << std::format("Function name: {}", __func__ ) << std::endl;
+    const size_t BufferSize { 50 };
+    std::string out(BufferSize, ' ');
+    auto result { std::to_chars(out.data(), out.data() + out.size(), 12345) };
+    if( result.ec == std::errc{})
+    {
+        std::cout << std::format("out size() : {}\n", out.size());
+        std::cout << out << std::endl; //12345
+    }
+}
+
+/**
+ * @brief structure binding example for exampleString7
+ */
+void exampleString8()
+{
+    const size_t BufferSize { 50 }; //if 1 is not enough
+    std::string out( BufferSize, ' ');
+    auto [ptr, error] { std::to_chars(out.data(), out.data() + out.size(), 12345) };
+    if( error == std::errc{} )
+    {
+        std::cout << std::format("out size() : {}\n", out.size());
+        std::cout << out << std::endl; //12345
+    }
+    else
+    {
+        std::cout << "Error occurred" << std::endl;
+    }
+}
+
+void exampleString9()
+{
+    const size_t BufferSize { 50 };
+    double value { 0.314 };
+    std::string out( BufferSize, ' ');
+    auto [ptr, error] { std::to_chars(out.data(), out.data() + out.size(), value) };
+    if( error == std::errc{})
+    {
+        std::cout << out << std::endl;
+    }
+}
+
+void ExampleConvertToString()
+{
+    using namespace std;
+    cout << __func__ << endl;
+    const size_t BufferSize { 50 };
+    double value1 { 0.314 };
+    string out( BufferSize, ' ' );
+    auto [ptr1, error1] { to_chars(out.data(), out.data() + out.size(), value1) };
+    if( error1 == errc{} ) { cout << out << endl; }
+
+    double value2;
+    auto [ptr2, error2] { from_chars(out.data(), out.data() + out.size(), value2) };
+    if( error2 == errc{})
+    {
+        if( value1 == value2)
+        {
+            cout << "Perfect roundtrip" << endl;
+        }
+        else
+        {
+            cout << "No Perfect roundtrip" << endl;
+
+        }
+    }
+}
+
+std::string_view extractExtension(std::string_view filename)
+{
+    return filename.substr(filename.rfind('.'));
+}
+
+void ExampleStringView()
+{
+    using namespace std;
+    cout << format("Example string view {}", __func__) << endl;
+    string filename { R"(c:\temp\example.txt)" };
+    cout << format("C++ string: {}", extractExtension(filename)) << endl;
+
+    const char* cString {  R"(c:\temp\example.txt)" };
+    cout << format("C string: {}", extractExtension(cString)) << endl;
+
+    cout << format("Literal: {}", extractExtension(R"(c:\temp\example.txt)")) << endl;
+}

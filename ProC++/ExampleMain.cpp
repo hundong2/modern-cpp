@@ -54,5 +54,11 @@ int main()
     exampleString3();
     exampleString4();
     exampleString5();
+    exampleString6();
+    exampleString7();
+    exampleString8();
+    exampleString9();
+    ExampleConvertToString();
+    ExampleStringView();
     return 0;
 }

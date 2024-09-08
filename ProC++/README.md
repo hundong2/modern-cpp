@@ -372,3 +372,100 @@ string to_string(T val);
 long double d { 3.14L };
 string s { to_string(d) };
 ```
+
+#### change string to numeric  
+
+- first space string ignore 
+- if change fail then `invalid_argument` exception handling.  
+
+```c++
+int stoi(const string& str, size_t *idx=0, int base=10);
+long stol(const string& str, size_t *idx=0, int base=10);
+unsigned long stoul(const string& str, size_t *idx=0, int base=10);
+long long stoll(const string& str, size_t *idx=0, int base=10);
+unsigned long long stoull(const string& str, size_t *idx=0, int base=10);
+float stof(const string& str, size_t *idx=10);
+double stod(const string& str, size_t *idx=10);
+long double stold(const string& str, size_t *idx=10);
+```
+
+[ExampleString.cpp - exampleString6()](./ExampleString.cpp)  
+
+#### raw level numeric convert to string 
+
+[ExampleString.cpp - exampleString7()](./ExampleString.cpp)  
+
+```c++
+to_chars_result to_chars(char* first, char* last, IntegerT value, int base=10;
+struct to_chars_result{
+  char* ptr;
+  errc ec;
+};
+```
+
+`ec == errc::value_too_large`  
+
+#### example structure binding 
+
+[exampleString.cpp - exampleString8()](./ExampleString.cpp)  
+
+- floating point example
+
+```c++
+to_chars_result to_chars(char* first, char* last, FloatT value);
+to_chars_result to_chars(char* first, char* last, FloatT value, chars_format format);
+to_chars_result to_chars(char* first, char* last, FloatT value, chars_format format, int precision);
+```
+
+```c++
+enum class chars_format {
+  scientific,//style : (-)d.ddde +- dd
+  fixed, //style : (-)ddd.ddd
+  hex, //style : (-)h.hhhp +- d
+  general = fixed | scientific //next 
+}
+```
+
+### example convert string to numeric format 
+
+[ExampleString.cpp ExampleConvertToString](./ExampleString.cpp)  
+
+```c++
+from_chars_result from_chars(const char* first, const char* last, IntegerT& value, int base=10);
+from_chars_result from_chars(const char* first, const char* last, FloatT& value, chars_format format = chars_format::genral);
+```
+
+```c++
+struct from_chars_result {
+  const char* ptr;
+  errc ec;
+}
+```
+
+- convert fail : `ptr` is `first`, `errc` is `errc::result_out_of_range`.
+- convert success : `ptr` is `last`.
+- space words not ingnore.  
+
+## string_view ( after C++17 )  
+
+```c++
+std::string_view extractExtension(std::string_view filename)
+```
+[string_view example extractExtension function](./ExampleString.cpp)  
+
+### note
+
+```
+R은 C++에서 "raw string literal"을 나타내는 접두사입니다. 
+Raw string literal은 문자열 내에서 이스케이프 시퀀스(예: \n, \t, \\)를 무시하고, 
+문자열 그대로를 포함할 수 있게 해줍니다. 이는 특히 파일 경로, 정규 표현식, HTML 코드 등에서 유용합니다.
+```
+
+- example string_view result ([ExampleStringView()](./ExampleString.cpp))
+
+```sh
+Example string view ExampleStringView
+C++ string: .txt
+C string: .txt
+Literal: .txt
+```

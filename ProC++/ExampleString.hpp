@@ -4,13 +4,20 @@
 #include <cstring>
 #include <string>
 #include <format>
+#include <string_view>
 // Include any necessary libraries or headers here
 void exampleString();
 void exampleString2();
 void exampleString3();
 void exampleString4();
 void exampleString5();
-
+void exampleString6();
+void exampleString7();
+void exampleString8();
+void exampleString9();
+void ExampleConvertToString();
+std::string_view extractExtension(std::string_view filename);
+void ExampleStringView();
 // Declare any classes, functions, or variables here
 
 #endif // EXAMPLESTRING_HPP
