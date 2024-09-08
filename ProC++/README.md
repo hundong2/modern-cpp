@@ -310,3 +310,20 @@ const char* str { R"(Is the following a tab character? \t)" };
 //Is the following a tab character? \t
 ```
 
+### string example 
+
+[ExampleString.cpp exampleString3()](./ExampleString.cpp)  
+
+
+### three-way comparison operator 
+
+[ExampleString.cpp exampleString4() ](./ExampleString.cpp)  
+
+### string calculator 
+
+- `substr(pos, len)` : substring return pos ~ pos + len 
+- `find(str)` : substring position return, if not then `string::npos` returns.
+- `replace(pos, len, str)` : replace string from pos to pos + len.  
+- `starts_with(str)/end_with(str)` : if matching start/ end substring with str parameter, then returns true values.  
+
+[ExampleString.cpp exampleString5()](./ExampleString.cpp)   

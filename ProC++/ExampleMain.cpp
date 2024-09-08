@@ -51,5 +51,8 @@ int main()
     std::cout << "Example String Library"  << std::endl;
     exampleString();
     exampleString2();
+    exampleString3();
+    exampleString4();
+    exampleString5();
     return 0;
 }
