@@ -163,3 +163,36 @@ void ExampleStringView()
 
     cout << format("Literal: {}", extractExtension(R"(c:\temp\example.txt)")) << endl;
 }
+
+void handleExtension(const std::string& extension)
+{
+    std::cout << std::format("handleExtension: {}", extension) << std::endl;
+}
+void ExampleStringView2()
+{
+    //std::string and std::string_view are not the same type, not convcatenate directly
+    //handleExtension(extractExtension(R"(c:\temp\example.txt)")); ///error: invalid initialization of reference of type ‘const std::string&’ {aka ‘const std::__cxx11::basic_string<char>&’} from expression of type ‘std::string_view’ {aka ‘std::basic_string_view<char>’}
+    handleExtension(extractExtension("c:\\temp\\example.txt").data());
+    handleExtension(std::string{extractExtension("c:\\temp\\example.txt")}); //uniform initialization syntax
+}
+
+void ExampleStringView3()
+{
+    //string -> string_view ok, string_view -> string not ok.
+    std::string value { "test string"};
+    std::string_view view { value };
+
+    std::cout << view << std::endl;
+    value[2] = 'x';
+    std::cout << view << std::endl;
+
+    constexpr std::string_view unicode[]{"▀▄─", "▄▀─", "▀─▄", "▄─▀"};
+    //unicode[0] = "▄▀▄▀";
+    for (int y{}, p{}; y != 6; ++y, p = ((p + 1) % 4))
+    {
+        for (int x{}; x != 16; ++x)
+            std::cout << unicode[p];
+        std::cout << '\n';
+    }
+
+}

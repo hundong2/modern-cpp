@@ -60,5 +60,7 @@ int main()
     exampleString9();
     ExampleConvertToString();
     ExampleStringView();
+    ExampleStringView2();
+    ExampleStringView3();
     return 0;
 }

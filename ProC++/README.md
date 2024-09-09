@@ -469,3 +469,29 @@ C++ string: .txt
 C string: .txt
 Literal: .txt
 ```
+
+### strint_view concatenate 
+
+[ExampleStringView2() function example](./ExampleString.cpp)  
+
+- error situation
+
+```c++
+std::string str { "Hello" };
+std::string_view sv { " world" };
+auto result { str + sv };
+```
+
+- but, it's ok 
+
+```c++
+auto result { str + sv.data() };
+```
+
+```c++
+auto result2 { str };
+result2.append(sv.data(), sv.size());
+```
+
+- string return function is reutrn just `const string&` `string` types.
+- class member data just defined `std::string`, ( don't define `const string&` or `string_view`)  

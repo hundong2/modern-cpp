@@ -19,5 +19,7 @@ void ExampleConvertToString();
 std::string_view extractExtension(std::string_view filename);
 void ExampleStringView();
 // Declare any classes, functions, or variables here
-
+void handleExtension(const std::string& extension);
+void ExampleStringView2();
+void ExampleStringView3();
 #endif // EXAMPLESTRING_HPP
