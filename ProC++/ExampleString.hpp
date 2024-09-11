@@ -22,4 +22,8 @@ void ExampleStringView();
 void handleExtension(const std::string& extension);
 void ExampleStringView2();
 void ExampleStringView3();
+void ExampleStringView4();
+void ExampleStringFormat1();
+void ExampleStringFormat2();
+void ExampleStringFormat3();
 #endif // EXAMPLESTRING_HPP

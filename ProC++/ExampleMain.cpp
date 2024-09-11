@@ -62,5 +62,9 @@ int main()
     ExampleStringView();
     ExampleStringView2();
     ExampleStringView3();
+    ExampleStringView4();
+    ExampleStringFormat1();
+    ExampleStringFormat2();
+    ExampleStringFormat3();
     return 0;
 }

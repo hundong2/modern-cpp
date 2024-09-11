@@ -495,3 +495,68 @@ result2.append(sv.data(), sv.size());
 
 - string return function is reutrn just `const string&` `string` types.
 - class member data just defined `std::string`, ( don't define `const string&` or `string_view`)  
+
+### string_view temporary string 
+
+- never save temporary string in std::string_view.   
+
+### string_view literal 
+
+```c++
+auto sv { "My string_view"sv };
+```
+
+- it is used with namespace below
+
+```c++
+using namespace std::literals::string_view_literals;
+using namespace std::string_view_literals;
+using namespace std::literals;
+using namespace std;
+```
+
+`std::string_view` 는 C++17에서 도입된 클래스 템플릿으로, 문자열 데이터를 소유하지 않고 읽기 전용으로 참조할 수 있게 해줍니다.  
+이는 문자열 데이터를 복사하지 않고도 효율적으로 처리할 수 있게 해주며, 성능 향상에 기여할 수 있습니다.
+
+`std::string_view`의 주요 사용 사례  
+- 함수 인수로 사용: 문자열 데이터를 복사하지 않고 함수에 전달할 수 있습니다.  
+- 부분 문자열 참조: 문자열의 일부를 참조할 때 유용합니다.  
+- 리터럴 문자열 처리: 문자열 리터럴을 효율적으로 처리할 수 있습니다.  
+
+### new feature C++20, string format 
+
+- `#include <format>`
+- `std::format`
+
+```c++
+auto s1 { std::format("Read {} bytes from {}", n, "file1.txt")};
+auto s2 { std::format("Read {0} bytes from {1}", n, "file1.txt")};
+```
+
+don't mix `{}` and `{N}`. 
+
+```c++
+auto s2 { std::format("Read {} bytes from {0}", n, "file1.txt")};
+```
+
+### format specifiers
+
+```c++
+[[fill]align][sign][#][0][width][.precision][type]
+```
+- dynamic width example  
+  - [string formatter - ExampleStringFormat1() ](./ExampleString.cpp)  
+
+```sh
+|   42|
+|     42|
+```
+
+#### [fill]align
+
+- fill character and align method 
+- `<` : left align
+- `>` : right align
+- `^` : center align  
+
+

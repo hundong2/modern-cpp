@@ -196,3 +196,40 @@ void ExampleStringView3()
     }
 
 }
+
+void ExampleStringView4()
+{
+    std::string s { "Hello" };
+    std::string_view sv { s + "World!" };
+    std::cout << sv << std::endl;
+}
+
+void ExampleStringFormat1()
+{
+    std::cout << std::format("{}", __func__) << std::endl;
+    int i { 42 };
+    std::cout << std::format("|{:5}|", i ) << std::endl;
+    std::cout << std::format("|{:{}}|", i, 7) << std::endl;
+}
+
+void ExampleStringFormat2()
+{
+    std::cout << std::format("{}", __func__) << std::endl;
+    int i { 42 };
+    std::cout << std::format("|{:7}|", i ) << std::endl;    //|     42|
+    std::cout << std::format("|{:<7}|", i ) << std::endl;   //|42     |
+    std::cout << std::format("|{:_>7}|", i ) << std::endl;  //|_____42|
+    std::cout << std::format("|{:_<7}|", i ) << std::endl;  //|42_____|
+    std::cout << std::format("|{:_^7}|", i ) << std::endl;  //|__42___|
+    std::cout << std::format("|{:_^4}|", i ) << std::endl;  //|_42_|
+}
+
+void ExampleStringFormat3()
+{
+    std::cout << std::format("{}", __func__) << std::endl;
+    int i { 42 };
+    std::cout << std::format("|{:<5}|", i ) << std::endl;
+    std::cout << std::format("|{:<+5}|", i ) << std::endl;
+    std::cout << std::format("|{:< 5}|", i ) << std::endl;
+    std::cout << std::format("|{:< 5}|", -i ) << std::endl;
+}
