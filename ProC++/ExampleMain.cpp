@@ -5,7 +5,27 @@
 #include "ExampleCasting.hpp"
 #include "Employee.hpp"
 #include "ExampleString.hpp"
+#include "ExampleKeyValue.hpp"
 
+
+void ExampleFormatter()
+{
+    using namespace std;
+    KeyValue keyValue { "Key1", 11 };
+    cout << format( "{}", keyValue) << endl;
+    cout << format( "{:a}", keyValue) << endl;
+    cout << format( "{:b}", keyValue) << endl;
+    cout << format( "{:c}", keyValue) << endl;
+    try
+    {
+        cout << format("{:d}", keyValue) << endl;
+    }
+    catch(const format_error& ex)
+    {
+        cout << ex.what() << endl;
+    }
+    
+}
 void ExampleEmployee()
 {
     std::cout << "Testing the Employee class." << std::endl;
@@ -66,5 +86,7 @@ int main()
     ExampleStringFormat1();
     ExampleStringFormat2();
     ExampleStringFormat3();
+
+    ExampleFormatter();
     return 0;
 }

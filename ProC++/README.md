@@ -559,4 +559,7 @@ auto s2 { std::format("Read {} bytes from {0}", n, "file1.txt")};
 - `>` : right align
 - `^` : center align  
 
+### formatter custom type
+
+- [formatter custom type example = ExmampleKeyValue.hpp](./ExampleKeyValue.hpp)  
 
