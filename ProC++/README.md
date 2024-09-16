@@ -563,3 +563,67 @@ auto s2 { std::format("Read {} bytes from {0}", n, "file1.txt")};
 
 - [formatter custom type example = ExmampleKeyValue.hpp](./ExampleKeyValue.hpp)  
 
+### using new keyword
+
+- using `new` keyword, it's saved in free store.  
+
+```c++
+int *ptr { nullptr };
+ptr = new int;
+```
+
+or 
+
+```c++
+int *ptr { new int };
+```
+
+## using new and delete
+
+```c++
+void leaky()
+{
+  new int; //memory leak
+}
+```
+
+- using delete for memory free 
+
+```c++
+int* ptr { new int };
+delete ptr;
+ptr = nullptr;
+```
+
+- malloc 
+  - didn't have to call initialize constructor. 
+- new 
+  - having to call initialize constructor. 
+- free()
+  - didn't have to call initialize destructor.
+- delete 
+  - having to call destructor.
+
+- in case of insufficient memory.  
+  - using `new` is throw exception. 
+  - but, you can use to return `nullptr` below example. 
+
+```c++
+int* ptr { new(nothrow) int };
+```
+
+### initialize array
+
+```C++
+int myArray[5] { 1,2,3,4,5 };//1,2,3,4,5
+int myArray[5] { 1,2}; //1,2,0,0,0
+int myArray[5] { 0 }; //0,0,0,0,0
+int myArray[5] {}; //0,0,0,0,0
+int myArray[] {1,2,3,4,5};//1,2,3,4,5
+```
+
+```c++
+int* myArrayPtr { new int[] { 1, 2, 3, 4, 5} };
+delete[] myArrayPtr;
+myArrayPtr = nullptr;
+```

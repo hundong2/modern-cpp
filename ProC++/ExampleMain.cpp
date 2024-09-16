@@ -6,6 +6,7 @@
 #include "Employee.hpp"
 #include "ExampleString.hpp"
 #include "ExampleKeyValue.hpp"
+#include "ExampleArray339.hpp"
 
 
 void ExampleFormatter()
@@ -18,7 +19,7 @@ void ExampleFormatter()
     cout << format( "{:c}", keyValue) << endl;
     try
     {
-        cout << format("{:d}", keyValue) << endl;
+        //cout << format("{:d}", keyValue) << endl;
     }
     catch(const format_error& ex)
     {
@@ -88,5 +89,7 @@ int main()
     ExampleStringFormat3();
 
     ExampleFormatter();
+    exampleArray339();
+    exampleArray341();
     return 0;
 }
