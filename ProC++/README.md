@@ -563,3 +563,8 @@ auto s2 { std::format("Read {} bytes from {0}", n, "file1.txt")};
 
 - [formatter custom type example = ExmampleKeyValue.hpp](./ExampleKeyValue.hpp)  
 
+## 7.1.1 Memory 
+
+```c++
+int i { 7 }; //i is automatic variable, it's saved in stack area. 
+```
