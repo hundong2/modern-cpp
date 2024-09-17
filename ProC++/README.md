@@ -646,3 +646,32 @@ myArrayPtr = nullptr;
 - `*` pointer arithmetic.  
 - `&` dereference.  
  
+### array = pointer 
+
+- [Example code - ExamplePage349() ](./ExamplePointer.hpp)
+
+- it's same means example below. 
+
+```c++
+void doubleInts(int* theArray, size_t inSize);
+void doubleInts(int theArray[], size_t inSize);
+void doubleInts(int theArray[2], size_t inSize);
+```
+
+- using parameter just Array Size N 
+
+```c++
+void doubleIntsStack(int (&theArray)[4]);
+```
+
+or using template
+
+```c++
+template<size_t N>
+void doubleIntStack(int (&theArray)[N])
+{
+  for(size_t i { 0 }; i < N; i++) { theArray[i] *= 2; }
+}
+```
+
+
