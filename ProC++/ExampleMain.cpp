@@ -8,6 +8,7 @@
 #include "ExampleKeyValue.hpp"
 #include "ExampleArray339.hpp"
 
+#include "ExamplePointer.hpp"
 
 void ExampleFormatter()
 {

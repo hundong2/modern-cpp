@@ -640,3 +640,9 @@ myArrayPtr = nullptr;
 
 - Using `xDimension * yDimension * elementSize` is not efficient.
 - A better approach is to allocate `x * yDimension + y`.
+
+## Pointer ( page 346 ) 
+
+- `*` pointer arithmetic.  
+- `&` dereference.  
+ 
