@@ -674,7 +674,7 @@ void doubleIntStack(int (&theArray)[N])
 }
 ```
 
-### Example Memory leak check 
+### Example Memory leak check ( window )
 
 ```c++
 #define _CRTDBG_MAP_ALLOC
@@ -695,4 +695,81 @@ void doubleIntStack(int (&theArray)[N])
 _CtrSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF );
 ```
 
+### Example Memory leack check ( linux ) 
 
+Valgrind는 메모리 누수와 메모리 사용 오류를 탐지하는 데 유용한 도구입니다. 
+
+```sh
+sudo apt-get install valgrind #Debian/Ubuntu
+sudo yum install valgrind # CentOS/RHEL
+sudo dnf install valgrind # Fedora
+```
+
+- execute valgrind 
+
+```sh
+valgrind --leak-check=full ./exampleCode 
+```
+
+- example result 
+
+```sh
+==4421== 
+==4421== HEAP SUMMARY:
+==4421==     in use at exit: 6 bytes in 3 blocks
+==4421==   total heap usage: 54 allocs, 51 frees, 75,966 bytes allocated
+==4421==
+==4421== 1 bytes in 1 blocks are definitely lost in loss record 1 of 3
+==4421==    at 0x4849013: operator new(unsigned long) (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==4421==    by 0x10F057: main (in /mnt/d/workspace/modern-cpp/ProC++/build/ExampleMain)
+==4421==
+==4421== 1 bytes in 1 blocks are definitely lost in loss record 2 of 3
+==4421==    at 0x4849013: operator new(unsigned long) (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==4421==    by 0x10F122: main (in /mnt/d/workspace/modern-cpp/ProC++/build/ExampleMain)
+==4421==
+==4421== 4 bytes in 1 blocks are definitely lost in loss record 3 of 3
+==4421==    at 0x4849013: operator new(unsigned long) (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==4421==    by 0x123986: ExampleReference::exampleReference3() (in /mnt/d/workspace/modern-cpp/ProC++/build/ExampleMain)
+==4421==    by 0x10F0E8: main (in /mnt/d/workspace/modern-cpp/ProC++/build/ExampleMain)
+==4421==
+==4421== LEAK SUMMARY:
+==4421==    definitely lost: 6 bytes in 3 blocks
+==4421==    indirectly lost: 0 bytes in 0 blocks
+==4421==      possibly lost: 0 bytes in 0 blocks
+==4421==    still reachable: 0 bytes in 0 blocks
+==4421==         suppressed: 0 bytes in 0 blocks
+==4421==
+==4421== For lists of detected and suppressed errors, rerun with: -s
+==4421== ERROR SUMMARY: 3 errors from 3 contexts (suppressed: 0 from 0)
+```
+
+## std::make_shared_for_overwrite()
+
+```C++
+std::make_shared() value initialises the object(s) it creates, which might be an unnecessary step if you intend to assign values over them later.
+
+std::make_shared_for_overwrite() default initialises the object(s) it creates.
+
+The difference only matters for (sub-)objects of fundamental types, where there is no initialiser.
+
+std::make_shared<int[1000][1000]>() will allocate and zero a million ints std::make_shared_for_overwrite<int[1000][1000]>() will allocate a million ints
+```
+
+### using shared_ptr() return 
+
+```c++
+class Foo : public enable_shared_from_this<Foo>
+{
+  public:
+    shared_ptr<Foo> getPointer()
+    {
+      return shared_from_this(); 
+      //return shared_ptr<Foo>(this); //occur duplicate delete 
+    }
+};
+int main()
+{
+  auto ptr1 { make_shared<Foo>() };
+  auto ptr2 { ptr1->getPointer() };
+}
+```
