@@ -37,4 +37,31 @@ void exampleArray341()
     delete[] mySimplePtrArray;
     mySimplePtrArray = nullptr;
 }
+char** allocateCharacterBoard(size_t xDimension, size_t yDimension)
+{
+    std::cout << "allocateCharacterBoard" << std::endl;
+    char** myArray { new char*[xDimension] };
+    for( size_t i { 0 }; i < xDimension; i++ )
+    {
+        myArray[i] = new char[yDimension];
+    }
+    return myArray;
+}
+void releaseCharacterBoard(char** myArray, size_t xDimension)
+{
+    std::cout << "releaseCharacterBoard" << std::endl;
+    for( size_t i { 0 }; i < xDimension; i++ )
+    {
+        delete[] myArray[i];
+        myArray[i] = nullptr;
+    }
+    delete[] myArray;
+    myArray = nullptr;
+}
+void ExampleArray344()
+{
+    std::cout << format("using {}", __func__) << std::endl; 
+    auto exampleArray = allocateCharacterBoard(3, 3);
+    releaseCharacterBoard(exampleArray, 3);
+}
 #endif // EXAMPLEARRAY339_HPP

@@ -633,3 +633,10 @@ int* myArrayPtr { new int[] { 1, 2, 3, 4, 5} };
 delete[] myArrayPtr;
 myArrayPtr = nullptr;
 ```
+
+### Example: multi dimension
+
+[ExampleArray344()](./ExampleMain.cpp)  
+
+- Using `xDimension * yDimension * elementSize` is not efficient.
+- A better approach is to allocate `x * yDimension + y`.
