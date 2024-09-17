@@ -5,6 +5,18 @@
 #include <format>
 #include <array>
 
+#ifdef _WIN32
+    #define _CRTDBG_MAP_ALLOC
+    #include <cstdlib>
+    #include <crtdbg.h>
+    #ifdef _DEBUG
+    #ifndef DBG_NEW
+        #define DBG_NEW new ( _NORMAL_BLOCK, __FILE__, __LINE__ )
+        #define new DBG_NEW
+    #endif
+    #endif //_DEBUG
+#endif //_WIN32
+
 using namespace std;
 class Document
 {

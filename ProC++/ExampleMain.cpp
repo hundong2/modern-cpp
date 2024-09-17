@@ -43,6 +43,9 @@ void ExampleEmployee()
 }
 int main()
 {
+#ifdef _WIN32
+    _CtrSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF );
+#endif //_WIN32
     auto *exampleAllocateArray = new ExampleAllocateArray();
     delete exampleAllocateArray;
     exampleAllocateArray = nullptr;
