@@ -840,3 +840,36 @@ SpreadsheetCell::SpreadsheetCell(double initialValue)
 - "In C++, data members are initialized in the order they appear in the class definition, not in the order they appear in the constructor initializer list."
 - [InitializeClass()](./ExampleMain.cpp)  
 - [Class Example](./chap8/FooExample.hpp)  
+
+
+#### copy constructor 
+
+```c++
+class SpreadsheetCell
+{
+  public:
+    SpreadsheetCell(const SpreadsheetCell& src);
+}
+
+SpreadsheetCell::SpreadsheetCell(const SpreadsheetCell& src) : m_value { src.m_value }
+{
+  //any code ....
+}
+```
+
+- If a copy constructor is not explicitly defined, the C++ compiler will generate a copy constructor that initializes the new object with the same data members as the original object.
+
+```c++
+classname::classname(const classname& src)
+  : m1 { src.m1 }, m2 { src.m2 }, m3 { src.m3 }, ... mn { src.mn }
+{ 
+}
+```
+
+- Explicitly defaulted copy constructor and explicitly deleted copy constructor.  
+
+```c++
+SpreadsheetCell(const SpreadsheetCell& src) = default;
+SpreadsheetCell(const SpreadsheetCell& src) = delete; //no more don't copy construct 
+```
+ 
