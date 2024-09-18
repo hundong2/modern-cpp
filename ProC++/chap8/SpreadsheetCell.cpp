@@ -1,6 +1,15 @@
 #include "SpreadsheetCell.hpp"
 #include <charconv>
 
+
+SpreadsheetCell::SpreadsheetCell(double initializeValue)
+{
+    setValue(initializeValue);
+}
+SpreadsheetCell::SpreadsheetCell(std::string_view initialValue)
+{
+    setString(initialValue);
+}
 void SpreadsheetCell::setValue(double value)
 {
     m_value = value;

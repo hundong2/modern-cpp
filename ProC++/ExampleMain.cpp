@@ -16,8 +16,8 @@
 
 void ExampleChap8()
 {
-    auto myCell = std::make_shared<SpreadsheetCell>();
-    auto anotherCell = std::make_shared<SpreadsheetCell>();    
+    auto myCell = std::make_shared<SpreadsheetCell>( double { 5.0 });
+    auto anotherCell = std::make_shared<SpreadsheetCell>("5.0");    
 
     myCell->setValue(5);
     anotherCell->setString("6.5");

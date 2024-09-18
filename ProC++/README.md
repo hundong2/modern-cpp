@@ -773,3 +773,64 @@ int main()
   auto ptr2 { ptr1->getPointer() };
 }
 ```
+
+## Construct of class ( ctor )
+
+- [ExampleChap8()](./ExampleMain.cpp)  
+
+- default construct
+  - it't not contained any parameter making construct.  
+  - it called `0-argument construct` ( zero )  
+ 
+ - uniform initailization 
+   - using `{}`
+
+- class uniform initialization ( making stack object )
+  
+```c++
+SpreadsheetCell myCell { };//called default ctor 
+```
+
+- class initialization ( making free store object )
+
+```c++
+auto smartCellp { make_unique<SpreadsheetCell>() }; //recommand 
+
+//not recommand 
+SpreadsheetCell* myCellp { new SpreadsheetCell {} };
+//SpreadsheetCell* myCellp { new SpreadsheetCell };
+//SpreadsheetCell* myCellp { new SpreadsheetCell() };
+delete myCellp; 
+myCellp = nullptr;
+```
+
+### explicitly defaulted constructor 
+
+```c++
+class SpreadsheetCell
+{
+  public:
+    SpreadsheetCell() = default;//making default constructor by compiler 
+}
+```
+
+### explicitly deleted constructor 
+
+- it's used a class composed only of static methods.
+
+```c++
+class MyClass 
+{
+  public:
+    MyClass() = delete;
+}
+```
+
+### constructor initializer ( ctor-initializer or member initializer list )
+
+```c++
+SpreadsheetCell::SpreadsheetCell(double initialValue)
+  : m_value { initializeValue }
+{ 
+}
+```
