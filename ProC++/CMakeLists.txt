@@ -36,6 +36,7 @@ add_executable(ExampleMain ExampleMain.cpp)
 
 
 target_link_libraries(ExampleMain PRIVATE spreadsheet_cell)
+target_link_libraries(ExampleMain PRIVATE foo_lib)
 
 target_link_libraries(ExampleMain PRIVATE ExampleAllocateArrayLib)
 target_link_libraries(ExampleMain PRIVATE ExampleConstLib)

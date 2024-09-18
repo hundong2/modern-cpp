@@ -11,9 +11,26 @@
 #include "ExamplePointer.hpp"
 
 #include "SpreadsheetCell.hpp"
+#include "FooExample.hpp"
 
 #include <memory>
 
+void InitializeClass()
+{
+    MyClassFoo instance { 1.2 };
+    /*
+    Foo::m_value: 1.2
+    MyClass::m_value: 1.2
+    */
+
+   MyClassFooReverse instance2 { 1.2 };
+   /*
+   Foo::m_value: 5
+    MyClass::m_value: 1.2
+   */
+
+    MyClassSolve instance3 { 1.2 };//recommand to use this
+}
 void ExampleChap8()
 {
     auto myCell = std::make_shared<SpreadsheetCell>( double { 5.0 });
@@ -116,5 +133,7 @@ int main()
     //chapter 8
 
     ExampleChap8();
+
+    InitializeClass();
     return 0;
 }

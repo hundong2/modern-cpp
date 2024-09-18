@@ -834,3 +834,9 @@ SpreadsheetCell::SpreadsheetCell(double initialValue)
 { 
 }
 ```
+
+### initializer class 
+
+- "In C++, data members are initialized in the order they appear in the class definition, not in the order they appear in the constructor initializer list."
+- [InitializeClass()](./ExampleMain.cpp)  
+- [Class Example](./chap8/FooExample.hpp)  
