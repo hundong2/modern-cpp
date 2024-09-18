@@ -12,11 +12,39 @@
 
 #include "SpreadsheetCell.hpp"
 #include "FooExample.hpp"
+#include "EvenSequence.hpp"
 
 #include <memory>
+#include <vector>
 
+void ExampleEvenSequence()
+{
+    std::cout << std::endl << std::format("using {}", __func__) << std::endl;
+    
+    EvenSequence p1 { 1.0, 2.0, 3.0, 4.0, 5.0 , 6.0 };
+    p1.dump();
+
+    try
+    {
+        /* code */
+        EvenSequence p2 { 1.0, 2.0, 3.0 };
+    }
+    catch(const std::invalid_argument& e)
+    {
+        std::cout << e.what() << std::endl;
+    }
+
+    //initialize vector 
+    std::vector myVec { "string1", "string2", "string3" };
+    //old vector push
+    std::vector<std::string> myVec2;
+    myVec2.push_back("string1");
+    myVec2.push_back("string2");
+    myVec2.push_back("string3");
+}
 void InitializeClass()
 {
+    std::cout << std::endl << std::format("using {}", __func__) << std::endl;
     MyClassFoo instance { 1.2 };
     /*
     Foo::m_value: 1.2
@@ -135,5 +163,6 @@ int main()
     ExampleChap8();
 
     InitializeClass();
+    ExampleEvenSequence();
     return 0;
 }

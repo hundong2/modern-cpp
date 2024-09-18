@@ -14,5 +14,11 @@ add_library(foo_lib STATIC
     FooExample.hpp
 )
 
+add_library(evensequence_lib STATIC 
+    EvenSequence.cpp
+    EvenSequence.hpp
+)
+
 target_include_directories(spreadsheet_cell PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_include_directories(foo_lib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(evensequence_lib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})

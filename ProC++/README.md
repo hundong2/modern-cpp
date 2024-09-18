@@ -873,3 +873,7 @@ SpreadsheetCell(const SpreadsheetCell& src) = default;
 SpreadsheetCell(const SpreadsheetCell& src) = delete; //no more don't copy construct 
 ```
  
+### example initializer_list initializer constructor 
+
+- [Example code EvenSequence.hpp](./chap8/EvenSequence.hpp)  
+- [Example code function - ExampleEvenSequence()](./ExampleMain.cpp)  
