@@ -10,6 +10,21 @@
 
 #include "ExamplePointer.hpp"
 
+#include "SpreadsheetCell.hpp"
+
+#include <memory>
+
+void ExampleChap8()
+{
+    auto myCell = std::make_shared<SpreadsheetCell>();
+    auto anotherCell = std::make_shared<SpreadsheetCell>();    
+
+    myCell->setValue(5);
+    anotherCell->setString("6.5");
+
+    std::cout << "myCell: " << myCell->getValue() << std::endl;
+    std::cout << "anotherCell: " << anotherCell->getValue() << std::endl;
+}
 void ExampleFormatter()
 {
     using namespace std;
@@ -97,5 +112,9 @@ int main()
     exampleArray341();
     ExampleArray344();
     ExamplePage349();
+
+    //chapter 8
+
+    ExampleChap8();
     return 0;
 }

@@ -1,5 +1,5 @@
 #include "ExampleConst.hpp"
-
+#include <array>
 ExampleConst::ExampleConst()
 {
     std::cout << "Example Const Initialized" << std::endl;  
@@ -30,8 +30,9 @@ constexpr void ExampleConst::SetConstExpr()
     // This will throw an error
     // PI = 3.14;
     constexpr Rect r { 8, 2};
-    int myArray[r.getArea()];
-    std::cout << "Array Size: " << r.getArea() << std::endl;
+    //int myArray[r.getArea()];
+    std::array<int, r.getArea()> myArray;
+    //std::cout << "Array Size: " << r.getArea() << std::endl;
 }
 constexpr double ExampleConst::inchToMm(double inch)
 {
