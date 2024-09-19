@@ -877,3 +877,81 @@ SpreadsheetCell(const SpreadsheetCell& src) = delete; //no more don't copy const
 
 - [Example code EvenSequence.hpp](./chap8/EvenSequence.hpp)  
 - [Example code function - ExampleEvenSequence()](./ExampleMain.cpp)  
+
+### converting constructor 
+
+- copy constructor not allowed 
+
+```c++
+SpreadsheetCell myCell { 4 };
+myCell = 5; //SpreadsheetCell myCell { 5 }; copy constructor 
+myCell = "6"sv; //SpreadsheetCell myCell { "6"sv }; copy constructor 
+```
+
+- function call not allowed 
+
+```c++
+void DoSomethingWithString(SpreadsheetCell s)
+{
+  //Do something 
+}
+int main()
+{
+  DoesomethingWithString(3); //error, SpreadsheetCell s = 3
+}
+```
+
+- using explicit keyword 
+
+```c++
+class SpreadsheetCell
+{
+  public:
+    SpreadsheetCell() = default;
+    SpreadsheetCell(double initialValue);
+    explicit SpreadsheetCell(std::string_view initialValue); //implicit coercion not allow
+    SpreadsheetCell(const SpreadsheetCell& src);
+}
+```
+
+```c++
+class MyClass
+{
+  public:
+    MyClass(int) { }
+    MyClass(int, int) { }
+    //...
+};
+
+void process(const MyClass& c) { }
+
+int main()
+{
+  process(1);
+  process( { 1 });
+  process( { 1, 2});
+}
+```
+
+- Adding explicit keyword 
+
+```c++
+class MyClass
+{
+  public:
+    explicit MyClass(int) {}
+    explicit MyClass(int, int) {}
+};
+
+process(MyClass{1}); //need implicit
+process(MyClass{1,2});//need implicit 
+```
+
+- after `C++20`  
+- it can be use `explicit([boolean])`  
+
+```c++
+explicit(true) MyClass(int);
+``` 
+
+- it's useful `type traits`.   
