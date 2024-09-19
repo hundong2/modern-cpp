@@ -955,3 +955,36 @@ explicit(true) MyClass(int);
 ``` 
 
 - it's useful `type traits`.   
+
+## destructor  
+
+```c++
+class SpreadsheetCell
+{
+  public:
+    ~SpreadsheetCell(); //destructor
+};
+SpreadsheetCell::~SpreadsheetCell()
+{
+  cout << "Destructor called" << endl;
+}
+
+```
+
+- A stack object is automatically destroyed when it goes out of scope, such as when the current function, method, or code block ends.  
+- for example,
+
+```c++
+int main()
+{
+  SpreadsheetCell myCell { 5 };
+  if( myCell.getValue() == 5)
+  {
+    SpreadsheetCell anotherCell { 6 };
+  }//this block ended removed anotherCell 
+  cout << "myCell : " << myCell.getValue() << endl;
+}//this block ended myCell is deleted.  
+```
+
+```c++
+```
