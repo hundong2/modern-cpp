@@ -17,6 +17,14 @@
 #include <memory>
 #include <vector>
 
+void ExampleCopyAndAssignment()
+{
+    std::cout << std::format("using {}", __func__) << std::endl;
+    SpreadsheetCell doc1; //called default constructor
+    SpreadsheetCell doc2 { doc1 }; //called copy constructor
+    SpreadsheetCell doc3 = doc1; //called copy constructor
+    doc3 = doc1; //called assignment operator
+}
 void ExampleEvenSequence()
 {
     std::cout << std::endl << std::format("using {}", __func__) << std::endl;
@@ -164,5 +172,6 @@ int main()
 
     InitializeClass();
     ExampleEvenSequence();
+    ExampleCopyAndAssignment();
     return 0;
 }

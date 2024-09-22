@@ -986,5 +986,33 @@ int main()
 }//this block ended myCell is deleted.  
 ```
 
+## copy constructor and assignment operator
+
+- using default with copy constructor ( made by compiler )
+- using default with assignment operator ( made by compiler )
+
 ```c++
+MyClass(const MyClass& src) = default;
+MyClass& operator=(const MyClass& rhs) = default;
+``` 
+
+### Copy constructor compare with assignment operator 
+
+- Copy constructor 
+
+```c++
+SpreadsheetCell myCell { 5 };
+SpreadsheetCell anotherCell { myCell }; 
+SpredsheetCell aThirdCell = myCell; //=same means ( SpreadsheetCell aThirdCell { myCell } )
 ```
+
+- if already declare aThirdCell then, it called `operator=` from compiler. 
+- [Example code - ExampleCopyAndAssignment()](./ExampleMain.cpp)  
+
+```c++
+anotherCell = myCell; //called assignment operator. 
+```
+
+
+
+

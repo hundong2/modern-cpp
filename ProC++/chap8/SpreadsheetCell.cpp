@@ -1,7 +1,20 @@
 #include "SpreadsheetCell.hpp"
 #include <charconv>
 
-
+SpreadsheetCell::SpreadsheetCell(const SpreadsheetCell& src) : m_value { src.m_value }
+{
+    std::cout << "called copy constructor" << std::endl;
+}
+SpreadsheetCell& SpreadsheetCell::operator=(const SpreadsheetCell& rhs)
+{
+    std::cout << "called assignment constructor operator" << std::endl;
+    if (this == &rhs)
+    {
+        return *this;
+    }
+    m_value = rhs.m_value;
+    return *this;
+}
 SpreadsheetCell::SpreadsheetCell(double initializeValue)
 {
     setValue(initializeValue);
