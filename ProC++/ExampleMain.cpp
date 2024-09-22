@@ -10,19 +10,25 @@
 
 #include "ExamplePointer.hpp"
 
-#include "SpreadsheetCell.hpp"
+#include "chap8/SpreadsheetCell.hpp"
 #include "FooExample.hpp"
 #include "EvenSequence.hpp"
+#include "chap9/SpreadsheetCell.hpp"
 
 #include <memory>
 #include <vector>
 
+void ExampleCopyAndAssignment2()
+{
+    std::cout << std::format("using {}", __func__) << std::endl;
+    ch9::SpreadsheetCell doc1; 
+}
 void ExampleCopyAndAssignment()
 {
     std::cout << std::format("using {}", __func__) << std::endl;
-    SpreadsheetCell doc1; //called default constructor
-    SpreadsheetCell doc2 { doc1 }; //called copy constructor
-    SpreadsheetCell doc3 = doc1; //called copy constructor
+    ch8::SpreadsheetCell doc1; //called default constructor
+    ch8::SpreadsheetCell doc2 { doc1 }; //called copy constructor
+    ch8::SpreadsheetCell doc3 = doc1; //called copy constructor
     doc3 = doc1; //called assignment operator
 }
 void ExampleEvenSequence()
@@ -69,8 +75,8 @@ void InitializeClass()
 }
 void ExampleChap8()
 {
-    auto myCell = std::make_shared<SpreadsheetCell>( double { 5.0 });
-    auto anotherCell = std::make_shared<SpreadsheetCell>("5.0");    
+    auto myCell = std::make_shared<ch8::SpreadsheetCell>( double { 5.0 });
+    auto anotherCell = std::make_shared<ch8::SpreadsheetCell>("5.0");    
 
     myCell->setValue(5);
     anotherCell->setString("6.5");

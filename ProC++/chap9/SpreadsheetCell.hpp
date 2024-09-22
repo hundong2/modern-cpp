@@ -1,5 +1,5 @@
-#ifndef SPREADSHEETCELL_HPP
-#define SPREADSHEETCELL_HPP
+#ifndef SPREADSHEETCELL_CH9_HPP
+#define SPREADSHEETCELL_CH9_HPP
 
 #include <cstddef>
 #include <iostream>

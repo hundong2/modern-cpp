@@ -7,10 +7,6 @@ project(ProC++)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
-
-
-
-
 # 소스 파일 추가
 file(GLOB_RECURSE SOURCES "*.cpp")
 
@@ -34,11 +30,15 @@ add_executable(ExampleInitList ExampleInitList.cpp)
 add_executable(ExampleInit ExampleInit.cpp)
 add_executable(ExampleMain ExampleMain.cpp)
 
+#target_include_directories(ExampleMain PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/ch8)
+#target_include_directories(ExampleMain PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/ch9)
 
 
 target_link_libraries(ExampleMain PRIVATE spreadsheet_cell)
+target_link_libraries(ExampleMain PRIVATE ch9_spreadsheet_cell)
 target_link_libraries(ExampleMain PRIVATE foo_lib)
 target_link_libraries(ExampleMain PRIVATE evensequence_lib)
+
 
 target_link_libraries(ExampleMain PRIVATE ExampleAllocateArrayLib)
 target_link_libraries(ExampleMain PRIVATE ExampleConstLib)
