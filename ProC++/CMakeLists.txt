@@ -16,6 +16,7 @@ file(GLOB_RECURSE SOURCES "*.cpp")
 
 # 하위 폴더 추가
 add_subdirectory(chap8)
+add_subdirectory(chap9)
 
 add_library(ExampleAllocateArrayLib ExampleAllocateArray.cpp)
 add_library(ExampleConstLib ExampleConst.cpp)
