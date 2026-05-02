@@ -1,0 +1,139 @@
+name: Daily C++ Learning Note
+
+# 매일 KST 09:00 (UTC 00:00) 에 실행 + 수동 트리거 지원
+on:
+  schedule:
+    - cron: "0 0 * * *"
+  workflow_dispatch:
+    inputs:
+      model:
+        description: "Gemini 모델 이름 (비우면 repo Variables 의 GEMINI_MODEL 또는 기본값 사용)"
+        required: false
+        type: string
+        default: ""
+      topic:
+        description: "주제 강제 지정 (비우면 자동 로테이션)"
+        required: false
+        type: string
+        default: ""
+
+# 같은 워크플로의 동시 실행 방지 — 이중 커밋 막기
+concurrency:
+  group: daily-cpp
+  cancel-in-progress: false
+
+permissions:
+  contents: write       # 생성한 .md 를 push 하기 위해 필요
+
+jobs:
+  generate:
+    name: Generate daily note
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          # push 권한이 있는 GITHUB_TOKEN 으로 체크아웃 (기본 동작이지만 명시)
+          persist-credentials: true
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # ──────────────────────────────────────────────────────────────
+      # 모델 결정 우선순위:
+      #   1) workflow_dispatch 의 inputs.model
+      #   2) repository Variable 'GEMINI_MODEL' (Settings > Variables)
+      #   3) 기본값 'gemini-2.5-flash'
+      # ──────────────────────────────────────────────────────────────
+      - name: Resolve model name
+        id: resolve_model
+        env:
+          INPUT_MODEL: ${{ inputs.model }}
+          VAR_MODEL: ${{ vars.GEMINI_MODEL }}
+        run: |
+          set -euo pipefail
+          MODEL="${INPUT_MODEL:-}"
+          if [ -z "$MODEL" ]; then
+            MODEL="${VAR_MODEL:-}"
+          fi
+          if [ -z "$MODEL" ]; then
+            MODEL="gemini-2.5-flash"
+          fi
+          echo "model=$MODEL" >> "$GITHUB_OUTPUT"
+          echo "선택된 모델: $MODEL"
+
+      - name: Generate daily note
+        id: gen
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_MODEL: ${{ steps.resolve_model.outputs.model }}
+          DAILY_TOPIC_HINT: ${{ inputs.topic }}
+          DAILY_OUT_DIR: daily
+        run: |
+          set -euo pipefail
+          if [ -z "${GEMINI_API_KEY}" ]; then
+            echo "::error::GEMINI_API_KEY secret 이 설정되어 있지 않다. Settings > Secrets and variables > Actions 에서 등록하라."
+            exit 1
+          fi
+          python scripts/daily_cpp.py
+
+      - name: Show generated file
+        if: steps.gen.outputs.file != ''
+        run: |
+          echo "=== ${{ steps.gen.outputs.file }} ==="
+          head -n 60 "${{ steps.gen.outputs.file }}" || true
+          echo "..."
+          echo "총 라인 수: $(wc -l < "${{ steps.gen.outputs.file }}")"
+
+      - name: Commit & push
+        if: steps.gen.outputs.file != ''
+        env:
+          FILE: ${{ steps.gen.outputs.file }}
+          TOPIC: ${{ steps.gen.outputs.topic }}
+          MODEL: ${{ steps.resolve_model.outputs.model }}
+        run: |
+          set -euo pipefail
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          # 변경사항이 없으면 (이미 같은 날에 실행되어 SKIP 된 경우) 종료
+          if git diff --quiet && git diff --cached --quiet; then
+            echo "변경사항 없음. 종료."
+            exit 0
+          fi
+
+          git add "$FILE"
+          git commit -m "docs(daily): $(basename "$FILE" .md) — ${TOPIC}" \
+                     -m "model: ${MODEL}"
+          # 푸시 — 다른 커밋이 동시에 들어왔을 가능성 대비 rebase 후 재시도
+          for i in 1 2 3; do
+            if git push; then
+              echo "push 성공"
+              break
+            fi
+            echo "push 실패 — pull --rebase 후 재시도 ($i/3)"
+            git pull --rebase --autostash
+            sleep $((i * 2))
+          done
+
+      - name: Job summary
+        if: always()
+        env:
+          MODEL: ${{ steps.resolve_model.outputs.model }}
+          FILE: ${{ steps.gen.outputs.file }}
+          TOPIC: ${{ steps.gen.outputs.topic }}
+          CATEGORY: ${{ steps.gen.outputs.category }}
+        run: |
+          {
+            echo "## Daily C++ Note"
+            echo ""
+            echo "- **모델**: \`${MODEL}\`"
+            echo "- **카테고리**: ${CATEGORY:-N/A}"
+            echo "- **주제**: ${TOPIC:-N/A}"
+            echo "- **파일**: \`${FILE:-(생성 안 됨)}\`"
+          } >> "$GITHUB_STEP_SUMMARY"

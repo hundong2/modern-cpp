@@ -1,0 +1,24 @@
+version: "3.9"
+
+services:
+  cpp-learn:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: cpp-learning:latest
+    container_name: cpp-learning
+    ports:
+      - "8888:8888"      # JupyterLab
+      - "9000:9000"      # 네트워크 실습용 서버 포트 (Lesson 09)
+      - "9001:9001"      # 네트워크 실습용 추가 포트
+    volumes:
+      - ./notebooks:/workspace/notebooks
+      - ./src:/workspace/src
+    working_dir: /workspace
+    # SYS_PTRACE: gdb / strace 사용을 위해 필요
+    cap_add:
+      - SYS_PTRACE
+    security_opt:
+      - seccomp:unconfined
+    stdin_open: true
+    tty: true

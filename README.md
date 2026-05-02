@@ -1,3 +1,8 @@
+## 00. todo list
+
+- [ ] modern cpp 2026.04 ~ 
+  - [modern cpp](./cpp_learning/README.md). 
+
 # 01. Study cpp reference for C++20
 
 - boost example 
