@@ -30,3 +30,8 @@
 *.exe
 *.out
 *.app
+
+# Local toolchains and generated build trees
+tools/
+build/
+**/build/
