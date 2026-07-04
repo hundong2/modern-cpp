@@ -1,5 +1,7 @@
 ## 00. todo list
 
+- [ ] CppCon System Architecture and Design Using Modern C++ Course
+  - [course readme](./Course/README.md).
 - [ ] modern cpp 2026.04 ~ 
   - [modern cpp](./cpp_learning/README.md). 
 
