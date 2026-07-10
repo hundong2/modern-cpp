@@ -31,7 +31,25 @@
 *.out
 *.app
 
+# Debug symbols and IDE/build metadata
+*.pdb
+*.ilk
+*.idb
+*.recipe
+*.log
+*.tlog
+*.lastbuildstate
+*.FileListAbsolute.txt
+_IsIncrementalBuild
+
 # Local toolchains and generated build trees
 tools/
 build/
 **/build/
+**/Debug/
+**/Release/
+**/x64/
+**/CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+compile_commands.json
