@@ -15,7 +15,15 @@ Chapter 06. 스택, 큐, 덱, 힙
 접근: 덱에 후보 인덱스를 값 내림차순으로 유지한다.
 */
 
-#include <bits/stdc++.h>
+#include <algorithm>
+#include <deque>
+#include <functional>
+#include <iostream>
+#include <queue>
+#include <stack>
+#include <string>
+#include <unordered_map>
+#include <vector>
 using namespace std;
 
 bool isValidParentheses(const string& s) {

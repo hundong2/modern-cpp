@@ -17,7 +17,9 @@ Chapter 19. 정수론, 모듈러 연산, 조합
 주의: MOD가 소수가 아니면 Fermat inverse를 그대로 쓰면 안 된다.
 */
 
-#include <bits/stdc++.h>
+#include <iostream>
+#include <numeric>
+#include <vector>
 using namespace std;
 
 const long long MOD = 1'000'000'007LL;
@@ -26,12 +28,28 @@ long long lcmSafe(long long a, long long b) {
     return a / gcd(a, b) * b;
 }
 
+long long addMod(long long a, long long b, long long mod) {
+    if (a >= mod - b) return a - (mod - b);
+    return a + b;
+}
+
+long long modMultiply(long long a, long long b, long long mod) {
+    long long result = 0;
+    a = (a % mod + mod) % mod;
+    while (b > 0) {
+        if (b & 1) result = addMod(result, a, mod);
+        a = addMod(a, a, mod);
+        b >>= 1;
+    }
+    return result;
+}
+
 long long modPow(long long base, long long exp, long long mod) {
     long long result = 1 % mod;
-    base %= mod;
+    base = (base % mod + mod) % mod;
     while (exp > 0) {
-        if (exp & 1) result = (__int128)result * base % mod;
-        base = (__int128)base * base % mod;
+        if (exp & 1) result = modMultiply(result, base, mod);
+        base = modMultiply(base, base, mod);
         exp >>= 1;
     }
     return result;

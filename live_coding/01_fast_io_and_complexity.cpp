@@ -20,7 +20,11 @@ Chapter 01. 빠른 입출력, 복잡도 감각, 기본 루프 패턴
 - 대략 1초 기준 O(N log N)은 N=1e6 근처까지, O(N^2)은 N=5e3 정도부터 위험하다.
 */
 
-#include <bits/stdc++.h>
+#include <algorithm>
+#include <climits>
+#include <iostream>
+#include <stdexcept>
+#include <vector>
 using namespace std;
 
 struct Summary {

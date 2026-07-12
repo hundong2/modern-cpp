@@ -15,7 +15,11 @@ Chapter 18. KMP, Trie, 문자열 탐색
 접근: Z-function.
 */
 
-#include <bits/stdc++.h>
+#include <algorithm>
+#include <array>
+#include <iostream>
+#include <string>
+#include <vector>
 using namespace std;
 
 vector<int> prefixFunction(const string& s) {

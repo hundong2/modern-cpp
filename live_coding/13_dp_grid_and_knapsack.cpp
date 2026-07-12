@@ -16,7 +16,10 @@ Chapter 13. 격자 DP, 0/1 배낭, 무한 배낭
 접근: 무게를 작은 값에서 큰 값으로 순회한다.
 */
 
-#include <bits/stdc++.h>
+#include <algorithm>
+#include <climits>
+#include <iostream>
+#include <vector>
 using namespace std;
 
 long long uniquePathsWithObstacles(const vector<vector<int>>& blocked) {

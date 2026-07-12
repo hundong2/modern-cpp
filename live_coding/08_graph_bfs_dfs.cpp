@@ -12,7 +12,11 @@ Chapter 08. 그래프 BFS/DFS, 격자 탐색
 접근: '1'을 만나면 DFS로 같은 섬을 모두 방문 처리한다.
 */
 
-#include <bits/stdc++.h>
+#include <iostream>
+#include <queue>
+#include <string>
+#include <utility>
+#include <vector>
 using namespace std;
 
 int countComponents(int n, const vector<pair<int, int>>& edges) {

@@ -16,7 +16,11 @@ Chapter 11. Union-Find, Kruskal MST
 접근: 이미 같은 집합인 두 정점을 잇는 간선은 cycle을 만든다.
 */
 
-#include <bits/stdc++.h>
+#include <algorithm>
+#include <iostream>
+#include <numeric>
+#include <utility>
+#include <vector>
 using namespace std;
 
 class DSU {

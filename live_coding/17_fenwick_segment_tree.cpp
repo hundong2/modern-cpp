@@ -16,7 +16,8 @@ Chapter 17. Fenwick Tree, Segment Tree, Lazy Propagation
 - min/max/gcd 또는 range update가 섞이면 Segment Tree가 일반적이다.
 */
 
-#include <bits/stdc++.h>
+#include <iostream>
+#include <vector>
 using namespace std;
 
 class Fenwick {

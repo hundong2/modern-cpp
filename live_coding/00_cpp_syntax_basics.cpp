@@ -6,9 +6,9 @@ Chapter 00. C++ 라이브 코딩 문법, STL, 실수 방지 체크리스트
 - 라이브 코딩에서 말로 설명하기 좋은 표현을 주석으로 남긴다.
 
 1. 기본 파일 구조
-- #include <bits/stdc++.h>
-  대부분의 온라인 저지와 GCC 환경에서 자주 쓰는 통합 헤더다.
-  회사 라이브 코딩 환경이 MSVC만 허용하면 <iostream>, <vector>, <algorithm>처럼 필요한 헤더를 직접 include한다.
+- 표준 헤더를 직접 include한다.
+  예: <iostream>, <vector>, <algorithm>, <queue>, <unordered_map>
+  GCC 전용 통합 헤더는 표준 C++이 아니고 MSVC에서 동작하지 않는다.
 - using namespace std;
   예제와 코딩 테스트에서는 짧게 쓰기 위해 사용한다. 실무 코드에서는 네임스페이스 오염 때문에 제한적으로 쓴다.
 - int main()은 프로그램 시작점이다. return 0은 정상 종료를 뜻한다.
@@ -77,7 +77,13 @@ Chapter 00. C++ 라이브 코딩 문법, STL, 실수 방지 체크리스트
 - "해시맵을 써서 이전에 본 값의 존재 여부를 평균 O(1)에 확인합니다."
 */
 
-#include <bits/stdc++.h>
+#include <algorithm>
+#include <functional>
+#include <iostream>
+#include <queue>
+#include <string>
+#include <unordered_map>
+#include <vector>
 using namespace std;
 
 struct Person {

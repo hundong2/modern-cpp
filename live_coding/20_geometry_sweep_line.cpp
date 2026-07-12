@@ -17,7 +17,11 @@ Chapter 20. 기하, CCW, 선분 교차, 볼록 껍질, 스위프 라인
 주의: 닫힌 구간 [l, r]이면 같은 좌표에서 시작을 끝보다 먼저 처리한다.
 */
 
-#include <bits/stdc++.h>
+#include <algorithm>
+#include <cstdlib>
+#include <iostream>
+#include <utility>
+#include <vector>
 using namespace std;
 
 struct Point {

@@ -15,7 +15,10 @@ Chapter 04. 정렬, lower/upper bound, 매개변수 탐색
 접근: 시작점 기준 정렬 후 마지막 병합 구간과 비교한다.
 */
 
-#include <bits/stdc++.h>
+#include <algorithm>
+#include <iostream>
+#include <utility>
+#include <vector>
 using namespace std;
 
 int countOccurrences(vector<int> a, int x) {

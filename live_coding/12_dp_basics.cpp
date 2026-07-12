@@ -20,7 +20,9 @@ DP 실전 질문:
 4. 답은 어느 상태에 있는가?
 */
 
-#include <bits/stdc++.h>
+#include <algorithm>
+#include <iostream>
+#include <vector>
 using namespace std;
 
 long long climbStairs(int n) {

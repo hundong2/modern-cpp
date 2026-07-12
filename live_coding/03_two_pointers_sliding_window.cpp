@@ -14,7 +14,11 @@ Chapter 03. 투 포인터, 슬라이딩 윈도우
 접근: 첫 창의 합을 만든 뒤 한 칸씩 밀며 갱신한다.
 */
 
-#include <bits/stdc++.h>
+#include <algorithm>
+#include <iostream>
+#include <stdexcept>
+#include <string>
+#include <vector>
 using namespace std;
 
 int minLengthAtLeastS(const vector<int>& a, int s) {

@@ -16,7 +16,9 @@ Chapter 07. 재귀, 백트래킹, pruning
 - 되돌리기(pop, used=false)를 빠뜨리는 실수가 가장 흔하다.
 */
 
-#include <bits/stdc++.h>
+#include <algorithm>
+#include <iostream>
+#include <vector>
 using namespace std;
 
 void permuteDfs(const vector<int>& nums, vector<int>& path, vector<bool>& used, vector<vector<int>>& result) {

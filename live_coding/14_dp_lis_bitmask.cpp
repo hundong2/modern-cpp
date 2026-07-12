@@ -16,7 +16,11 @@ Chapter 14. LIS, Edit Distance, Bitmask DP
 복잡도: O(N^2 * 2^N), N이 20을 넘으면 어렵다.
 */
 
-#include <bits/stdc++.h>
+#include <algorithm>
+#include <initializer_list>
+#include <iostream>
+#include <string>
+#include <vector>
 using namespace std;
 
 int lisLength(const vector<int>& a) {

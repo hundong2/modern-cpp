@@ -15,7 +15,10 @@ Chapter 16. 트리, 지름, LCA
 복잡도: 전처리 O(N log N), 질의 O(log N)
 */
 
-#include <bits/stdc++.h>
+#include <iostream>
+#include <queue>
+#include <utility>
+#include <vector>
 using namespace std;
 
 class LCA {

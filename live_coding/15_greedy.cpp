@@ -15,7 +15,13 @@ Chapter 15. Greedy
 접근: 매번 가장 작은 두 개를 먼저 합친다. priority_queue min-heap.
 */
 
-#include <bits/stdc++.h>
+#include <algorithm>
+#include <climits>
+#include <functional>
+#include <iostream>
+#include <queue>
+#include <utility>
+#include <vector>
 using namespace std;
 
 int maxNonOverlappingMeetings(vector<pair<int, int>> meetings) {

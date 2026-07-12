@@ -16,7 +16,13 @@ Chapter 05. 해시맵, 카운팅, 좌표 압축
 - 키가 정수이고 범위가 작으면 vector count가 더 빠르고 안정적이다.
 */
 
-#include <bits/stdc++.h>
+#include <algorithm>
+#include <iostream>
+#include <map>
+#include <string>
+#include <unordered_map>
+#include <utility>
+#include <vector>
 using namespace std;
 
 pair<int, int> twoSumIndices(const vector<int>& a, int target) {

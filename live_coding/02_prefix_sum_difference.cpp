@@ -15,7 +15,10 @@ Chapter 02. 누적합, 차분 배열, prefix hash
 복잡도: O(N), 메모리 O(N)
 */
 
-#include <bits/stdc++.h>
+#include <iostream>
+#include <tuple>
+#include <unordered_map>
+#include <vector>
 using namespace std;
 
 vector<long long> buildPrefix(const vector<int>& a) {

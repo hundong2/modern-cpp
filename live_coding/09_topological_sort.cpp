@@ -12,7 +12,11 @@ Chapter 09. 위상 정렬, DAG DP
 접근: 위상 순서대로 earliest[v] = max(earliest[v], earliest[u] + time[v])
 */
 
-#include <bits/stdc++.h>
+#include <algorithm>
+#include <iostream>
+#include <queue>
+#include <utility>
+#include <vector>
 using namespace std;
 
 vector<int> topologicalOrder(int n, const vector<pair<int, int>>& edges) {

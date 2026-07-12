@@ -17,7 +17,15 @@ Chapter 10. 최단 경로
 접근: 0 비용은 deque 앞, 1 비용은 deque 뒤에 넣는다.
 */
 
-#include <bits/stdc++.h>
+#include <algorithm>
+#include <climits>
+#include <deque>
+#include <functional>
+#include <iostream>
+#include <queue>
+#include <tuple>
+#include <utility>
+#include <vector>
 using namespace std;
 
 const long long INF = (1LL << 60);
