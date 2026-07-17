@@ -19,6 +19,13 @@
   - [2026-07-08 Daily Study: `volatile` MMIO 시뮬레이션과 K회 이상 문자열](./dailystudy/2026-07-08/README.md)
   - [2026-07-09 Daily Study: `alignas`, 바이트 뷰, 아나그램 윈도우](./dailystudy/2026-07-09/README.md)
   - [2026-07-10 Daily Study: 정적 DI와 최소 윈도우 문자열](./dailystudy/2026-07-10/README.md)
+  - [2026-07-11 Daily Study: Static Buffer Validation, span, Character Replacement](./dailystudy/2026-07-11/README.md)
+  - [2026-07-12 Daily Study: Modern Loops, Ranges, Prefix Sum](./dailystudy/2026-07-12/README.md)
+  - [2026-07-13 Daily Study: Error Recovery, Static DI, Sliding Windows](./dailystudy/2026-07-13/README.md)
+  - [2026-07-14 Daily Study: Atomic shared_ptr, Router Swap, Permutation Window](./dailystudy/2026-07-14/README.md)
+  - [2026-07-15 Daily Study: Packet Slicing and Minimum Window](./dailystudy/2026-07-15/README.md)
+  - [2026-07-16 Daily Study: Zero-Copy Serialization and Sum Window](./dailystudy/2026-07-16/README.md)
+  - [2026-07-17 Daily Study: Thread Affinity and K-Distinct Window](./dailystudy/2026-07-17/README.md)
 
 # 01. Study cpp reference for C++20
 

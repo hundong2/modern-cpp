@@ -5,7 +5,20 @@
 #include <string_view>
 #include <vector>
 
-// Minimum window substring.
+/*
+Problem: Minimum Window Substring
+
+Given two strings s and t, return the shortest contiguous substring of s that
+contains every character from t, including duplicates. Return "" if there is no
+valid window.
+
+Example:
+  s = "ADOBECODEBANC", t = "ABC" -> "BANC"
+
+Goal:
+  Learn std::string_view, std::vector frequency tables, and the sliding-window
+  pattern with two indexes.
+*/
 
 std::string min_window(std::string_view s, std::string_view t) {
     if (s.size() < t.size()) {
@@ -73,3 +86,9 @@ int main() {
     std::cout << "[TESTS] min window tests passed\n";
     return 0;
 }
+
+/*
+Execution result:
+ADOBECODEBANC / ABC -> BANC
+[TESTS] min window tests passed
+*/

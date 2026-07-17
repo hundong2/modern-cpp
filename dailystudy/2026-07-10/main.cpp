@@ -5,8 +5,13 @@
 #include <string_view>
 #include <tuple>
 
-// 2026-07-10
+// 2026-07-10 practice
 // Topic: static dependency injection without virtual dispatch.
+//
+// Dependency injection means an object receives the component it depends on
+// instead of creating that component itself. Here the gateway receives a driver.
+// Because the driver type is a template parameter, the compiler knows the exact
+// type at build time and does not need a virtual function table.
 
 struct FiberNetworkDriver {
     std::string_view driver_name = "HIGH_SPEED_FIBER_CORE";
@@ -77,3 +82,12 @@ int main() {
     std::cout << "[TESTS] static DI demo passed\n";
     return 0;
 }
+
+/*
+Execution result:
+[MOCK] captured packet: test
+[ENGINE] marker: NIC_DI_CH_0
+[DI] gateway type is resolved at compile time
+[HARDWARE] HIGH_SPEED_FIBER_CORE sends: RAW_TRANSACTION_BLOCK_2026
+[TESTS] static DI demo passed
+*/
