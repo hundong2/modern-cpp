@@ -72,5 +72,6 @@
         "map": "cpp",
         "set": "cpp",
         "ranges": "cpp"
-    }
+    },
+    "cmake.sourceDirectory": "/Users/donghun2/workspace/modern-cpp/Basic"
 }

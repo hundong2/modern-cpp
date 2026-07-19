@@ -1,0 +1,8 @@
+[project]
+name = "cpp23-notebook"
+version = "0.1.0"
+requires-python = ">=3.11"
+dependencies = [
+    "ipykernel>=6.29,<7",
+    "jupyterlab>=4.4,<5",
+]
