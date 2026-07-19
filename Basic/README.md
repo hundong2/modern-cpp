@@ -36,9 +36,8 @@ Windows에서 C++ 노트북까지 안정적으로 쓰려면 WSL Ubuntu 또는 co
 VSCode에서 `.ipynb`를 C++로 실행하려면 Jupyter C++ 커널이 필요합니다. conda-forge의 `xeus-cling`을 쓰면 `C++17` 커널을 선택할 수 있습니다.
 
 ```bash
-conda create -n cpp17-notebook -c conda-forge xeus-cling jupyterlab cmake ninja
-conda activate cpp17-notebook
-jupyter kernelspec list
+
+
 ```
 
 VSCode에서 `lesson.ipynb`를 열고 우측 상단 커널 선택 메뉴에서 `C++17` 또는 `xcpp17`을 선택합니다. 셀을 여러 번 다시 실행하다가 재정의 오류가 나면 `Restart Kernel` 후 처음부터 실행하면 됩니다.
