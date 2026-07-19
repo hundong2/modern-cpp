@@ -5,21 +5,21 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-find_package(Boost REQUIRED)
+find_package(Boost REQUIRED COMPONENTS program_options)
 
-set(BOOST_HEADER_STYLE_EXAMPLES
-    01_algorithm_string
-    02_lexical_cast_uuid
-    03_multi_index
-    04_signals2_observer
-    05_asio_timer
-    06_beast_http_message
-    07_json_value
-)
+# 이 폴더의 각 .cpp 파일을 같은 이름의 독립 실행 파일로 만듭니다.
+# CONFIGURE_DEPENDS 덕분에 .cpp 파일을 추가하거나 제거하면 CMake가 목록을 갱신합니다.
+file(GLOB BOOST_EXAMPLE_SOURCES CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp")
 
-foreach(example IN LISTS BOOST_HEADER_STYLE_EXAMPLES)
-    add_executable(${example} ${example}.cpp)
+foreach(source IN LISTS BOOST_EXAMPLE_SOURCES)
+    get_filename_component(example "${source}" NAME_WE)
+
+    add_executable(${example} "${source}")
     target_include_directories(${example} PRIVATE ${Boost_INCLUDE_DIRS})
+
+    if(example STREQUAL "08_program_options_shape")
+        target_link_libraries(${example} PRIVATE Boost::program_options)
+    endif()
 
     if (MSVC)
         target_compile_options(${example} PRIVATE /W4 /permissive-)
@@ -27,12 +27,3 @@ foreach(example IN LISTS BOOST_HEADER_STYLE_EXAMPLES)
         target_compile_options(${example} PRIVATE -Wall -Wextra -pedantic)
     endif()
 endforeach()
-
-# boost::program_options는 일반적으로 별도 라이브러리 링크가 필요합니다.
-# 설치 환경에 따라 아래 블록을 켜서 사용하세요.
-#
-# find_package(Boost REQUIRED COMPONENTS program_options)
-# add_executable(08_program_options_shape 08_program_options_shape.cpp)
-# target_include_directories(08_program_options_shape PRIVATE ${Boost_INCLUDE_DIRS})
-# target_link_libraries(08_program_options_shape PRIVATE Boost::program_options)
-
