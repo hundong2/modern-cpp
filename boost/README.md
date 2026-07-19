@@ -1,5 +1,12 @@
 ﻿# Boost 실무 커리큘럼
 
+## Getting Start
+
+```
+./run_script.sh <file name>
+```
+
+
 참고 공식 문서:
 
 - Boost: <https://www.boost.org/>
