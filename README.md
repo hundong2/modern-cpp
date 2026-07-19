@@ -6,6 +6,8 @@
   - [frequent patterns readme](./자주쓰는/README.md)
 - [ ] Boost 실무 커리큘럼
   - [boost curriculum readme](./boost/README.md)
+- [ ] C++17 Basic 실습 노트북
+  - [basic readme](./Basic/README.md)
 - [ ] modern cpp 2026.04 ~
   - [modern cpp](./cpp_learning/README.md)
 - [x] Modern C++ daily study
