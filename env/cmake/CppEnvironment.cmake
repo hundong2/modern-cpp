@@ -1,0 +1,27 @@
+include_guard(GLOBAL)
+
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+option(CPP_ENV_WARNINGS_AS_ERRORS "Treat compiler warnings as errors" OFF)
+option(CPP_ENV_SANITIZERS "Enable Address and UndefinedBehavior sanitizers" OFF)
+
+function(cpp_env_apply target)
+  if(MSVC)
+    target_compile_options(${target} PRIVATE /W4 /permissive- /Zc:__cplusplus)
+    if(CPP_ENV_WARNINGS_AS_ERRORS)
+      target_compile_options(${target} PRIVATE /WX)
+    endif()
+  else()
+    target_compile_options(${target} PRIVATE -Wall -Wextra -Wpedantic)
+    if(CPP_ENV_WARNINGS_AS_ERRORS)
+      target_compile_options(${target} PRIVATE -Werror)
+    endif()
+    if(CPP_ENV_SANITIZERS AND CMAKE_BUILD_TYPE STREQUAL "Debug")
+      target_compile_options(${target} PRIVATE -fsanitize=address,undefined -fno-omit-frame-pointer)
+      target_link_options(${target} PRIVATE -fsanitize=address,undefined)
+    endif()
+  endif()
+endfunction()
+

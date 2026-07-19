@@ -1,0 +1,9 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    { "label": "CMake: Configure", "type": "cmake", "command": "configure", "problemMatcher": [] },
+    { "label": "CMake: Build", "type": "cmake", "command": "build", "group": { "kind": "build", "isDefault": true }, "problemMatcher": "$gcc" },
+    { "label": "CMake: Test", "type": "shell", "command": "ctest", "args": ["--test-dir", "${command:cmake.buildDirectory}", "--output-on-failure"], "dependsOn": "CMake: Build", "problemMatcher": [] }
+  ]
+}
+

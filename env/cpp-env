@@ -1,0 +1,96 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+action="${1:-help}"
+project="${2:-.}"
+standard="${3:-23}"
+config="${4:-Debug}"
+
+show_help() {
+  cat <<'EOF'
+cpp-env - CMake 기반 C++17/20/23 공통 빌드 도구
+
+사용법:
+  ./env/cpp-env <command> [project] [standard] [config]
+  ./env/cpp-env help
+
+명령:
+  help        이 도움말을 표시합니다.
+  init        프로젝트에 CMake 프리셋과 VS Code 설정을 추가합니다.
+  configure   CMake configure를 실행해 빌드 디렉터리를 구성합니다.
+  build       configure 후 프로젝트를 병렬 빌드합니다.
+  test        configure/build 후 CTest를 실행합니다.
+  clean       선택한 표준과 설정의 빌드 디렉터리만 삭제합니다.
+
+위치 인자:
+  project     CMakeLists.txt가 있는 프로젝트 경로        기본값: .
+  standard    사용할 C++ 표준: 17 | 20 | 23             기본값: 23
+  config      Debug | Release | RelWithDebInfo | MinSizeRel
+                                                        기본값: Debug
+
+빌드 디렉터리:
+  <project>/build/cpp<standard>-<config>
+  예: ./build/cpp23-Debug
+
+예제:
+  ./env/cpp-env init .
+  ./env/cpp-env configure . 23 Debug
+  ./env/cpp-env build . 23 Debug
+  ./env/cpp-env build /path/to/project 20 Release
+  ./env/cpp-env test . 17 Debug
+  ./env/cpp-env clean . 23 Debug
+
+컴파일러 선택:
+  CC=clang CXX=clang++ ./env/cpp-env build . 23 Debug
+  CC=gcc CXX=g++ ./env/cpp-env build . 20 Release
+
+추가 CMake 옵션:
+  CPP_ENV_CMAKE_ARGS='-DBUILD_TESTING=ON -DCPP_ENV_SANITIZERS=ON' \
+    ./env/cpp-env build . 23 Debug
+
+사전 준비:
+  macOS:  ./env/setup-macos.sh
+  Linux: ./env/setup-linux.sh
+  Windows PowerShell: .\env\setup-windows.ps1
+
+더 자세한 설명: env/README.md
+EOF
+}
+
+if [[ "$action" == "help" || "$action" == "--help" || "$action" == "-h" ]]; then
+  show_help
+  exit 0
+fi
+
+case "$action" in
+  init|configure|build|test|clean) ;;
+  *) echo "unknown command: $action" >&2; echo >&2; show_help >&2; exit 2 ;;
+esac
+
+case "$standard" in 17|20|23) ;; *) echo "standard must be 17, 20, or 23" >&2; exit 2 ;; esac
+case "$config" in Debug|Release|RelWithDebInfo|MinSizeRel) ;; *) echo "invalid configuration: $config" >&2; exit 2 ;; esac
+
+project="$(cd "$project" && pwd)"
+build_dir="$project/build/cpp${standard}-${config}"
+
+write_project_files() {
+  test -f "$project/CMakeLists.txt" || { echo "CMakeLists.txt not found: $project" >&2; exit 2; }
+  mkdir -p "$project/.vscode"
+  script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+  "$script_dir/generate-config.sh" "$project"
+}
+
+configure() {
+  command -v cmake >/dev/null || { echo "cmake is required; run the OS setup script" >&2; exit 127; }
+  args=(-S "$project" -B "$build_dir" -G Ninja -DCMAKE_BUILD_TYPE="$config" -DCMAKE_CXX_STANDARD="$standard" -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=OFF -DCMAKE_EXPORT_COMPILE_COMMANDS=ON)
+  if [[ -n "${CPP_ENV_CMAKE_ARGS:-}" ]]; then read -r -a extra <<< "$CPP_ENV_CMAKE_ARGS"; args+=("${extra[@]}"); fi
+  cmake "${args[@]}"
+}
+
+case "$action" in
+  init) write_project_files ;;
+  configure) configure ;;
+  build) configure; cmake --build "$build_dir" --config "$config" --parallel ;;
+  test) configure; cmake --build "$build_dir" --config "$config" --parallel; ctest --test-dir "$build_dir" -C "$config" --output-on-failure ;;
+  clean) cmake -E remove_directory "$build_dir" ;;
+esac

@@ -1,0 +1,27 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "CMake: Debug selected target (GDB/LLDB)",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${command:cmake.launchTargetPath}",
+      "cwd": "${workspaceFolder}",
+      "stopAtEntry": false,
+      "MIMode": "${input:debugger}",
+      "preLaunchTask": "CMake: Build"
+    },
+    {
+      "name": "CMake: Debug selected target (MSVC)",
+      "type": "cppvsdbg",
+      "request": "launch",
+      "program": "${command:cmake.launchTargetPath}",
+      "cwd": "${workspaceFolder}",
+      "preLaunchTask": "CMake: Build"
+    }
+  ],
+  "inputs": [
+    { "id": "debugger", "type": "pickString", "description": "Debugger", "options": ["lldb", "gdb"], "default": "lldb" }
+  ]
+}
+

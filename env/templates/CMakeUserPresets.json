@@ -1,0 +1,38 @@
+{
+  "version": 6,
+  "cmakeMinimumRequired": { "major": 3, "minor": 25, "patch": 0 },
+  "configurePresets": [
+    {
+      "name": "cpp-base",
+      "hidden": true,
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_CXX_STANDARD_REQUIRED": "ON",
+        "CMAKE_CXX_EXTENSIONS": "OFF",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+      }
+    },
+    { "name": "cpp17-debug", "inherits": "cpp-base", "cacheVariables": { "CMAKE_CXX_STANDARD": "17" } },
+    { "name": "cpp20-debug", "inherits": "cpp-base", "cacheVariables": { "CMAKE_CXX_STANDARD": "20" } },
+    { "name": "cpp23-debug", "inherits": "cpp-base", "cacheVariables": { "CMAKE_CXX_STANDARD": "23" } },
+    { "name": "cpp17-release", "inherits": "cpp17-debug", "cacheVariables": { "CMAKE_BUILD_TYPE": "Release" } },
+    { "name": "cpp20-release", "inherits": "cpp20-debug", "cacheVariables": { "CMAKE_BUILD_TYPE": "Release" } },
+    { "name": "cpp23-release", "inherits": "cpp23-debug", "cacheVariables": { "CMAKE_BUILD_TYPE": "Release" } }
+  ],
+  "buildPresets": [
+    { "name": "cpp17-debug", "configurePreset": "cpp17-debug" },
+    { "name": "cpp20-debug", "configurePreset": "cpp20-debug" },
+    { "name": "cpp23-debug", "configurePreset": "cpp23-debug" },
+    { "name": "cpp17-release", "configurePreset": "cpp17-release" },
+    { "name": "cpp20-release", "configurePreset": "cpp20-release" },
+    { "name": "cpp23-release", "configurePreset": "cpp23-release" }
+  ],
+  "testPresets": [
+    { "name": "cpp17-debug", "configurePreset": "cpp17-debug", "output": { "outputOnFailure": true } },
+    { "name": "cpp20-debug", "configurePreset": "cpp20-debug", "output": { "outputOnFailure": true } },
+    { "name": "cpp23-debug", "configurePreset": "cpp23-debug", "output": { "outputOnFailure": true } }
+  ]
+}
+
