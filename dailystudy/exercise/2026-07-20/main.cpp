@@ -1,21 +1,3 @@
-/*
-[기초 문법부터 읽는 순서]
-1. #include는 필요한 표준 기능의 선언을 가져옵니다. string은 문자열,
-   variant는 여러 후보 중 한 값을 저장할 때 사용합니다.
-2. struct는 상태별 데이터를 묶고, `int item_count{}`는 정수를 0으로 초기화합니다.
-3. using OrderState는 긴 variant 타입에 별명을 붙입니다. Pending, Paid, Shipped 중
-   한 시점에는 정확히 하나만 저장됩니다.
-4. 함수 매개변수의 const OrderState&는 state를 복사하거나 수정하지 않고 읽습니다.
-5. 람다 `[](const auto& current)`의 []는 외부 변수를 쓰지 않음, auto는 현재 상태
-   타입을 컴파일러가 추론함, &는 복사하지 않음을 뜻합니다.
-6. decltype은 식의 타입을 구하고 decay_t는 const와 참조를 제거합니다.
-7. if constexpr는 컴파일 시 타입에 맞는 분기만 선택하고, std::visit는 현재 상태를
-   그 람다에 전달합니다.
-8. get은 맞는 타입이라고 확신할 때, get_if는 틀리면 nullptr가 필요할 때,
-   holds_alternative는 타입 여부만 묻고 싶을 때 사용합니다.
-9. assert는 괄호 안 조건이 참인지 확인하여 상태 변화와 출력 결과를 검증합니다.
-*/
-
 #include <cassert>
 #include <iostream>
 #include <string>
@@ -23,7 +5,7 @@
 #include <variant>
 
 struct Pending {
-    int item_count{};
+    int item_count{}; // {}는 0 초기화. 이름 있는 멤버에 접근한 식은 일반적으로 lvalue다.
 };
 
 struct Paid {
@@ -35,14 +17,17 @@ struct Shipped {
     std::string tracking_number;
 };
 
-using OrderState = std::variant<Pending, Paid, Shipped>;
+using OrderState = std::variant<Pending, Paid, Shipped>; // 태그와 가장 큰 후보를 담을 저장 공간을 갖는 형태가 일반적이다.
 
 std::string describe(const OrderState& state) {
+    // state는 const lvalue 참조라 variant와 내부 string을 복사하지 않고 읽는다.
     return std::visit(
         [](const auto& current) -> std::string {
+            // current는 참조 타입이다. decay_t로 const와 &를 제거해야 Pending 같은 원본 타입과 비교할 수 있다.
             using T = std::decay_t<decltype(current)>;
 
             if constexpr (std::is_same_v<T, Pending>) {
+                // + 연결 결과 string은 prvalue. 반환 객체를 직접 구성하거나 이동할 수 있다.
                 return "결제 대기: 상품 " + std::to_string(current.item_count) + "개";
             } else if constexpr (std::is_same_v<T, Paid>) {
                 return "결제 완료: " + std::to_string(current.paid_won) + "원";
@@ -58,11 +43,11 @@ bool is_shipped(const OrderState& state) {
 }
 
 int main() {
-    OrderState state{Pending{2}};
+    OrderState state{Pending{2}}; // Pending{2}는 prvalue, state는 이후 이름으로 접근하므로 lvalue다.
     assert(std::get<Pending>(state).item_count == 2);
     assert(describe(state) == "결제 대기: 상품 2개");
 
-    state = Paid{2, 25'000};
+    state = Paid{2, 25'000}; // 오른쪽 prvalue로 활성 후보를 Pending에서 Paid로 바꾸고 이전 객체 수명을 끝낸다.
     assert(std::get_if<Paid>(&state) != nullptr);
     assert(describe(state) == "결제 완료: 25000원");
 

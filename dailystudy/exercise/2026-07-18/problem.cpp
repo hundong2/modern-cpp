@@ -1,16 +1,3 @@
-/*
-[기초 문법부터 읽는 순서]
-1. double은 소수점이 있는 수를 저장합니다.
-2. enum class는 온도 오류를 두 가지 이름 있는 값으로 제한합니다.
-3. using Temperature는 expected<double, TemperatureError>의 짧은 별명입니다.
-4. validate_celsius는 정상 온도면 double을, 범위를 벗어나면 unexpected 오류를 반환합니다.
-5. if는 위에서부터 조건을 검사하고 return을 만나면 함수 실행을 즉시 끝냅니다.
-6. switch의 case는 오류 종류에 맞는 설명 문자열을 선택합니다.
-7. `room && *room == 21.5`는 값이 존재하는지 먼저 확인한 뒤 && 오른쪽에서 값을 읽습니다.
-   &&는 왼쪽이 거짓이면 오른쪽을 실행하지 않아 빈 expected 접근을 막습니다.
-8. assert는 학습 예제의 예상 결과가 실제 결과와 같은지 자동 검증합니다.
-*/
-
 #include <cassert>
 #include <expected>
 #include <iostream>
@@ -22,13 +9,14 @@ using Temperature = std::expected<double, TemperatureError>;
 
 // Exercise: read the rules below, then hide this solution and retype it.
 [[nodiscard]] Temperature validate_celsius(double value) {
+    // value는 함수 호출 시 복사되는 지역 lvalue다. double 비교는 보통 부동소수점 비교+조건 분기로 구현된다.
     if (value < -273.15) {
-        return std::unexpected(TemperatureError::below_absolute_zero);
+        return std::unexpected(TemperatureError::below_absolute_zero); // 오류 prvalue로 expected를 구성한다.
     }
     if (value > 150.0) {
         return std::unexpected(TemperatureError::sensor_too_hot);
     }
-    return value;
+    return value; // double 값을 성공 저장소에 복사한다.
 }
 
 [[nodiscard]] constexpr std::string_view describe(TemperatureError error) {
@@ -44,6 +32,7 @@ int main() {
     const auto impossible = validate_celsius(-300.0);
     const auto overheated = validate_celsius(180.0);
 
+    // &&는 단락 평가한다. room이 비었으면 오른쪽 *room을 실행하지 않아 잘못된 접근을 막는다.
     assert(room && *room == 21.5);
     assert(!impossible &&
            impossible.error() == TemperatureError::below_absolute_zero);

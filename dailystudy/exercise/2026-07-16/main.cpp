@@ -1,19 +1,4 @@
 /*
-[기초 문법부터 읽는 순서]
-1. AddStock과 RemoveStock은 같은 필드를 가져도 의미가 다른 별도 타입입니다.
-2. using은 긴 타입에 별명을 붙이며, variant<A, B>는 A 또는 B 중 한 값만 담습니다.
-3. class의 public은 외부에 공개, private은 클래스 내부에서만 사용할 수 있다는 뜻입니다.
-4. [[nodiscard]]는 반환값을 무시하지 말라고 컴파일러에 알려 줍니다.
-5. const T&는 복사 없이 읽고, int&는 원본 정수를 직접 수정하는 참조입니다.
-6. map<string, int>는 상품 이름을 키로 재고 수량을 찾습니다. find 결과가 end와
-   같으면 키가 없다는 뜻입니다.
-7. std::visit는 variant의 현재 값을 처리합니다. 람다의 [this]는 현재 서비스
-   객체의 멤버 함수 handle을 호출하기 위해 this를 캡처합니다.
-8. Overloaded는 여러 람다의 operator()를 합쳐 각 상태별 처리를 한 방문자에
-   모으는 Modern C++ 도우미입니다.
-*/
-
-/*
 Daily Modern C++ Exercise - 2026-07-16
 
 Architecture: Command -> InventoryService -> Event -> Console adapter
@@ -40,7 +25,7 @@ struct RemoveStock {
     int amount{};
 };
 
-using InventoryCommand = std::variant<AddStock, RemoveStock>;
+using InventoryCommand = std::variant<AddStock, RemoveStock>; // 후보 중 하나의 수명만 활성화된다.
 
 struct StockChanged {
     std::string item;
@@ -56,6 +41,7 @@ using InventoryEvent = std::variant<StockChanged, CommandRejected>;
 
 template <class... Callables>
 struct Overloaded : Callables... {
+    // 각 람다의 operator()를 현재 구조체 범위로 가져와 오버로드 집합을 만든다.
     using Callables::operator()...;
 };
 
@@ -65,9 +51,10 @@ Overloaded(Callables...) -> Overloaded<Callables...>;
 class InventoryService {
 public:
     [[nodiscard]] InventoryEvent execute(const InventoryCommand& command) {
+        // command는 이름 있는 const 참조이므로 lvalue다. visit는 활성 객체를 const lvalue 참조로 전달한다.
         return std::visit(
             Overloaded{
-                [this](const AddStock& add) { return handle(add); },
+                [this](const AddStock& add) { return handle(add); }, // this 포인터를 값으로 캡처한다.
                 [this](const RemoveStock& remove) { return handle(remove); },
             },
             command);
@@ -84,9 +71,11 @@ private:
             return CommandRejected{"item must be non-empty and amount must be positive"};
         }
 
+        // operator[] 결과는 map 내부 int의 lvalue. int&는 그 저장 위치에 별명을 붙여 직접 수정한다.
         int& current = quantities_[command.item];
         const int old_quantity = current;
         current += command.amount;
+        // 중괄호로 만든 StockChanged는 prvalue이며 반환 객체를 직접 구성할 수 있다(복사 생략).
         return StockChanged{command.item, old_quantity, current};
     }
 

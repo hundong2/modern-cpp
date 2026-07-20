@@ -1,18 +1,4 @@
 /*
-[기초 문법부터 읽는 순서]
-1. vector<int>는 int 여러 개를 연속으로 저장하고, span<const int>는 그 배열을
-   복사하지 않고 읽기 전용으로 바라봅니다.
-2. optional<size_t>는 위치가 있으면 인덱스를, 없으면 nullopt를 반환합니다.
-3. readings.size()는 원소 수이고, readings[index]는 index 위치의 값입니다.
-4. ||는 '또는', >=는 '크거나 같다', ++right는 right를 1 증가시킵니다.
-5. 슬라이딩 윈도우는 새 값을 더하고 빠진 값을 빼서 매번 전체 합을 다시
-   계산하지 않습니다.
-6. auto는 오른쪽 식으로 타입을 추론하고, const는 이후 값을 바꾸지 않겠다는
-   약속입니다.
-7. assert(조건)는 조건이 거짓이면 테스트를 즉시 실패시켜 예상 동작을 검증합니다.
-*/
-
-/*
 Daily Modern C++ Syntax Drill - 2026-07-14
 
 Problem:
@@ -32,14 +18,15 @@ Why this is useful:
 #include <vector>
 
 std::optional<std::size_t> first_window_at_least(
-    std::span<const int> readings,
+    std::span<const int> readings, // 원소 복사 없이 시작 주소와 길이만 값으로 전달한다.
     std::size_t window_size,
     int threshold) {
 
     if (window_size == 0 || readings.size() < window_size) {
-        return std::nullopt;
+        return std::nullopt; // 값이 없다는 상태를 optional 내부 태그로 표현한다.
     }
 
+    // window_sum은 이름 있는 지역 객체이므로 lvalue다. 대입 시 이 객체의 저장 위치가 갱신된다.
     int window_sum = std::accumulate(
         readings.begin(),
         readings.begin() + static_cast<std::ptrdiff_t>(window_size),
@@ -50,7 +37,7 @@ std::optional<std::size_t> first_window_at_least(
     }
 
     for (std::size_t right = window_size; right < readings.size(); ++right) {
-        window_sum += readings[right];
+        window_sum += readings[right]; // 배열 원소 식도 lvalue이며, 값을 레지스터로 load해 합산하는 형태가 일반적이다.
         window_sum -= readings[right - window_size];
 
         if (window_sum >= threshold) {
@@ -64,6 +51,7 @@ std::optional<std::size_t> first_window_at_least(
 void run_tests() {
     {
         const std::vector<int> readings = {4, 1, 7, 3, 6, 2};
+        // 함수 반환 optional은 prvalue다. auto 지역 객체 index를 직접 초기화해 불필요한 복사를 피할 수 있다.
         const auto index = first_window_at_least(readings, 3, 16);
         assert(index.has_value());
         assert(*index == 2); // 7 + 3 + 6

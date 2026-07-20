@@ -1,16 +1,4 @@
 /*
-[기초 문법부터 읽는 순서]
-1. enum class TransactionKind는 거래 종류를 incoming 또는 outgoing으로 제한합니다.
-2. struct는 item, kind, amount처럼 함께 다닐 데이터를 묶습니다. amount{}는 0 초기화입니다.
-3. 멤버 함수 뒤의 const는 그 함수가 객체의 멤버를 변경하지 않는다는 약속입니다.
-4. span<const Transaction>은 vector를 복사하지 않고 읽기 전용으로 전달합니다.
-5. 범위 for의 const Transaction&는 각 원소를 복사하지 않고 읽습니다.
-6. continue는 현재 반복만 건너뛰고 다음 원소로 이동합니다.
-7. switch는 거래 종류에 맞는 합계를 고르고, break는 해당 case 실행을 끝냅니다.
-8. +=는 기존 값에 오른쪽 값을 더해 다시 저장하며 assert는 계산 결과를 검증합니다.
-*/
-
-/*
 Daily syntax drill - 2026-07-16
 
 Summarize transactions using enum class, a struct, a range-based for loop,
@@ -24,6 +12,7 @@ references, and a switch.
 #include <vector>
 
 enum class TransactionKind {
+    // 내부적으로 정수로 표현되는 경우가 많지만 enum class는 타입 안전성을 제공한다.
     incoming,
     outgoing,
 };
@@ -38,7 +27,7 @@ struct Summary {
     int incoming_total{};
     int outgoing_total{};
 
-    [[nodiscard]] int net_change() const {
+    [[nodiscard]] int net_change() const { // 뒤 const는 숨은 this가 const Summary*임을 뜻한다.
         return incoming_total - outgoing_total;
     }
 };
@@ -46,14 +35,15 @@ struct Summary {
 [[nodiscard]] Summary summarize(std::span<const Transaction> transactions) {
     Summary result{};
 
+    // transaction은 각 원소에 바인딩된 const lvalue 참조라 문자열을 포함한 구조체 복사를 피한다.
     for (const Transaction& transaction : transactions) {
         if (transaction.amount <= 0) {
-            continue;
+            continue; // 기계어 수준에서는 다음 반복 조건으로 분기하는 형태가 일반적이다.
         }
 
         switch (transaction.kind) {
         case TransactionKind::incoming:
-            result.incoming_total += transaction.amount;
+            result.incoming_total += transaction.amount; // 멤버 lvalue에서 읽고 더한 뒤 같은 위치에 저장한다.
             break;
         case TransactionKind::outgoing:
             result.outgoing_total += transaction.amount;

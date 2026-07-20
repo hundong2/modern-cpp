@@ -1,23 +1,4 @@
 /*
-[기초 문법부터 읽는 순서]
-1. #include는 표준 라이브러리 기능을 가져옵니다. <iostream>은 화면 출력,
-   <vector>는 여러 값 저장, <string>은 문자열에 사용합니다.
-2. struct는 관련 변수를 한 타입으로 묶습니다. int는 정수이며 멤버 뒤의 {}
-   는 0으로 안전하게 초기화한다는 뜻입니다.
-3. 함수 선언의 왼쪽은 반환 타입, 괄호 안은 매개변수입니다. const T&는
-   원본을 복사하지 않고 읽기만 하겠다는 뜻입니다.
-4. if는 조건 분기, for는 반복, return은 함수 결과를 호출한 곳에 돌려줍니다.
-5. string_view와 span은 데이터를 소유하지 않고 빌려 봅니다. 따라서 원본이
-   먼저 사라지면 안 됩니다.
-6. expected<값, 오류>는 성공 값 또는 실패 이유 중 하나를 담습니다. !result는
-   실패 여부를 검사하고, *result와 result->member는 성공 값을 읽습니다.
-7. template과 concept는 publish 함수를 가진 타입만 서비스에 연결되도록
-   컴파일 시점에 검사합니다.
-8. 생성자에서 횟수를 늘리고 소멸자에서 줄이는 ProcessingSession은 스코프를
-   벗어나면 자동 정리되는 RAII의 예입니다.
-*/
-
-/*
 Daily Modern C++ Exercise - 2026-07-14
 
 Theme:
@@ -44,7 +25,7 @@ What to notice:
 #include <vector>
 
 struct TemperatureReading {
-    int sensor_id{};
+    int sensor_id{}; // {}는 0으로 값 초기화한다. 이 멤버 식은 이름이 있으므로 lvalue다.
     int celsius{};
 };
 
@@ -96,13 +77,16 @@ struct BatchReport {
 };
 
 std::expected<int, std::string> parse_int(std::string_view text, std::string_view field_name) {
+    // text는 원본 문자를 소유하지 않는 작은 뷰를 값으로 복사해 받는다(보통 포인터+길이 두 단어).
     if (text.empty()) {
+        // unexpected 임시 객체는 prvalue이며 expected의 오류 저장소를 직접 초기화할 수 있다.
         return std::unexpected(std::string(field_name) + " is empty");
     }
 
     int value{};
     const char* first = text.data();
     const char* last = text.data() + text.size();
+    // 구조적 바인딩은 from_chars가 반환한 결과 객체의 두 멤버에 읽기 좋은 이름을 붙인다.
     const auto [parsed_until, error] = std::from_chars(first, last, value);
 
     if (error != std::errc{} || parsed_until != last) {
@@ -138,6 +122,7 @@ template <AlertPublisher Publisher>
 class ReadingService {
 public:
     ReadingService(Publisher& publisher, int high_temperature_celsius, int& active_sessions)
+        // 참조 멤버는 객체를 복사·소유하지 않고 기존 객체 주소를 보관한다.
         : publisher_{publisher},
           high_temperature_celsius_{high_temperature_celsius},
           active_sessions_{active_sessions} {}
@@ -147,6 +132,7 @@ public:
         BatchReport report{};
 
         for (std::size_t index = 0; index < lines.size(); ++index) {
+            // CPU 관점에서는 대략 인덱스 비교→조건 분기→증가로 반복되지만 실제 명령은 최적화에 따라 달라진다.
             const auto parsed = parse_reading(lines[index]);
             if (!parsed) {
                 return std::unexpected(

@@ -1,20 +1,4 @@
 /*
-[기초 문법부터 읽는 순서]
-1. enum class는 start, stop, status처럼 가능한 값을 이름으로 제한합니다.
-2. struct Command는 명령 종류와 대상 문자열을 한 객체에 묶습니다.
-3. string은 문자를 소유하지만 string_view는 기존 문자열을 빌려 읽습니다.
-4. expected<Command, string>은 파싱 성공 시 Command, 실패 시 오류 문자열을
-   저장합니다. unexpected(...)로 실패 값을 만듭니다.
-5. line.find(' ')와 substr은 공백 위치를 찾고 문자열의 일부를 잘라 봅니다.
-6. switch와 case는 enum 값에 따라 실행할 코드를 선택합니다.
-7. Logger&의 &는 logger를 복사하지 않고 원본 객체를 참조한다는 뜻입니다.
-8. template/concept는 write(message)가 가능한 로거만 CommandRouter에 주입되게
-   하며, 서비스 규칙과 출력 저장소를 분리합니다.
-9. RouteScope의 생성자·소멸자는 조기 return이 있어도 횟수를 원상 복구하는
-   RAII 패턴입니다.
-*/
-
-/*
 Daily Modern C++ Exercise - 2026-07-15
 
 Theme:
@@ -39,6 +23,7 @@ What to notice:
 #include <vector>
 
 enum class CommandKind {
+    // enum class는 정수로 암시 변환되지 않아 다른 숫자와 실수로 섞이는 일을 막는다.
     start,
     stop,
     status,
@@ -56,12 +41,13 @@ struct RouteReport {
 
 template <typename Logger>
 concept CommandLogger = requires(Logger logger, std::string_view message) {
+    // 실행 코드가 아니라 컴파일 시 "이 식이 유효하고 반환형이 void인가"를 검사한다.
     { logger.write(message) } -> std::same_as<void>;
 };
 
 class RouteScope {
 public:
-    explicit RouteScope(int& active_routes) : active_routes_{active_routes} {
+    explicit RouteScope(int& active_routes) : active_routes_{active_routes} { // &는 원본 카운터에 바인딩한다.
         ++active_routes_;
     }
 
@@ -101,6 +87,7 @@ std::expected<CommandKind, std::string> parse_kind(std::string_view word) {
         return CommandKind::status;
     }
 
+    // 문자열 연결 결과는 임시 std::string(prvalue)이며 오류 expected를 이동/직접 초기화한다.
     return std::unexpected("unknown command kind: " + std::string(word));
 }
 
@@ -116,7 +103,7 @@ std::expected<Command, std::string> parse_command(std::string_view line) {
         return std::unexpected("target is empty");
     }
 
-    const auto kind = parse_kind(kind_text);
+    const auto kind = parse_kind(kind_text); // 반환 prvalue로 const 지역 객체를 초기화한다.
     if (!kind) {
         return std::unexpected(kind.error());
     }
@@ -168,6 +155,7 @@ public:
             }
 
             ++report.success_count;
+            // 가상 호출이 아니라 템플릿으로 Logger 타입이 확정되어 컴파일러가 인라인할 여지가 크다.
             logger_.write(
                 std::string(to_text(parsed->kind)) + " routed to " + parsed->target);
         }

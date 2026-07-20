@@ -1,15 +1,3 @@
-/*
-[기초 문법부터 읽는 순서]
-1. string_view는 문자열을 복사·소유하지 않고 읽습니다. 호출 중 원본이 살아 있어야 합니다.
-2. optional<int>는 정상 정수 또는 '값 없음'을 표현하여 -1 같은 약속값을 피합니다.
-3. int value{}는 정수를 0으로 초기화하고, const char*는 문자를 가리키는 읽기 전용 포인터입니다.
-4. from_chars는 문자열 범위를 숫자로 바꾸며 구조적 바인딩 `[next, error]`로 두 결과를 받습니다.
-5. `!=`, `||`, `<=`는 각각 다름, 또는, 작거나 같음을 검사합니다.
-6. value_or(10)은 optional이 비었을 때 기본값 10을 사용합니다.
-7. 함수 앞 [[nodiscard]]는 반환값을 실수로 버리지 않도록 경고를 요청합니다.
-8. require는 조건이 거짓이면 cerr로 오류를 출력하고 exit로 프로그램을 종료하는 작은 테스트 함수입니다.
-*/
-
 #include <charconv>
 #include <cstdlib>
 #include <iostream>
@@ -19,9 +7,10 @@
 // A failed conversion is normal input, so std::optional expresses it without
 // a magic number such as -1 and without throwing an exception.
 [[nodiscard]] std::optional<int> parse_positive_count(std::string_view text) {
-    int value{};
-    const char* first = text.data();
+    int value{}; // 이름 있는 객체이므로 lvalue이며 from_chars가 이 저장 위치에 결과를 쓴다.
+    const char* first = text.data(); // 포인터 값은 복사되지만 가리킨 문자의 소유권은 얻지 않는다.
     const char* last = first + text.size();
+    // 함수 호출 결과는 prvalue. 구조적 바인딩으로 결과 포인터와 오류 코드를 각각 이름 붙인다.
     const auto [next, error] = std::from_chars(first, last, value);
 
     if (error != std::errc{} || next != last || value <= 0) {
@@ -32,6 +21,7 @@
 
 [[nodiscard]] int pages_to_read(std::optional<int> daily_pages, int days) {
     // value_or supplies a visible default when the optional is empty.
+    // 곱셈 결과 int는 prvalue다. 작은 정수 연산은 보통 레지스터에서 수행되지만 컴파일러가 결정한다.
     return daily_pages.value_or(10) * days;
 }
 
@@ -48,7 +38,7 @@ int main() {
     const auto mixed = parse_positive_count("12pages");
 
     require(valid.has_value(), "12 is a positive integer");
-    require(*valid == 12, "operator* reads the contained value");
+    require(*valid == 12, "operator* reads the contained value"); // *valid는 optional 내부 int의 lvalue 참조다.
     require(!zero, "zero is rejected");
     require(!mixed, "the whole input must be numeric");
     require(pages_to_read(valid, 3) == 36, "present optionals are used");
