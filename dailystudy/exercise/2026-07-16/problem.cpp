@@ -1,4 +1,16 @@
 /*
+[기초 문법부터 읽는 순서]
+1. enum class TransactionKind는 거래 종류를 incoming 또는 outgoing으로 제한합니다.
+2. struct는 item, kind, amount처럼 함께 다닐 데이터를 묶습니다. amount{}는 0 초기화입니다.
+3. 멤버 함수 뒤의 const는 그 함수가 객체의 멤버를 변경하지 않는다는 약속입니다.
+4. span<const Transaction>은 vector를 복사하지 않고 읽기 전용으로 전달합니다.
+5. 범위 for의 const Transaction&는 각 원소를 복사하지 않고 읽습니다.
+6. continue는 현재 반복만 건너뛰고 다음 원소로 이동합니다.
+7. switch는 거래 종류에 맞는 합계를 고르고, break는 해당 case 실행을 끝냅니다.
+8. +=는 기존 값에 오른쪽 값을 더해 다시 저장하며 assert는 계산 결과를 검증합니다.
+*/
+
+/*
 Daily syntax drill - 2026-07-16
 
 Summarize transactions using enum class, a struct, a range-based for loop,

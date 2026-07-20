@@ -1,3 +1,20 @@
+/*
+[기초 문법부터 읽는 순서]
+1. Book 구조체는 문자열 두 개와 bool 상태를 한 객체로 묶습니다. bool은 true/false입니다.
+2. class는 데이터와 동작을 묶고 public/private로 접근 범위를 나눕니다.
+3. virtual 함수는 BookRepository 참조를 통해 실제 저장소 구현을 호출하게 합니다.
+   `= 0`은 파생 클래스가 반드시 구현해야 하는 순수 가상 함수입니다.
+4. override는 기반 클래스 함수를 정확히 재정의했는지, final은 더 상속하지 않을지를
+   컴파일러가 검사하게 합니다.
+5. vector<Book>은 책 목록을 소유하며 std::move는 소유한 자원을 다른 객체로 넘길
+   수 있게 합니다.
+6. find_if의 람다 `[id](const Book& book)`는 id를 값으로 캡처하고 각 책을 참조로 읽습니다.
+7. optional<Book>은 검색 결과가 있거나 없음을 표현합니다. !book은 없음, book->title은
+   들어 있는 Book의 멤버 접근입니다.
+8. LendingService는 인터페이스 참조만 의존하므로 메모리 저장소를 DB 저장소로 바꿔도
+   대출 규칙을 수정할 필요가 없습니다.
+*/
+
 #include <algorithm>
 #include <cstdlib>
 #include <iostream>

@@ -1,3 +1,17 @@
+/*
+[기초 문법부터 읽는 순서]
+1. Cents 구조체는 돈을 일반 int와 구별하는 강한 타입입니다. 같은 정수라도 의미가
+   다른 값을 실수로 섞지 않게 합니다.
+2. vector<LineItem>에 Cart라는 별명을 붙여 장바구니가 여러 상품을 소유함을 표현합니다.
+3. expected<Cents, CheckoutError>는 합계 또는 오류 중 하나만 저장합니다.
+4. operator+를 정의하면 Cents끼리 `left + right` 문법을 사용할 수 있습니다.
+5. constexpr는 가능한 경우 컴파일 시점에도 계산할 수 있음을 뜻합니다.
+6. const Cart&는 장바구니를 복사하거나 수정하지 않고 읽고, 범위 for로 상품을 하나씩 검사합니다.
+7. if (!checked)는 expected의 실패를 확인하고 error()로 오류 값을 꺼냅니다.
+8. enum class와 switch는 가능한 오류를 이름으로 제한하고 각 오류의 문구를 선택합니다.
+9. CheckoutService는 검증·합계 규칙을 담당하고 print_receipt는 출력만 담당하여 역할을 분리합니다.
+*/
+
 #include <cassert>
 #include <expected>
 #include <iostream>

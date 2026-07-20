@@ -1,4 +1,19 @@
 /*
+[기초 문법부터 읽는 순서]
+1. AddStock과 RemoveStock은 같은 필드를 가져도 의미가 다른 별도 타입입니다.
+2. using은 긴 타입에 별명을 붙이며, variant<A, B>는 A 또는 B 중 한 값만 담습니다.
+3. class의 public은 외부에 공개, private은 클래스 내부에서만 사용할 수 있다는 뜻입니다.
+4. [[nodiscard]]는 반환값을 무시하지 말라고 컴파일러에 알려 줍니다.
+5. const T&는 복사 없이 읽고, int&는 원본 정수를 직접 수정하는 참조입니다.
+6. map<string, int>는 상품 이름을 키로 재고 수량을 찾습니다. find 결과가 end와
+   같으면 키가 없다는 뜻입니다.
+7. std::visit는 variant의 현재 값을 처리합니다. 람다의 [this]는 현재 서비스
+   객체의 멤버 함수 handle을 호출하기 위해 this를 캡처합니다.
+8. Overloaded는 여러 람다의 operator()를 합쳐 각 상태별 처리를 한 방문자에
+   모으는 Modern C++ 도우미입니다.
+*/
+
+/*
 Daily Modern C++ Exercise - 2026-07-16
 
 Architecture: Command -> InventoryService -> Event -> Console adapter
