@@ -1,4 +1,20 @@
 /*
+[기초 문법부터 읽는 순서]
+1. enum class는 start, stop, status처럼 가능한 값을 이름으로 제한합니다.
+2. struct Command는 명령 종류와 대상 문자열을 한 객체에 묶습니다.
+3. string은 문자를 소유하지만 string_view는 기존 문자열을 빌려 읽습니다.
+4. expected<Command, string>은 파싱 성공 시 Command, 실패 시 오류 문자열을
+   저장합니다. unexpected(...)로 실패 값을 만듭니다.
+5. line.find(' ')와 substr은 공백 위치를 찾고 문자열의 일부를 잘라 봅니다.
+6. switch와 case는 enum 값에 따라 실행할 코드를 선택합니다.
+7. Logger&의 &는 logger를 복사하지 않고 원본 객체를 참조한다는 뜻입니다.
+8. template/concept는 write(message)가 가능한 로거만 CommandRouter에 주입되게
+   하며, 서비스 규칙과 출력 저장소를 분리합니다.
+9. RouteScope의 생성자·소멸자는 조기 return이 있어도 횟수를 원상 복구하는
+   RAII 패턴입니다.
+*/
+
+/*
 Daily Modern C++ Exercise - 2026-07-15
 
 Theme:
