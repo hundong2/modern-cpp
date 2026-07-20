@@ -1,10 +1,10 @@
-# 2026-07-15 Understanding Checkpoint
+# 2026-07-15 초보자 이해 점검
 
 This checkpoint proves whether you understood the material. Do not only ask
 "did it compile?" A beginner passes today only when they can explain, trace,
 modify, and rebuild.
 
-## Stage 1: Explain in Plain Words
+## 1단계: 쉬운 말로 설명하기
 
 Answer each question in 1 to 3 sentences.
 
@@ -19,7 +19,7 @@ Answer each question in 1 to 3 sentences.
 Pass rule: at least five answers connect the concept to a specific line or
 function in the code.
 
-## Stage 2: Trace by Hand
+## 2단계: 손으로 실행 흐름 추적하기
 
 Trace this batch from `main.cpp`:
 
@@ -40,7 +40,7 @@ Write down:
 
 Pass rule: your hand-written answer matches the program output.
 
-## Stage 3: Make a Small Change
+## 3단계: 작은 변경 직접 만들기
 
 Make at least two of these changes, rebuild, and run again:
 
@@ -52,7 +52,7 @@ Make at least two of these changes, rebuild, and run again:
 
 Pass rule: `cmake --build build` succeeds and both executables still run.
 
-## Stage 4: Beginner Self-Test
+## 4단계: 초보자 자기 검증
 
 You pass today if you can say all of this without reading the README:
 
@@ -63,7 +63,14 @@ You pass today if you can say all of this without reading the README:
 - RAII keeps paired cleanup reliable.
 - A concept states what operations a template argument must support.
 
-## Validation Log
+## 검증 기록
+
+## 통과 기준
+
+- 개념 문제 70% 이상을 자료 없이 설명한다.
+- 실행 전 결과를 예측하고 실제 출력과 비교한다.
+- 한 가지 기능을 직접 추가한 뒤 빌드와 CTest 2개를 모두 통과시킨다.
+- lvalue와 prvalue의 예를 코드에서 각각 하나씩 찾는다.
 
 The provided code includes assertions for:
 

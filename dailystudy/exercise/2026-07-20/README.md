@@ -103,6 +103,13 @@ state = Paid{2, 25'000};
 4. `Paid` 상태에서만 금액을 반환하는 `paid_amount(const OrderState&) -> int`를 만듭니다. 나머지는 0을 반환합니다.
 5. 일부러 `std::get<Paid>`를 Pending 상태에 호출해 어떤 오류가 나는지 관찰한 뒤 되돌립니다.
 
+## 값 범주와 기계 실행 관점
+
+- 이름 있는 `state`는 lvalue, `Pending{2}`와 `Paid{...}`는 prvalue다.
+- variant 대입은 기존 활성 객체의 수명을 끝내고 새 후보 객체의 수명을 시작한다.
+- 방문자는 상태 태그를 확인해 분기하는 형태가 일반적이지만 실제 어셈블리는 구현과 최적화에 따라 다르다.
+- `const auto& current`는 활성 객체를 복사하지 않고 lvalue 참조로 읽는다.
+
 ## 초보자 이해 검증
 
 [CHECKPOINT.md](CHECKPOINT.md)의 8점 문제를 자료를 보지 않고 먼저 풉니다. 그다음 직접 해보기 3번 또는 4번을 구현하고 다시 빌드하세요.

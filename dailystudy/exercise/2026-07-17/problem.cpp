@@ -4,8 +4,7 @@
 #include <optional>
 #include <string_view>
 
-// A failed conversion is normal input, so std::optional expresses it without
-// a magic number such as -1 and without throwing an exception.
+// 변환 실패는 정상적인 입력 결과다. -1 같은 마법 값이나 예외 대신 optional로 표현한다.
 [[nodiscard]] std::optional<int> parse_positive_count(std::string_view text) {
     int value{}; // 이름 있는 객체이므로 lvalue이며 from_chars가 이 저장 위치에 결과를 쓴다.
     const char* first = text.data(); // 포인터 값은 복사되지만 가리킨 문자의 소유권은 얻지 않는다.
@@ -20,7 +19,7 @@
 }
 
 [[nodiscard]] int pages_to_read(std::optional<int> daily_pages, int days) {
-    // value_or supplies a visible default when the optional is empty.
+    // optional이 비었을 때 value_or가 눈에 보이는 기본값 10을 제공한다.
     // 곱셈 결과 int는 prvalue다. 작은 정수 연산은 보통 레지스터에서 수행되지만 컴파일러가 결정한다.
     return daily_pages.value_or(10) * days;
 }

@@ -16,3 +16,7 @@ foreach(target library_demo optional_problem)
         target_compile_options(${target} PRIVATE -Wall -Wextra -Wpedantic)
     endif()
 endforeach()
+
+enable_testing()
+add_test(NAME library_example_runs COMMAND library_demo)
+add_test(NAME optional_problem_runs COMMAND optional_problem)

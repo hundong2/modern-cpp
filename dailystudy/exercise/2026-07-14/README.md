@@ -73,6 +73,13 @@ cmake --build build
 5. `problem.cpp`의 `first_window_at_least()`를 손으로 추적한다.
 6. [CHECKPOINT.md](./CHECKPOINT.md)의 검증 질문을 답한다.
 
+## 값 범주와 기계 실행 관점
+
+- 이름 있는 `value`, `report`, `publisher`는 lvalue이며 수정 가능한 저장 위치를 나타낸다.
+- `TemperatureReading{...}`와 `unexpected(...)` 결과는 prvalue로 반환 객체를 직접 초기화할 수 있다.
+- `string_view`와 `span`은 보통 주소와 길이를 복사할 뿐 원본 데이터를 소유하지 않는다.
+- 파싱과 반복은 대체로 load·비교·조건 분기로 실행되지만 정확한 어셈블리는 CPU와 최적화 옵션에 따라 달라진다.
+
 ## 오늘의 완료 기준
 
 - 두 실행 파일이 모두 빌드된다.

@@ -1,11 +1,11 @@
-# 2026-07-18 Modern C++ Daily Exercise
+# 2026-07-18 Modern C++ 일일 연습
 
 Today you will build a tiny checkout application. It teaches a useful design
 rule: **make invalid outcomes visible in the type system**. The material assumes
 weak C++ fundamentals, so every new piece of syntax is explained before the
 exercises.
 
-## Learning goals
+## 학습 목표
 
 By the end, you should be able to:
 
@@ -16,7 +16,7 @@ By the end, you should be able to:
 - understand `const`, references, range-based `for`, and `[[nodiscard]]`
 - prove success and failure behavior with executable assertions
 
-## Architecture at a glance
+## 아키텍처 한눈에 보기
 
 ```text
 Cart + LineItem (domain data)
@@ -35,7 +35,7 @@ Keeping these responsibilities separate makes each rule easier to find and
 test. The checkout service calculates totals; it does not decide how a terminal
 message should look.
 
-## Build and run
+## 빌드와 실행
 
 From this directory in PowerShell:
 
@@ -56,22 +56,22 @@ If CMake is unavailable, compile directly from the repository root:
   dailystudy/exercise/2026-07-18/main.cpp -o checkout_demo.exe
 ```
 
-## Syntax tour
+## 문법 둘러보기
 
-### 1. Strong types
+### 1. 강한 타입
 
 `struct Cents { int value{}; };` creates a type distinct from plain `int`.
 `Cents{450}` clearly means money. A function asking for `Cents` cannot silently
 receive an item quantity. The `{}` initializes the number to zero by default.
 
-### 2. Scoped errors with `enum class`
+### 2. `enum class`로 오류 범위 제한하기
 
 `CheckoutError::invalid_quantity` is a named value. Unlike an old-style `enum`,
 its names stay inside `CheckoutError`, and it does not silently become an
 integer. That prevents accidental comparisons such as an error code against a
 price.
 
-### 3. A value or an error
+### 3. 값 또는 오류
 
 ```cpp
 using CheckoutResult = std::expected<Cents, CheckoutError>;
@@ -86,28 +86,28 @@ Unlike an exception, the error is part of the return type and callers cannot
 miss that failure is possible. Unlike a magic value such as `-1`, every valid
 integer price remains available.
 
-### 4. References and `const`
+### 4. 참조와 `const`
 
 `const Cart& cart` means “borrow this cart, do not copy it, and do not modify
 it.” In the loop, `const LineItem& item` borrows each element for the same
 reason. The referenced objects must remain alive while these references are
 used.
 
-### 5. Small safety signals
+### 5. 작은 안전 신호
 
 - `[[nodiscard]]` asks the compiler to warn if a result is ignored.
 - `override` is not needed today because there is no inheritance.
 - `assert(condition)` stops a debug run when a promised fact is false.
 - `switch` lists how every named error becomes a user-facing message.
 
-## Guided code reading
+## 안내에 따라 코드 읽기
 
 Before running `main.cpp`, predict the two printed lines. Then trace the valid
 cart with paper and write the running total after each item. Notice that
 `validate` returns immediately on the first invalid item. This is called
 fail-fast behavior: later calculations never use bad data.
 
-## Hands-on exercises
+## 직접 해보기
 
 1. Change the pen quantity to `4`. Predict the new total, run, and update the
    assertion so it passes.
@@ -121,7 +121,11 @@ fail-fast behavior: later calculations never use bad data.
 5. Replace one `const LineItem&` with `LineItem` in the loop. Explain what gets
    copied and why the program still produces the same result.
 
-## Beginner validation stage
+## 값 범주와 기계 실행 관점
+
+`Cents{...}`는 prvalue이고 C++17 이후 반환 객체를 직접 구성할 수 있다. 이름 있는 지역 `item`은 lvalue지만 반환 문맥에서는 암시적 이동 후보가 된다. `expected`는 성공/오류 태그와 저장 공간을 가지는 형태가 일반적이며, 조건 검사는 태그 load와 분기로 구현될 수 있다.
+
+## 초보자 검증 단계
 
 Do not look at `CHECKPOINT.md` until completing these steps:
 

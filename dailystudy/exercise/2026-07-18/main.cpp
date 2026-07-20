@@ -6,7 +6,7 @@
 #include <utility>
 #include <vector>
 
-// A strong type prevents accidentally mixing an item count with money.
+// 강한 타입은 상품 개수와 돈처럼 표현은 int여도 의미가 다른 값을 섞지 못하게 한다.
 struct Cents {
     int value{}; // 강한 타입: 기계 수준 표현은 int와 비슷해도 C++ 타입 검사는 서로 구분한다.
 };
@@ -96,7 +96,7 @@ int main() {
     print_receipt(valid_result);
     print_receipt(invalid_result);
 
-    // Executable proof: the program stops if its rules are broken.
+    // 실행 가능한 증명: 규칙이 깨지면 assert가 프로그램을 중단한다.
     assert(valid_result && valid_result->value == 1260);
     assert(!invalid_result &&
            invalid_result.error() == CheckoutError::invalid_quantity);

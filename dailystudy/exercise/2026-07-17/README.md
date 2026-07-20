@@ -1,11 +1,11 @@
-# 2026-07-17 Modern C++ Daily Exercise
+# 2026-07-17 Modern C++ 일일 연습
 
 Today you will build a tiny library-lending program. The goal is not a large
 application: it is to see how C++ syntax supports a clean architecture. This
 lesson starts from first principles and includes executable checks, so you can
 prove what you understood instead of only reading about it.
 
-## Learning goals
+## 학습 목표
 
 By the end, you should be able to:
 
@@ -16,7 +16,7 @@ By the end, you should be able to:
 - understand `virtual`, `override`, `final`, references, and object lifetimes
 - use `std::move` only when an object is being handed to a new owner
 
-## Files
+## 파일 구성
 
 ```text
 dailystudy/exercise/2026-07-17/
@@ -27,7 +27,7 @@ dailystudy/exercise/2026-07-17/
   CHECKPOINT.md   # Beginner validation and answer key
 ```
 
-## Build and run
+## 빌드와 실행
 
 From PowerShell at the repository root:
 
@@ -46,7 +46,7 @@ The last lines should be:
 [TESTS] optional syntax exercise passed
 ```
 
-## 1. Follow the architecture
+## 1. 아키텍처 흐름 따라가기
 
 The program has four responsibilities:
 
@@ -71,7 +71,7 @@ Depending on the small `BookRepository` interface keeps the business rules
 independent from that storage decision. This is dependency inversion in a very
 small form.
 
-## 2. Read the class syntax
+## 2. 클래스 문법 읽기
 
 ```cpp
 class LendingService {
@@ -92,7 +92,7 @@ details. The constructor initializer list after `:` initializes the member.
 not a copy and not an owned object. Therefore the repository must remain alive
 longer than the service. In `main`, construction order makes that true.
 
-## 3. Understand the interface
+## 3. 인터페이스 이해하기
 
 `BookRepository` has `virtual` functions, which allow a call through the base
 type to run the chosen implementation. `= 0` makes a function pure virtual, so
@@ -103,7 +103,7 @@ to ask the compiler to verify that its function really matches the interface.
 The virtual destructor matters when a derived object is ever destroyed through
 a base pointer. `= default` asks the compiler to generate its normal behavior.
 
-## 4. Model absence with `std::optional`
+## 4. `std::optional`로 값 없음을 모델링하기
 
 Searching can succeed or fail:
 
@@ -122,7 +122,7 @@ accesses the object itself. Never use `*` or `->` before proving a value exists.
 `problem.cpp` also demonstrates `value_or(default)` and `std::nullopt`. It uses
 `std::from_chars`, a non-throwing conversion well suited to validating input.
 
-## 5. Copies, moves, and `const`
+## 5. 복사, 이동과 `const`
 
 The repository returns a `Book` copy. The service changes that local copy and
 calls `save`, so state changes are explicit. `std::move(*book)` says the local
@@ -133,7 +133,7 @@ book afterward.
 as `std::string_view` cheaply borrow text for the duration of a call. A
 `const auto` local cannot be reassigned after initialization.
 
-## Hands-on exercises
+## 직접 해보기
 
 1. Build and run both programs before editing them.
 2. Predict all four `[RESULT]` lines, then compare your answer with the output.
@@ -145,7 +145,11 @@ as `std::string_view` cheaply borrow text for the duration of a call. A
    `std::nullopt`; prove that `LendingService` needs no changes to use it.
 7. Complete [CHECKPOINT.md](./CHECKPOINT.md) before viewing its answer key.
 
-## Completion criteria
+## 값 범주와 기계 실행 관점
+
+`*found`는 저장소 내부 Book의 lvalue이므로 반환할 때 복사한다. 반면 `std::move(book)`은 이름 있는 lvalue를 xvalue로 바꾸어 문자열 버퍼 소유권 이전을 허용한다. 가상 인터페이스 호출은 보통 vtable을 통한 간접 호출이지만, 실제 명령과 인라인 여부는 컴파일러·ABI·최적화에 따라 달라진다.
+
+## 완료 기준
 
 You are done when both executables pass, your new checks also pass, and you can
 explain why the service stores a repository reference instead of constructing

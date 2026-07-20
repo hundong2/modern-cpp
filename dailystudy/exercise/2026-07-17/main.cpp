@@ -13,7 +13,7 @@ struct Book {
     bool is_borrowed{}; // {}로 false 초기화. bool의 실제 메모리 크기는 구현에 따라 달라질 수 있다.
 };
 
-// The service depends on this small abstraction, not on a database or vector.
+// 서비스는 DB나 vector 구현이 아니라 이 작은 추상 인터페이스에만 의존한다.
 class BookRepository {
 public:
     virtual ~BookRepository() = default; // 기반 포인터 삭제 시 파생 소멸자까지 호출되도록 가상화한다.
@@ -71,7 +71,7 @@ struct LoanResult {
 
 class LendingService {
 public:
-    // The repository must outlive this service because repository_ is a reference.
+    // repository_는 비소유 참조이므로 저장소 객체가 서비스보다 오래 살아야 한다.
     explicit LendingService(BookRepository& repository)
         : repository_{repository} {
     }

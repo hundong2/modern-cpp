@@ -1,8 +1,8 @@
-# Beginner Checkpoint: Ownership and Dependency Injection
+# 초보자 이해 점검: 소유권과 의존성 주입
 
 Answer before reading the key. Score one point per question.
 
-## Questions
+## 문제
 
 1. In one sentence, what does an object's owner do?
 2. Who owns the `RecordingSink` after `WelcomeService service{std::move(recorder)}`?
@@ -14,7 +14,7 @@ Answer before reading the key. Score one point per question.
 8. Where can `RecordingSink` be replaced by `ConsoleSink` without changing the
    business workflow?
 
-## Practical proof
+## 실기 증명
 
 Without consulting the README, draw this ownership statement and fill the gaps:
 
@@ -28,7 +28,7 @@ Next, implement one hands-on exercise, rebuild, and run CTest. A verbal answer
 alone is not enough: successful compilation and assertions are part of the
 validation.
 
-## Answer key
+## 정답
 
 1. The owner keeps an object alive and is responsible for its destruction.
 2. The `WelcomeService` object, through its `sink_` member.
@@ -42,7 +42,11 @@ validation.
 
 Practical blanks: `main`; `MessageSink`; `std::unique_ptr<MessageSink>`; zero.
 
-## Result
+## 결과 판정
+
+## 추가 통과 질문
+
+`recorder`가 lvalue인데 `std::move(recorder)`가 xvalue 식인 이유, 이동 후 `recorder`가 유효하지만 비어 있는 이유, observer가 댕글링되는 시점을 설명한다.
 
 - **8/8 plus practical proof:** ready to use unique ownership in small designs.
 - **6-7/8:** understood; revisit the missed syntax and rerun the example.

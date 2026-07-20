@@ -1,9 +1,9 @@
-# Beginner Checkpoint and Answer Key
+# 초보자 이해 점검과 정답
 
 Complete the questions before reading the answer key. Give yourself one point
 for each correct answer or demonstrated behavior.
 
-## Questions (10 points)
+## 문제: 10점
 
 1. Why is `Cents` safer than using `int` for both money and quantity?
 2. What two alternatives can `CheckoutResult` contain?
@@ -16,7 +16,7 @@ for each correct answer or demonstrated behavior.
 9. Add an assertion that proves `validate_celsius(-273.15)` succeeds.
 10. Make a cart fail with `blank_name` and show the matching assertion passes.
 
-## Answer key
+## 정답
 
 1. `Cents` is a distinct type, so a function cannot accidentally accept an
    unrelated integer quantity where money is required.
@@ -44,7 +44,11 @@ for each correct answer or demonstrated behavior.
     assert(!result && result.error() == CheckoutError::blank_name);
     ```
 
-## Score interpretation
+## 점수 해석
+
+## 실기 통과 조건
+
+새 오류 종류 하나를 추가하고 `validate`, `message`, assert를 함께 수정한다. 빌드와 CTest 2개가 통과해야 하며, 반환하는 `Cents{...}`가 prvalue인 이유도 설명한다.
 
 - **9-10:** Ready to use these ideas in a small feature.
 - **7-8:** Good start; repeat any missed coding proof.

@@ -16,3 +16,7 @@ foreach(target inventory_demo syntax_problem)
         target_compile_options(${target} PRIVATE -Wall -Wextra -Wpedantic)
     endif()
 endforeach()
+
+enable_testing()
+add_test(NAME inventory_example_runs COMMAND inventory_demo)
+add_test(NAME transaction_problem_runs COMMAND syntax_problem)

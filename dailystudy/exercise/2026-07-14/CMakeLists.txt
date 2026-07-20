@@ -16,3 +16,8 @@ else()
     target_compile_options(exercise_architecture PRIVATE -Wall -Wextra -Wpedantic)
     target_compile_options(exercise_window PRIVATE -Wall -Wextra -Wpedantic)
 endif()
+
+# 실행 파일이 단순히 컴파일되는 데서 끝나지 않고 내부 assert까지 통과하는지 자동 검증한다.
+enable_testing()
+add_test(NAME architecture_example_runs COMMAND exercise_architecture)
+add_test(NAME window_problem_runs COMMAND exercise_window)

@@ -1,9 +1,9 @@
-# 2026-07-16 Beginner Validation Checkpoint
+# 2026-07-16 초보자 이해 점검
 
 Compilation proves the source is legal C++; it does not prove understanding.
 Pass all four stages below. Write answers before checking them by running code.
 
-## Stage 1: Explain
+## 1단계: 설명하기
 
 Answer in your own words:
 
@@ -17,7 +17,7 @@ Answer in your own words:
 Pass rule: five answers are correct, and answer 1 mentions separation or
 testability.
 
-## Stage 2: Trace Without Running
+## 2단계: 실행하지 않고 추적하기
 
 For the original command array, fill in the table:
 
@@ -31,7 +31,7 @@ Also predict the final keyboard quantity. Now run `inventory_demo` and compare.
 
 Pass rule: every cell and the final quantity match the program.
 
-## Stage 3: Modify and Test
+## 3단계: 수정하고 테스트하기
 
 Make these changes:
 
@@ -43,7 +43,7 @@ Make these changes:
 Pass rule: compilation has no warnings, every assertion passes, and you can
 point to the single map that holds both item quantities.
 
-## Stage 4: Debugging Proof
+## 4단계: 디버깅으로 증명하기
 
 Temporarily change this test expectation:
 
@@ -54,7 +54,7 @@ assert(inventory.quantity_of("book") == 999);
 Run the program and observe the failed assertion. Restore `3`, rebuild, and run
 again. This proves that you know the tests actually execute.
 
-## Answer Key for the Trace
+## 흐름 추적 정답
 
 Check only after writing your prediction:
 
@@ -66,7 +66,9 @@ Check only after writing your prediction:
 
 The final keyboard quantity is `3`; a rejected command does not mutate state.
 
-## Final Pass Statement
+## 최종 통과 선언
+
+추가로 `std::visit`가 어떤 variant 후보를 선택하는지, map 원소를 가리키는 `int&`가 왜 lvalue 참조인지 자기 말로 설명해야 한다.
 
 You pass when you can truthfully say: "I can trace a command into a service,
 explain how a variant selects one event type, modify the state rules, and use a

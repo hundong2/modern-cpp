@@ -7,7 +7,7 @@ enum class TemperatureError { below_absolute_zero, sensor_too_hot };
 
 using Temperature = std::expected<double, TemperatureError>;
 
-// Exercise: read the rules below, then hide this solution and retype it.
+// 연습: 아래 규칙을 읽은 뒤 구현을 가리고 직접 다시 입력해 본다.
 [[nodiscard]] Temperature validate_celsius(double value) {
     // value는 함수 호출 시 복사되는 지역 lvalue다. double 비교는 보통 부동소수점 비교+조건 분기로 구현된다.
     if (value < -273.15) {

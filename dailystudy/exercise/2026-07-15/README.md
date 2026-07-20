@@ -1,4 +1,4 @@
-# 2026-07-15 Modern C++ Daily Exercise
+# 2026-07-15 Modern C++ 일일 연습
 
 Today you will build a tiny command router for a server-like program. The goal is
 to practice both architecture and syntax:
@@ -12,7 +12,7 @@ to practice both architecture and syntax:
 This material is written for a developer whose C++ fundamentals are still weak.
 Read slowly, build the code, run it, then change it.
 
-## Files
+## 파일 구성
 
 ```text
 dailystudy/exercise/2026-07-15/
@@ -23,7 +23,7 @@ dailystudy/exercise/2026-07-15/
   CHECKPOINT.md    # Beginner validation stage.
 ```
 
-## Build and Run
+## 빌드와 실행
 
 From PowerShell:
 
@@ -38,7 +38,7 @@ cmake --build build
 
 If you already have another compiler, the same CMake project should still work.
 
-## Concept 1: Small Types Make Architecture Easier
+## 개념 1: 작은 타입이 아키텍처를 단순하게 만든다
 
 Beginner C++ code often passes plain strings through the whole program. That
 works at first, but every function then has to remember the format.
@@ -58,7 +58,7 @@ After parsing succeeds, the rest of the program receives a `Command`, not a raw
 line such as `"start api"`. That means business logic can focus on decisions,
 not text splitting.
 
-## Concept 2: `std::string_view` Borrows Text
+## 개념 2: `std::string_view`는 문자열을 빌려 본다
 
 `std::string_view` is a non-owning view of characters. It does not copy the
 characters and it does not keep them alive.
@@ -73,7 +73,7 @@ Beginner rule: a view is safe when the original string or string literal is
 still alive. Do not store a `std::string_view` for later unless you are sure the
 original text will outlive it.
 
-## Concept 3: `std::expected` Makes Failure Visible
+## 개념 3: `std::expected`는 실패를 타입에 드러낸다
 
 Parsing can fail. Instead of guessing with a partially filled object, the
 function returns either:
@@ -91,7 +91,7 @@ if (!parsed) {
 This is easier to test than printing from inside the parser. The parser returns
 facts; the caller decides how to display them.
 
-## Concept 4: RAII Means Cleanup Belongs to an Object
+## 개념 4: RAII는 정리 책임을 객체에 둔다
 
 `RouteScope` increments an active counter in its constructor and decrements it in
 its destructor. The destructor runs when the object leaves scope, even if the
@@ -103,7 +103,7 @@ Beginner translation: put "open/start/increment" in the constructor and
 "close/stop/decrement" in the destructor when the two operations must always be
 paired.
 
-## Concept 5: Concepts Describe Required Behavior
+## 개념 5: concept는 요구 동작을 선언한다
 
 The router does not care whether logs go to memory, a file, or the console. It
 only requires a logger with this shape:
@@ -117,7 +117,7 @@ concept CommandLogger = requires(Logger logger, std::string_view message) {
 
 This gives a clear compile-time error if you pass the wrong kind of object.
 
-## Hands-On Exercises
+## 직접 해보기
 
 1. Build and run both executables.
 2. In `main.cpp`, add the command `"status worker"` to the batch and predict the
@@ -127,7 +127,14 @@ This gives a clear compile-time error if you pass the wrong kind of object.
 5. In `problem.cpp`, add a new server load value and update the tests.
 6. Complete [CHECKPOINT.md](./CHECKPOINT.md) without looking at the answer first.
 
-## Completion Criteria
+## 값 범주와 기계 실행 관점
+
+- 이름 있는 `logger`, `report`, `parsed`는 lvalue이며 저장 위치가 있다.
+- 파싱 함수가 반환하는 `expected` 임시값은 prvalue이며 지역 객체를 직접 초기화할 수 있다.
+- 반복문은 일반적으로 비교·조건 분기·증가로 구현되지만 정확한 명령은 최적화와 CPU에 따라 달라진다.
+- 템플릿으로 Logger 타입이 확정되므로 가상 간접 호출 없이 인라인될 가능성이 있다.
+
+## 완료 기준
 
 You are done when:
 

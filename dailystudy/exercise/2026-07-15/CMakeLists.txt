@@ -16,3 +16,8 @@ else()
     target_compile_options(exercise_router PRIVATE -Wall -Wextra -Wpedantic)
     target_compile_options(exercise_problem PRIVATE -Wall -Wextra -Wpedantic)
 endif()
+
+# 두 프로그램의 종료 코드가 0인지 CTest에서 반복 검증한다.
+enable_testing()
+add_test(NAME router_example_runs COMMAND exercise_router)
+add_test(NAME load_problem_runs COMMAND exercise_problem)

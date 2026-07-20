@@ -51,7 +51,7 @@ int main() {
     auto recorder = std::make_unique<RecordingSink>(); // 반환 unique_ptr prvalue로 recorder를 직접 초기화한다.
     RecordingSink* observer = recorder.get(); // 비소유 포인터. recorder/service보다 오래 사용하면 댕글링된다.
 
-    WelcomeService service{std::move(recorder)}; // ownership moves to service
+    WelcomeService service{std::move(recorder)}; // recorder의 소유권이 service로 이동한다.
     assert(recorder == nullptr);
 
     service.welcome("Mina", "mina@example.test");
