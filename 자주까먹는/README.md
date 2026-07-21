@@ -6,6 +6,17 @@
 
 ## 자료 목차
 
+### [RAII: 스코프와 객체 수명으로 자원 관리](./raii-resource-lifetime/README.md)
+
+- 생성자·소멸자, 예외 스택 해제, 역순 파괴, 커스텀 deleter와 범위 잠금을 하드웨어·ABI 관점까지 설명합니다.
+- 핵심 표준: C++17
+- [C#/Python/Rust 비교](./raii-resource-lifetime/compare.md)
+- 예제 및 실습 코드
+  - [`example.cpp`](./raii-resource-lifetime/example.cpp): FILE 핸들, 예외 경로, lock_guard 통합 예제
+  - [`exercise.cpp`](./raii-resource-lifetime/exercise.cpp): 이동 가능한 Lease guard와 조기 반환 실습
+- 빌드 구성
+  - [`CMakeLists.txt`](./raii-resource-lifetime/CMakeLists.txt): C++17 대상과 경고 옵션
+
 ### [모던 C++ 런타임 기반 6가지](./modern-cpp-runtime-foundations/README.md)
 
 - 방어적 클래스 설계부터 이동, RAII, 원자 연산, 다형성, OS 이벤트 I/O와 코루틴까지
