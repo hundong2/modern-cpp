@@ -18,6 +18,7 @@ Why this is useful:
 #include <vector>
 
 std::optional<std::size_t> first_index_at_least(
+    // size_t는 음수가 없는 크기 타입이고 optional은 인덱스 부재를 별도 상태로 표현한다.
     std::span<const int> values,
     int threshold) {
 
@@ -32,6 +33,7 @@ std::optional<std::size_t> first_index_at_least(
 }
 
 std::optional<double> average(std::span<const int> values) {
+    // span은 원소를 소유하지 않는 읽기 전용 뷰이므로 원본이 호출 중 살아 있어야 한다.
     if (values.empty()) {
         return std::nullopt;
     }
@@ -74,6 +76,7 @@ void run_tests() {
 }
 
 int main() {
+    // main은 프로그램 진입점이고 중괄호 초기화는 축소 변환을 방지한다.
     run_tests();
 
     const std::vector<int> loads = {22, 48, 65, 81, 44};

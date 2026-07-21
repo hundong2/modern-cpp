@@ -23,6 +23,7 @@ What to notice:
 #include <vector>
 
 enum class CommandKind {
+    // enum class는 열거자 이름을 타입 안에 가두고 정수와의 암시적 변환을 막는다.
     // enum class는 정수로 암시 변환되지 않아 다른 숫자와 실수로 섞이는 일을 막는다.
     start,
     stop,
@@ -30,6 +31,7 @@ enum class CommandKind {
 };
 
 struct Command {
+    // struct 멤버는 기본 public이며 string 멤버가 대상 이름을 소유한다.
     CommandKind kind{};
     std::string target;
 };
@@ -47,6 +49,8 @@ concept CommandLogger = requires(Logger logger, std::string_view message) {
 
 class RouteScope {
 public:
+    // 생성자는 반환형이 없다. explicit은 int가 RouteScope로 저절로 변환되는 것을 막는다.
+    // 초기화 목록은 참조 멤버를 매개변수가 가리키는 원본에 바인딩한다.
     explicit RouteScope(int& active_routes) : active_routes_{active_routes} { // &는 원본 카운터에 바인딩한다.
         ++active_routes_;
     }
@@ -59,6 +63,7 @@ public:
     }
 
 private:
+    // private 참조 멤버는 원본을 소유하지 않으므로 원본이 더 오래 살아야 한다.
     int& active_routes_;
 };
 

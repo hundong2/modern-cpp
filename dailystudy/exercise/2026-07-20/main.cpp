@@ -5,6 +5,7 @@
 #include <variant>
 
 struct Pending {
+    // struct 멤버는 기본 public이며 대기 상태에 필요한 데이터만 가진다.
     int item_count{}; // {}는 0 초기화. 이름 있는 멤버에 접근한 식은 일반적으로 lvalue다.
 };
 
@@ -18,8 +19,10 @@ struct Shipped {
 };
 
 using OrderState = std::variant<Pending, Paid, Shipped>; // 태그와 가장 큰 후보를 담을 저장 공간을 갖는 형태가 일반적이다.
+// using은 새 클래스를 만들지 않고 세 상태를 담는 타입에 별칭을 붙인다.
 
 std::string describe(const OrderState& state) {
+    // 반환형 string은 호출자가 소유할 새 설명 문자열을 값으로 돌려준다는 뜻이다.
     // state는 const lvalue 참조라 variant와 내부 string을 복사하지 않고 읽는다.
     return std::visit(
         [](const auto& current) -> std::string {

@@ -4,6 +4,7 @@
 #include <variant>
 
 struct Loading {};
+// 빈 구조체도 서로 다른 상태를 타입으로 구분하며 멤버는 기본 public이다.
 struct Success {
     std::string value;
 };
@@ -12,8 +13,10 @@ struct Failure {
 };
 
 using Result = std::variant<Loading, Success, Failure>; // 동시에 한 후보 객체의 수명만 활성 상태다.
+// using은 새 클래스를 만들지 않고 긴 variant 타입에 Result라는 별칭을 붙인다.
 
 std::string message(const Result& result) {
+    // const lvalue 참조로 받아 variant와 내부 string을 복사하지 않고 읽는다.
     // 연습: 아래 방문자에 Success와 Failure 처리를 직접 추가해 보세요.
     // 완성 예시는 CHECKPOINT.md의 정답을 푼 뒤 확인하세요.
     return std::visit(
@@ -32,6 +35,7 @@ std::string message(const Result& result) {
 }
 
 int main() {
+    // Success{...}는 prvalue이며 Result 내부의 활성 저장소를 초기화한다.
     Result result{Loading{}}; // 오른쪽 빈 객체는 prvalue, result는 저장 공간을 가진 지역 lvalue다.
     assert(message(result) == "불러오는 중");
 

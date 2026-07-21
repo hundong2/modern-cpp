@@ -8,6 +8,7 @@
 
 // 강한 타입은 상품 개수와 돈처럼 표현은 int여도 의미가 다른 값을 섞지 못하게 한다.
 struct Cents {
+    // 강한 타입 구조체로 원시 int와 금액을 구분하며 멤버는 기본 public이다.
     int value{}; // 강한 타입: 기계 수준 표현은 int와 비슷해도 C++ 타입 검사는 서로 구분한다.
 };
 
@@ -18,6 +19,7 @@ struct LineItem {
 };
 
 enum class CheckoutError {
+    // enum class는 오류 이름을 자체 범위에 두고 정수와 섞이지 않게 한다.
     empty_cart,
     blank_name,
     invalid_price,
@@ -26,6 +28,7 @@ enum class CheckoutError {
 
 using Cart = std::vector<LineItem>;
 using CheckoutResult = std::expected<Cents, CheckoutError>;
+// 첫 템플릿 인자는 성공 금액, 둘째는 실패 이유이며 하나만 활성화된다.
 
 [[nodiscard]] constexpr Cents operator+(Cents left, Cents right) {
     // 인수를 값으로 받아 독립 객체로 계산한다. 반환 Cents{...}는 prvalue이고 복사 생략 대상이다.
@@ -49,6 +52,7 @@ validate(LineItem item) {
 
 class CheckoutService {
 public:
+    // public 멤버는 외부 호출 계약이며 뒤의 const는 서비스 상태를 바꾸지 않음을 뜻한다.
     [[nodiscard]] CheckoutResult total(const Cart& cart) const {
         if (cart.empty()) {
             return std::unexpected(CheckoutError::empty_cart);

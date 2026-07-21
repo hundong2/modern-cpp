@@ -8,6 +8,7 @@
 #include <vector>
 
 struct Book {
+    // struct 멤버는 기본 public이며 두 string이 문자 저장 공간을 직접 소유한다.
     std::string id;
     std::string title;
     bool is_borrowed{}; // {}로 false 초기화. bool의 실제 메모리 크기는 구현에 따라 달라질 수 있다.
@@ -16,6 +17,7 @@ struct Book {
 // 서비스는 DB나 vector 구현이 아니라 이 작은 추상 인터페이스에만 의존한다.
 class BookRepository {
 public:
+    // 가상 소멸자는 기반 포인터로 파생 객체를 삭제할 때 전체 소멸을 보장한다.
     virtual ~BookRepository() = default; // 기반 포인터 삭제 시 파생 소멸자까지 호출되도록 가상화한다.
     [[nodiscard]] virtual std::optional<Book> find_by_id(std::string_view id) const = 0;
     virtual void save(Book book) = 0;
@@ -23,6 +25,8 @@ public:
 
 class InMemoryBookRepository final : public BookRepository {
 public:
+    // final은 추가 상속을 막고 public 상속은 저장소 계약 구현을 뜻한다.
+    // explicit은 vector에서 저장소로의 뜻밖의 암시적 변환을 막는다.
     explicit InMemoryBookRepository(std::vector<Book> books)
         // books는 이름이 있어 lvalue지만 move가 xvalue로 바꿔 vector 버퍼 소유권 이전을 허용한다.
         : books_{std::move(books)} {
@@ -53,6 +57,7 @@ public:
     }
 
 private:
+    // private vector가 모든 Book 원소의 수명과 저장 공간을 소유한다.
     std::vector<Book> books_;
 };
 
@@ -72,6 +77,7 @@ struct LoanResult {
 class LendingService {
 public:
     // repository_는 비소유 참조이므로 저장소 객체가 서비스보다 오래 살아야 한다.
+    // 참조 매개변수와 멤버는 저장소를 소유하지 않으므로 저장소가 더 오래 살아야 한다.
     explicit LendingService(BookRepository& repository)
         : repository_{repository} {
     }

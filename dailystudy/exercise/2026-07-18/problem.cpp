@@ -4,8 +4,10 @@
 #include <string_view>
 
 enum class TemperatureError { below_absolute_zero, sensor_too_hot };
+// enum class는 가능한 실패를 닫힌 집합으로 만들고 정수와 암시적으로 섞이지 않는다.
 
 using Temperature = std::expected<double, TemperatureError>;
+// using 별칭에서 double은 성공값, TemperatureError는 오류값 타입이다.
 
 // 연습: 아래 규칙을 읽은 뒤 구현을 가리고 직접 다시 입력해 본다.
 [[nodiscard]] Temperature validate_celsius(double value) {
@@ -28,6 +30,7 @@ using Temperature = std::expected<double, TemperatureError>;
 }
 
 int main() {
+    // const auto는 반환 타입을 추론하되 초기화 뒤 결과 상태 변경을 막는다.
     const auto room = validate_celsius(21.5);
     const auto impossible = validate_celsius(-300.0);
     const auto overheated = validate_celsius(180.0);

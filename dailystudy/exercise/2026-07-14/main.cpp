@@ -25,6 +25,7 @@ What to notice:
 #include <vector>
 
 struct TemperatureReading {
+    // struct의 멤버는 기본 public이다. 단순 데이터 묶음은 값처럼 복사·이동할 수 있다.
     int sensor_id{}; // {}는 0으로 값 초기화한다. 이 멤버 식은 이름이 있으므로 lvalue다.
     int celsius{};
 };
@@ -42,6 +43,8 @@ concept AlertPublisher = requires(Publisher publisher, Alert alert) {
 
 class ProcessingSession {
 public:
+    // 생성자는 반환형이 없다. explicit은 int에서 세션으로의 암시적 변환을 막는다.
+    // 멤버 초기화 목록은 참조 멤버를 생성 시점에 원본 카운터에 바인딩한다.
     explicit ProcessingSession(int& active_sessions) : active_sessions_{active_sessions} {
         ++active_sessions_;
     }
@@ -54,6 +57,7 @@ public:
     }
 
 private:
+    // class 상태는 기본 private이며, 참조 대상이 이 객체보다 오래 살아야 한다.
     int& active_sessions_;
 };
 
@@ -77,6 +81,7 @@ struct BatchReport {
 };
 
 std::expected<int, std::string> parse_int(std::string_view text, std::string_view field_name) {
+    // expected의 첫 타입 int는 성공값, 둘째 string은 오류값이다.
     // text는 원본 문자를 소유하지 않는 작은 뷰를 값으로 복사해 받는다(보통 포인터+길이 두 단어).
     if (text.empty()) {
         // unexpected 임시 객체는 prvalue이며 expected의 오류 저장소를 직접 초기화할 수 있다.

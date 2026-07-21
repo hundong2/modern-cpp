@@ -6,6 +6,7 @@
 
 // 변환 실패는 정상적인 입력 결과다. -1 같은 마법 값이나 예외 대신 optional로 표현한다.
 [[nodiscard]] std::optional<int> parse_positive_count(std::string_view text) {
+    // [[nodiscard]]는 호출자가 성공/실패 결과를 버릴 때 경고하도록 돕는다.
     int value{}; // 이름 있는 객체이므로 lvalue이며 from_chars가 이 저장 위치에 결과를 쓴다.
     const char* first = text.data(); // 포인터 값은 복사되지만 가리킨 문자의 소유권은 얻지 않는다.
     const char* last = first + text.size();
@@ -19,6 +20,7 @@
 }
 
 [[nodiscard]] int pages_to_read(std::optional<int> daily_pages, int days) {
+    // 값 매개변수는 호출자의 optional과 독립된 작은 복사본을 사용한다.
     // optional이 비었을 때 value_or가 눈에 보이는 기본값 10을 제공한다.
     // 곱셈 결과 int는 prvalue다. 작은 정수 연산은 보통 레지스터에서 수행되지만 컴파일러가 결정한다.
     return daily_pages.value_or(10) * days;
@@ -32,6 +34,7 @@ void require(bool condition, std::string_view explanation) {
 }
 
 int main() {
+    // auto는 함수 반환식으로부터 optional<int> 타입을 추론한다.
     const auto valid = parse_positive_count("12");
     const auto zero = parse_positive_count("0");
     const auto mixed = parse_positive_count("12pages");

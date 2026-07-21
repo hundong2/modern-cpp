@@ -18,6 +18,7 @@ Why this is useful:
 #include <vector>
 
 std::optional<std::size_t> first_window_at_least(
+    // optional은 성공 인덱스가 있거나 값이 없다는 두 상태 중 하나를 표현한다.
     std::span<const int> readings, // 원소 복사 없이 시작 주소와 길이만 값으로 전달한다.
     std::size_t window_size,
     int threshold) {
@@ -78,6 +79,7 @@ void run_tests() {
 }
 
 int main() {
+    // main은 프로그램 진입점이며 int 반환값 0은 정상 종료를 뜻한다.
     run_tests();
 
     const std::vector<int> readings = {4, 1, 7, 3, 6, 2};

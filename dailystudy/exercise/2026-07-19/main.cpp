@@ -7,18 +7,21 @@
 #include <vector>
 
 struct Message {
+    // struct 멤버는 기본 public이며 두 string이 문자 버퍼를 각각 소유한다.
     std::string recipient;
     std::string body;
 };
 
 class MessageSink {
 public:
+    // = 0은 순수 가상 함수 계약이며 가상 소멸자는 다형 삭제에 필요하다.
     virtual ~MessageSink() = default; // 가상 함수 테이블(vtable)을 쓰는 구현이 일반적이나 표준이 강제하지는 않는다.
     virtual void send(const Message& message) = 0;
 };
 
 class RecordingSink final : public MessageSink {
 public:
+    // final은 추가 상속을 막고 override는 기반 함수와 서명을 검사하게 한다.
     void send(const Message& message) override { messages_.push_back(message); } // lvalue message를 vector에 복사한다.
     [[nodiscard]] const std::vector<Message>& messages() const { return messages_; }
 
@@ -28,6 +31,8 @@ private:
 
 class WelcomeService {
 public:
+    // 생성자는 반환형이 없다. explicit은 unique_ptr에서 서비스로의 암시 변환을 막는다.
+    // 값 매개변수 unique_ptr는 호출자로부터 단독 소유권을 받는 경계를 표현한다.
     explicit WelcomeService(std::unique_ptr<MessageSink> sink)
         // sink는 이름이 있어 lvalue. move가 xvalue로 변환해 unique_ptr 이동 생성자를 선택하게 한다.
         : sink_(std::move(sink)) {
@@ -44,6 +49,7 @@ public:
     }
 
 private:
+    // private unique_ptr가 sink의 수명을 소유하며 서비스 소멸 때 자동 해제한다.
     std::unique_ptr<MessageSink> sink_;
 };
 

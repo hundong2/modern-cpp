@@ -16,6 +16,7 @@ the event.
 #include <variant>
 
 struct AddStock {
+    // struct는 관련 값을 묶는 사용자 정의 타입이며 멤버가 기본 public이다.
     std::string item;
     int amount{};
 };
@@ -26,6 +27,7 @@ struct RemoveStock {
 };
 
 using InventoryCommand = std::variant<AddStock, RemoveStock>; // 후보 중 하나의 수명만 활성화된다.
+// using은 새 타입을 만들지 않고 긴 variant 타입에 읽기 쉬운 별칭을 붙인다.
 
 struct StockChanged {
     std::string item;
@@ -50,6 +52,7 @@ Overloaded(Callables...) -> Overloaded<Callables...>;
 
 class InventoryService {
 public:
+    // public 아래 함수는 외부 계층이 호출할 수 있는 서비스 인터페이스다.
     [[nodiscard]] InventoryEvent execute(const InventoryCommand& command) {
         // command는 이름 있는 const 참조이므로 lvalue다. visit는 활성 객체를 const lvalue 참조로 전달한다.
         return std::visit(
@@ -66,6 +69,7 @@ public:
     }
 
 private:
+    // private 아래 구현 함수와 상태는 서비스 내부에서만 접근할 수 있다.
     InventoryEvent handle(const AddStock& command) {
         if (command.item.empty() || command.amount <= 0) {
             return CommandRejected{"item must be non-empty and amount must be positive"};

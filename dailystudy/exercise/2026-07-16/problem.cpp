@@ -12,12 +12,14 @@ references, and a switch.
 #include <vector>
 
 enum class TransactionKind {
+    // enum class는 수입과 지출을 별도 타입으로 묶어 잘못된 정수 대입을 막는다.
     // 내부적으로 정수로 표현되는 경우가 많지만 enum class는 타입 안전성을 제공한다.
     incoming,
     outgoing,
 };
 
 struct Transaction {
+    // struct 멤버는 기본 public이며 각 객체가 문자열 버퍼를 직접 소유한다.
     std::string item;
     TransactionKind kind{};
     int amount{};
@@ -72,6 +74,7 @@ void run_tests() {
 }
 
 int main() {
+    // const 입력 컨테이너는 검증 중 원소가 바뀌지 않음을 타입으로 보장한다.
     run_tests();
 
     const std::vector<Transaction> transactions = {
