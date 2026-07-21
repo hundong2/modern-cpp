@@ -31,6 +31,19 @@
   - [2026-07-16 Daily Study: Zero-Copy Serialization and Sum Window](./dailystudy/2026-07-16/README.md)
   - [2026-07-17 Daily Study: Thread Affinity and K-Distinct Window](./dailystudy/2026-07-17/README.md)
 
+
+## Getting Start 
+
+- [boost run script](./boost/README.md).
+  - [using run scrint](./boost/run.sh). 
+- [daily study script](./dailystudy/README.md). 
+  - [using run script](./dailystudy/run.sh). 
+
+```sh
+./run.sh <file name> #boost files 
+./run.sh <folder name> #daily study
+```
+
 # 01. Study cpp reference for C++20
 
 - boost example
