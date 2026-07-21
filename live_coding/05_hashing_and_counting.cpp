@@ -27,13 +27,13 @@ using namespace std;
 
 pair<int, int> twoSumIndices(const vector<int>& a, int target) {
     unordered_map<int, int> indexOf;
-    indexOf.reserve(a.size() * 2 + 1);
+    indexOf.reserve(a.size() * 2 + 1); // rehash를 줄여 평균 성능을 안정화한다.
 
     for (int i = 0; i < (int)a.size(); ++i) {
         int need = target - a[i];
-        auto it = indexOf.find(need);
+        auto it = indexOf.find(need); // 현재 값과 짝이 되는 이전 값을 찾는다.
         if (it != indexOf.end()) return {it->second, i};
-        indexOf[a[i]] = i;
+        indexOf[a[i]] = i; // 같은 값이 여러 번 나오면 더 최근 인덱스로 갱신한다.
     }
     return {-1, -1};
 }
@@ -41,24 +41,24 @@ pair<int, int> twoSumIndices(const vector<int>& a, int target) {
 vector<int> coordinateCompress(const vector<int>& a) {
     vector<int> values = a;
     sort(values.begin(), values.end());
-    values.erase(unique(values.begin(), values.end()), values.end());
+    values.erase(unique(values.begin(), values.end()), values.end()); // 압축 좌표의 기준 목록이다.
 
     vector<int> compressed;
     compressed.reserve(a.size());
     for (int x : a) {
-        compressed.push_back((int)(lower_bound(values.begin(), values.end(), x) - values.begin()));
+        compressed.push_back((int)(lower_bound(values.begin(), values.end(), x) - values.begin())); // 정렬된 위치가 압축값이다.
     }
     return compressed;
 }
 
 int mostFrequentSmallestTie(const vector<int>& a) {
-    map<int, int> freq;
+    map<int, int> freq; // 동률일 때 작은 값을 고르기 위해 key 오름차순 순회를 사용한다.
     for (int x : a) ++freq[x];
 
     int bestValue = 0;
     int bestCount = -1;
     for (auto [value, count] : freq) {
-        if (count > bestCount) {
+        if (count > bestCount) { // map 순서상 같은 count면 먼저 나온 작은 값이 유지된다.
             bestCount = count;
             bestValue = value;
         }

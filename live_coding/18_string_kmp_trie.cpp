@@ -26,8 +26,8 @@ vector<int> prefixFunction(const string& s) {
     vector<int> pi(s.size(), 0);
     for (int i = 1; i < (int)s.size(); ++i) {
         int j = pi[i - 1];
-        while (j > 0 && s[i] != s[j]) j = pi[j - 1];
-        if (s[i] == s[j]) ++j;
+        while (j > 0 && s[i] != s[j]) j = pi[j - 1]; // 실패하면 다음 가능한 접두사 길이로 되돌아간다.
+        if (s[i] == s[j]) ++j;                       // 한 글자 더 맞으면 border 길이가 증가한다.
         pi[i] = j;
     }
     return pi;
@@ -40,11 +40,11 @@ vector<int> kmpSearch(const string& text, const string& pattern) {
     vector<int> pi = prefixFunction(pattern);
     int matched = 0;
     for (int i = 0; i < (int)text.size(); ++i) {
-        while (matched > 0 && text[i] != pattern[matched]) matched = pi[matched - 1];
+        while (matched > 0 && text[i] != pattern[matched]) matched = pi[matched - 1]; // text 인덱스는 되돌리지 않는다.
         if (text[i] == pattern[matched]) ++matched;
         if (matched == (int)pattern.size()) {
             result.push_back(i - matched + 1);
-            matched = pi[matched - 1];
+            matched = pi[matched - 1]; // 겹치는 매칭을 찾기 위해 다음 border에서 이어간다.
         }
     }
     return result;
@@ -61,7 +61,7 @@ public:
         for (char ch : word) {
             int idx = ch - 'a';
             if (nodes[cur].next[idx] == -1) {
-                nodes[cur].next[idx] = (int)nodes.size();
+                nodes[cur].next[idx] = (int)nodes.size(); // 없는 간선이면 새 노드를 만든다.
                 nodes.push_back(Node{});
             }
             cur = nodes[cur].next[idx];
@@ -109,8 +109,8 @@ vector<int> zFunction(const string& s) {
     int left = 0;
     int right = 0;
     for (int i = 1; i < n; ++i) {
-        if (i <= right) z[i] = min(right - i + 1, z[i - left]);
-        while (i + z[i] < n && s[z[i]] == s[i + z[i]]) ++z[i];
+        if (i <= right) z[i] = min(right - i + 1, z[i - left]); // 기존 Z-box 안의 정보를 재사용한다.
+        while (i + z[i] < n && s[z[i]] == s[i + z[i]]) ++z[i];  // box 밖은 실제 문자 비교로 확장한다.
         if (i + z[i] - 1 > right) {
             left = i;
             right = i + z[i] - 1;

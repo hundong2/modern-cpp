@@ -4,6 +4,8 @@
   - [course readme](./Course/README.md)
 - [ ] 자주쓰는 Modern C++ 실무 문법
   - [frequent patterns readme](./자주쓰는/README.md)
+- [ ] 자주 까먹는 C++ 문법과 기술
+  - [자주까먹는 자료 목차](./자주까먹는/README.md)
 - [ ] Boost 실무 커리큘럼
   - [boost curriculum readme](./boost/README.md)
 - [ ] C++17 Basic 실습 노트북

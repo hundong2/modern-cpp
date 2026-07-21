@@ -25,11 +25,11 @@ using namespace std;
 const long long MOD = 1'000'000'007LL;
 
 long long lcmSafe(long long a, long long b) {
-    return a / gcd(a, b) * b;
+    return a / gcd(a, b) * b; // 먼저 나누면 a*b overflow 위험을 줄일 수 있다.
 }
 
 long long addMod(long long a, long long b, long long mod) {
-    if (a >= mod - b) return a - (mod - b);
+    if (a >= mod - b) return a - (mod - b); // a+b 대신 비교와 뺄셈으로 overflow를 피한다.
     return a + b;
 }
 
@@ -37,8 +37,8 @@ long long modMultiply(long long a, long long b, long long mod) {
     long long result = 0;
     a = (a % mod + mod) % mod;
     while (b > 0) {
-        if (b & 1) result = addMod(result, a, mod);
-        a = addMod(a, a, mod);
+        if (b & 1) result = addMod(result, a, mod); // b의 현재 비트가 1이면 해당 배수를 더한다.
+        a = addMod(a, a, mod);                      // 다음 비트로 넘어가며 a를 두 배로 만든다.
         b >>= 1;
     }
     return result;
@@ -48,8 +48,8 @@ long long modPow(long long base, long long exp, long long mod) {
     long long result = 1 % mod;
     base = (base % mod + mod) % mod;
     while (exp > 0) {
-        if (exp & 1) result = modMultiply(result, base, mod);
-        base = modMultiply(base, base, mod);
+        if (exp & 1) result = modMultiply(result, base, mod); // 지수의 현재 비트가 1이면 결과에 곱한다.
+        base = modMultiply(base, base, mod);                  // 다음 비트를 위해 밑을 제곱한다.
         exp >>= 1;
     }
     return result;
@@ -80,7 +80,7 @@ vector<int> sievePrimes(int n) {
     for (long long p = 2; p * p <= n; ++p) {
         if (!isPrime[p]) continue;
         for (long long x = p * p; x <= n; x += p) {
-            isPrime[(int)x] = false;
+            isPrime[(int)x] = false; // p보다 작은 배수는 더 작은 소수 단계에서 이미 지워졌다.
         }
     }
 
@@ -96,7 +96,7 @@ public:
     explicit CombinationMod(int maxN, long long mod = MOD) : mod(mod), fact(maxN + 1), invFact(maxN + 1) {
         fact[0] = 1;
         for (int i = 1; i <= maxN; ++i) fact[i] = fact[i - 1] * i % mod;
-        invFact[maxN] = modInversePrime(fact[maxN], mod);
+        invFact[maxN] = modInversePrime(fact[maxN], mod); // MOD가 소수일 때 Fermat inverse를 사용할 수 있다.
         for (int i = maxN; i >= 1; --i) invFact[i - 1] = invFact[i] * i % mod;
     }
 

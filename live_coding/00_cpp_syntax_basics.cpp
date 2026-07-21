@@ -92,22 +92,22 @@ struct Person {
 };
 
 void printVector(const vector<int>& values) {
-    for (int x : values) {
+    for (int x : values) {  // range-for는 컨테이너 전체를 순회할 때 인덱스 실수를 줄인다.
         cout << x << ' ';
     }
     cout << '\n';
 }
 
 int main() {
-    ios::sync_with_stdio(false);
-    cin.tie(nullptr);
+    ios::sync_with_stdio(false);  // cin/cout만 쓸 때 입출력 병목을 줄이는 기본 설정이다.
+    cin.tie(nullptr);             // 입력 전 자동 flush를 끊어 불필요한 대기 비용을 없앤다.
 
     vector<int> numbers = {5, 1, 4, 1, 3};
-    sort(numbers.begin(), numbers.end());
+    sort(numbers.begin(), numbers.end());  // unique는 인접 중복만 제거하므로 정렬을 먼저 한다.
     cout << "[sorted] ";
     printVector(numbers);
 
-    numbers.erase(unique(numbers.begin(), numbers.end()), numbers.end());
+    numbers.erase(unique(numbers.begin(), numbers.end()), numbers.end());  // erase-remove 계열 패턴이다.
     cout << "[unique] ";
     printVector(numbers);
 
@@ -119,7 +119,7 @@ int main() {
 
     sort(people.begin(), people.end(), [](const Person& a, const Person& b) {
         if (a.score != b.score) return a.score > b.score;
-        return a.name < b.name;
+        return a.name < b.name;  // 점수가 같을 때만 이름 오름차순을 적용해 비교 규칙을 완성한다.
     });
 
     cout << "[people]\n";
@@ -127,13 +127,13 @@ int main() {
         cout << p.name << ' ' << p.score << '\n';
     }
 
-    unordered_map<string, int> count;
+    unordered_map<string, int> count;  // 평균 O(1) 조회가 필요할 때 map보다 먼저 검토한다.
     for (const Person& p : people) {
         ++count[p.name];
     }
     cout << "[hash lookup] alice=" << count["alice"] << '\n';
 
-    priority_queue<int, vector<int>, greater<int>> minHeap;
+    priority_queue<int, vector<int>, greater<int>> minHeap;  // greater를 쓰면 기본 max-heap이 min-heap이 된다.
     for (int x : {7, 2, 9}) {
         minHeap.push(x);
     }
@@ -141,7 +141,7 @@ int main() {
 
     long long lo = 0;
     long long hi = 1'000'000'000LL;
-    long long mid = lo + (hi - lo) / 2;
+    long long mid = lo + (hi - lo) / 2;  // lo + hi가 overflow 나는 경우를 피하는 이분 탐색 관용구다.
     cout << "[safe mid] " << mid << '\n';
 
     return 0;

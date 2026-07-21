@@ -28,12 +28,12 @@ int maxNonOverlappingMeetings(vector<pair<int, int>> meetings) {
     sort(meetings.begin(), meetings.end(), [](auto a, auto b) {
         if (a.second != b.second) return a.second < b.second;
         return a.first < b.first;
-    });
+    }); // 끝 시간이 빠른 회의를 먼저 고르면 남은 선택지가 가장 넓어진다.
 
     int count = 0;
     int currentEnd = INT_MIN;
     for (auto [start, end] : meetings) {
-        if (start >= currentEnd) {
+        if (start >= currentEnd) { // 직전 회의가 끝난 뒤 시작하는 회의만 선택한다.
             ++count;
             currentEnd = end;
         }
@@ -44,8 +44,8 @@ int maxNonOverlappingMeetings(vector<pair<int, int>> meetings) {
 bool canJumpToEnd(const vector<int>& jump) {
     int farthest = 0;
     for (int i = 0; i < (int)jump.size(); ++i) {
-        if (i > farthest) return false;
-        farthest = max(farthest, i + jump[i]);
+        if (i > farthest) return false;          // 현재 위치에 도달하지 못하면 이후도 볼 수 없다.
+        farthest = max(farthest, i + jump[i]);   // 지금 위치에서 확장 가능한 가장 먼 지점이다.
     }
     return true;
 }
@@ -59,8 +59,8 @@ long long minMergeCost(const vector<int>& sizes) {
         pq.pop();
         long long b = pq.top();
         pq.pop();
-        cost += a + b;
-        pq.push(a + b);
+        cost += a + b;  // 두 파일을 합치는 비용은 두 크기의 합이다.
+        pq.push(a + b); // 합쳐진 파일은 다시 다음 후보가 된다.
     }
     return cost;
 }

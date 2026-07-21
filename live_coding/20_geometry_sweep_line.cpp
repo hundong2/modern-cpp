@@ -47,14 +47,14 @@ long long cross(Point a, Point b) {
 }
 
 long long ccw(Point a, Point b, Point c) {
-    long long value = cross(b - a, c - a);
+    long long value = cross(b - a, c - a); // 외적 부호로 세 점의 회전 방향을 판정한다.
     if (value > 0) return 1;
     if (value < 0) return -1;
     return 0;
 }
 
 bool onSegment(Point a, Point b, Point p) {
-    if (ccw(a, b, p) != 0) return false;
+    if (ccw(a, b, p) != 0) return false; // 일직선이 아니면 선분 위에 있을 수 없다.
     return min(a.x, b.x) <= p.x && p.x <= max(a.x, b.x) &&
            min(a.y, b.y) <= p.y && p.y <= max(a.y, b.y);
 }
@@ -65,7 +65,7 @@ bool segmentsIntersect(Point a, Point b, Point c, Point d) {
     long long cd1 = ccw(c, d, a);
     long long cd2 = ccw(c, d, b);
 
-    if (ab1 == 0 && onSegment(a, b, c)) return true;
+    if (ab1 == 0 && onSegment(a, b, c)) return true; // 끝점이 다른 선분 위에 있는 퇴화 케이스다.
     if (ab2 == 0 && onSegment(a, b, d)) return true;
     if (cd1 == 0 && onSegment(c, d, a)) return true;
     if (cd2 == 0 && onSegment(c, d, b)) return true;
@@ -77,7 +77,7 @@ long long polygonArea2(const vector<Point>& poly) {
     for (int i = 0; i < (int)poly.size(); ++i) {
         Point a = poly[i];
         Point b = poly[(i + 1) % poly.size()];
-        area2 += a.x * b.y - a.y * b.x;
+        area2 += a.x * b.y - a.y * b.x; // 신발끈 공식의 한 항이다.
     }
     return llabs(area2);
 }
@@ -89,7 +89,7 @@ vector<Point> convexHull(vector<Point> points) {
 
     vector<Point> lower, upper;
     for (Point p : points) {
-        while (lower.size() >= 2 && ccw(lower[lower.size() - 2], lower.back(), p) <= 0) {
+        while (lower.size() >= 2 && ccw(lower[lower.size() - 2], lower.back(), p) <= 0) { // 우회전/일직선이면 convex hull 경계가 아니다.
             lower.pop_back();
         }
         lower.push_back(p);
@@ -112,8 +112,8 @@ vector<Point> convexHull(vector<Point> points) {
 int maxOverlappingClosedIntervals(const vector<pair<int, int>>& intervals) {
     vector<pair<int, int>> events;
     for (auto [l, r] : intervals) {
-        events.push_back({l, +1});
-        events.push_back({r, -1});
+        events.push_back({l, +1}); // 구간 시작점에서는 활성 구간 수가 증가한다.
+        events.push_back({r, -1}); // 닫힌 구간이라 같은 좌표에서는 시작 이벤트를 먼저 처리한다.
     }
 
     sort(events.begin(), events.end(), [](auto a, auto b) {

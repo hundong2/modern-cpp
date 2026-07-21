@@ -29,10 +29,10 @@ void permuteDfs(const vector<int>& nums, vector<int>& path, vector<bool>& used, 
 
     for (int i = 0; i < (int)nums.size(); ++i) {
         if (used[i]) continue;
-        used[i] = true;
+        used[i] = true;       // 현재 깊이에서 nums[i]를 선택한다.
         path.push_back(nums[i]);
         permuteDfs(nums, path, used, result);
-        path.pop_back();
+        path.pop_back();      // 다음 후보를 위해 선택을 되돌린다.
         used[i] = false;
     }
 }
@@ -49,10 +49,10 @@ vector<vector<int>> permutations(vector<int> nums) {
 bool subsetSumDfs(const vector<int>& a, int idx, int target, int current) {
     if (current == target) return true;
     if (idx == (int)a.size()) return false;
-    if (current > target) return false;
+    if (current > target) return false; // 양수 배열로 정렬했기 때문에 target 초과는 더 볼 필요가 없다.
 
-    if (subsetSumDfs(a, idx + 1, target, current + a[idx])) return true;
-    return subsetSumDfs(a, idx + 1, target, current);
+    if (subsetSumDfs(a, idx + 1, target, current + a[idx])) return true; // 현재 원소를 고르는 경우다.
+    return subsetSumDfs(a, idx + 1, target, current);                    // 현재 원소를 건너뛰는 경우다.
 }
 
 bool hasSubsetSum(vector<int> a, int target) {
@@ -67,11 +67,11 @@ int countNQueensDfs(int n, int row, vector<bool>& col, vector<bool>& diag1, vect
     for (int c = 0; c < n; ++c) {
         int d1 = row - c + n - 1;
         int d2 = row + c;
-        if (col[c] || diag1[d1] || diag2[d2]) continue;
+        if (col[c] || diag1[d1] || diag2[d2]) continue; // 열과 두 대각선 중 하나라도 막히면 놓을 수 없다.
 
         col[c] = diag1[d1] = diag2[d2] = true;
         count += countNQueensDfs(n, row + 1, col, diag1, diag2);
-        col[c] = diag1[d1] = diag2[d2] = false;
+        col[c] = diag1[d1] = diag2[d2] = false; // 백트래킹 복구가 없으면 다음 열 탐색이 오염된다.
     }
     return count;
 }

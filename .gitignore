@@ -47,6 +47,7 @@ _IsIncrementalBuild
 tools/
 build/
 **/build/
+**/build-*/
 **/Debug/
 **/Release/
 **/x64/

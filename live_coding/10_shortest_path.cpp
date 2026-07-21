@@ -40,11 +40,11 @@ vector<long long> dijkstra(int n, const vector<vector<pair<int, int>>>& graph, i
     while (!pq.empty()) {
         auto [d, u] = pq.top();
         pq.pop();
-        if (d != dist[u]) continue;
+        if (d != dist[u]) continue; // 더 짧은 거리로 갱신된 뒤 남은 오래된 후보는 무시한다.
 
         for (auto [v, w] : graph[u]) {
             if (dist[v] > d + w) {
-                dist[v] = d + w;
+                dist[v] = d + w; // u를 거쳐 가는 경로가 더 짧으면 완화한다.
                 pq.push({dist[v], v});
             }
         }
@@ -61,11 +61,11 @@ pair<bool, vector<long long>> bellmanFord(int n, const vector<tuple<int, int, in
         for (auto [u, v, w] : edges) {
             if (dist[u] == INF) continue;
             if (dist[v] > dist[u] + w) {
-                dist[v] = dist[u] + w;
+                dist[v] = dist[u] + w; // 모든 간선을 반복 완화해 음수 간선도 처리한다.
                 changed = true;
             }
         }
-        if (!changed) break;
+        if (!changed) break; // 더 이상 갱신이 없으면 조기 종료한다.
     }
 
     for (auto [u, v, w] : edges) {
@@ -83,7 +83,7 @@ vector<vector<long long>> floydWarshall(vector<vector<long long>> dist) {
             if (dist[i][k] == INF) continue;
             for (int j = 0; j < n; ++j) {
                 if (dist[k][j] == INF) continue;
-                dist[i][j] = min(dist[i][j], dist[i][k] + dist[k][j]);
+                dist[i][j] = min(dist[i][j], dist[i][k] + dist[k][j]); // k를 중간 정점으로 쓰는 경우를 반영한다.
             }
         }
     }
@@ -103,8 +103,8 @@ vector<int> zeroOneBfs(int n, const vector<vector<pair<int, int>>>& graph, int s
         for (auto [v, w] : graph[u]) {
             if (dist[v] <= dist[u] + w) continue;
             dist[v] = dist[u] + w;
-            if (w == 0) dq.push_front(v);
-            else dq.push_back(v);
+            if (w == 0) dq.push_front(v); // 0 비용 간선은 같은 거리 레벨이라 앞에 넣는다.
+            else dq.push_back(v);         // 1 비용 간선은 다음 거리 레벨이라 뒤에 넣는다.
         }
     }
     return dist;

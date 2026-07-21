@@ -24,12 +24,12 @@ vector<int> topologicalOrder(int n, const vector<pair<int, int>>& edges) {
     vector<int> indegree(n, 0);
     for (auto [u, v] : edges) {
         graph[u].push_back(v);
-        ++indegree[v];
+        ++indegree[v]; // v보다 먼저 끝나야 하는 선행 작업 수다.
     }
 
     queue<int> q;
     for (int i = 0; i < n; ++i) {
-        if (indegree[i] == 0) q.push(i);
+        if (indegree[i] == 0) q.push(i); // 지금 바로 처리 가능한 작업부터 시작한다.
     }
 
     vector<int> order;
@@ -39,11 +39,11 @@ vector<int> topologicalOrder(int n, const vector<pair<int, int>>& edges) {
         order.push_back(u);
 
         for (int v : graph[u]) {
-            if (--indegree[v] == 0) q.push(v);
+            if (--indegree[v] == 0) q.push(v); // 모든 선행 작업이 끝난 순간 큐에 넣는다.
         }
     }
 
-    if ((int)order.size() != n) return {};
+    if ((int)order.size() != n) return {}; // 처리하지 못한 정점이 있으면 cycle이 있다는 뜻이다.
     return order;
 }
 
@@ -66,7 +66,7 @@ int minimumProjectTime(const vector<int>& duration, const vector<pair<int, int>>
         int u = q.front();
         q.pop();
         for (int v : graph[u]) {
-            earliest[v] = max(earliest[v], earliest[u] + duration[v]);
+            earliest[v] = max(earliest[v], earliest[u] + duration[v]); // 가장 늦게 끝나는 선행 작업이 시작 가능 시간을 결정한다.
             if (--indegree[v] == 0) q.push(v);
         }
     }

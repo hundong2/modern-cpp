@@ -31,7 +31,7 @@ long long climbStairs(int n) {
     dp[0] = 1;
     dp[1] = 1;
     for (int i = 2; i <= n; ++i) {
-        dp[i] = dp[i - 1] + dp[i - 2];
+        dp[i] = dp[i - 1] + dp[i - 2]; // 마지막 이동이 1칸인지 2칸인지로 경우를 나눈다.
     }
     return dp[n];
 }
@@ -44,7 +44,7 @@ int minCoins(const vector<int>& coins, int amount) {
     for (int x = 1; x <= amount; ++x) {
         for (int coin : coins) {
             if (x >= coin && dp[x - coin] != INF) {
-                dp[x] = min(dp[x], dp[x - coin] + 1);
+                dp[x] = min(dp[x], dp[x - coin] + 1); // 마지막에 coin 하나를 썼다고 가정한다.
             }
         }
     }
@@ -55,7 +55,7 @@ int houseRobber(const vector<int>& money) {
     int prev2 = 0;
     int prev1 = 0;
     for (int x : money) {
-        int cur = max(prev1, prev2 + x);
+        int cur = max(prev1, prev2 + x); // 이번 집을 건너뛰거나, 전전 집 최적값에 이번 집을 더한다.
         prev2 = prev1;
         prev1 = cur;
     }

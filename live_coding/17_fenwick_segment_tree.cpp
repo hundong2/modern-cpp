@@ -26,14 +26,14 @@ public:
 
     void add(int index, long long delta) {
         for (++index; index < (int)bit.size(); index += index & -index) {
-            bit[index] += delta;
+            bit[index] += delta; // index가 담당하는 모든 prefix bucket에 변화량을 반영한다.
         }
     }
 
     long long sumPrefix(int index) const {
         long long result = 0;
         for (++index; index > 0; index -= index & -index) {
-            result += bit[index];
+            result += bit[index]; // 현재 index가 대표하는 구간 합을 누적한다.
         }
         return result;
     }
@@ -70,10 +70,10 @@ private:
             tree[node] = a[start];
             return;
         }
-        int mid = (start + end) / 2;
+        int mid = (start + end) / 2; // 세그먼트 트리는 구간을 절반씩 나눠 재귀적으로 저장한다.
         build(a, node * 2, start, mid);
         build(a, node * 2 + 1, mid + 1, end);
-        tree[node] = tree[node * 2] + tree[node * 2 + 1];
+        tree[node] = tree[node * 2] + tree[node * 2 + 1]; // 부모 노드는 두 자식 구간의 합이다.
     }
 
     void update(int node, int start, int end, int index, int value) {
@@ -88,8 +88,8 @@ private:
     }
 
     long long query(int node, int start, int end, int left, int right) const {
-        if (right < start || end < left) return 0;
-        if (left <= start && end <= right) return tree[node];
+        if (right < start || end < left) return 0;          // 질의 구간과 겹치지 않으면 항등원을 반환한다.
+        if (left <= start && end <= right) return tree[node]; // 완전히 포함되면 더 내려가지 않는다.
         int mid = (start + end) / 2;
         return query(node * 2, start, mid, left, right) + query(node * 2 + 1, mid + 1, end, left, right);
     }
@@ -127,9 +127,9 @@ private:
 
     void push(int node, int start, int end) {
         if (lazy[node] == 0) return;
-        tree[node] += lazy[node] * (end - start + 1);
+        tree[node] += lazy[node] * (end - start + 1); // 구간 전체에 같은 값을 더하므로 길이를 곱한다.
         if (start != end) {
-            lazy[node * 2] += lazy[node];
+            lazy[node * 2] += lazy[node];     // 자식 갱신은 필요한 시점까지 미룬다.
             lazy[node * 2 + 1] += lazy[node];
         }
         lazy[node] = 0;

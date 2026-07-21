@@ -36,13 +36,13 @@ public:
 
         int diff = depth[a] - depth[b];
         for (int k = 0; k < log; ++k) {
-            if (diff & (1 << k)) a = up[k][a];
+            if (diff & (1 << k)) a = up[k][a]; // 깊이 차이만큼 a를 위로 올려 두 노드의 깊이를 맞춘다.
         }
 
         if (a == b) return a;
         for (int k = log - 1; k >= 0; --k) {
             if (up[k][a] != up[k][b]) {
-                a = up[k][a];
+                a = up[k][a]; // 조상이 달라지는 가장 큰 점프부터 동시에 올린다.
                 b = up[k][b];
             }
         }
@@ -63,7 +63,7 @@ private:
     void dfs(int u, int parent) {
         up[0][u] = parent;
         for (int k = 1; k < log; ++k) {
-            up[k][u] = up[k - 1][up[k - 1][u]];
+            up[k][u] = up[k - 1][up[k - 1][u]]; // 2^k 조상은 2^(k-1) 조상의 2^(k-1) 조상이다.
         }
 
         for (int v : graph[u]) {
@@ -87,7 +87,7 @@ pair<int, int> farthestFrom(int start, const vector<vector<int>>& tree) {
         if (dist[u] > dist[best]) best = u;
         for (int v : tree[u]) {
             if (dist[v] != -1) continue;
-            dist[v] = dist[u] + 1;
+            dist[v] = dist[u] + 1; // 트리 간선 수 기준 거리라 부모 거리 + 1이다.
             q.push(v);
         }
     }
@@ -106,7 +106,7 @@ long long subtreeSumDfs(int u, int parent, const vector<vector<int>>& tree, cons
     sub[u] = value[u];
     for (int v : tree[u]) {
         if (v == parent) continue;
-        sub[u] += subtreeSumDfs(v, u, tree, value, sub);
+        sub[u] += subtreeSumDfs(v, u, tree, value, sub); // 자식 서브트리 합을 현재 노드 합에 누적한다.
     }
     return sub[u];
 }

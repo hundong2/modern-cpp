@@ -23,7 +23,7 @@ int countComponents(int n, const vector<pair<int, int>>& edges) {
     vector<vector<int>> graph(n);
     for (auto [u, v] : edges) {
         graph[u].push_back(v);
-        graph[v].push_back(u);
+        graph[v].push_back(u); // 무방향 그래프라 양쪽 인접 리스트에 모두 넣는다.
     }
 
     vector<bool> visited(n, false);
@@ -34,14 +34,14 @@ int countComponents(int n, const vector<pair<int, int>>& edges) {
         ++components;
         queue<int> q;
         q.push(start);
-        visited[start] = true;
+        visited[start] = true; // 큐에 넣는 순간 방문 처리해 중복 삽입을 막는다.
 
         while (!q.empty()) {
             int u = q.front();
             q.pop();
             for (int v : graph[u]) {
                 if (visited[v]) continue;
-                visited[v] = true;
+                visited[v] = true; // 발견 시점에 방문 처리하는 것이 BFS의 기본 패턴이다.
                 q.push(v);
             }
         }
@@ -78,8 +78,8 @@ int shortestPathInGrid(const vector<string>& grid) {
             int nr = r + dr[dir];
             int nc = c + dc[dir];
             if (nr < 0 || nr >= n || nc < 0 || nc >= m) continue;
-            if (grid[nr][nc] == '#' || dist[nr][nc] != -1) continue;
-            dist[nr][nc] = dist[r][c] + 1;
+            if (grid[nr][nc] == '#' || dist[nr][nc] != -1) continue; // 벽이거나 이미 최단 거리로 방문한 칸은 제외한다.
+            dist[nr][nc] = dist[r][c] + 1;                           // 간선 비용이 1이라 이전 거리 + 1이다.
             q.push({nr, nc});
         }
     }
@@ -91,7 +91,7 @@ void markIsland(vector<string>& grid, int r, int c) {
     int m = (int)grid[0].size();
     if (r < 0 || r >= n || c < 0 || c >= m || grid[r][c] != '1') return;
 
-    grid[r][c] = '0';
+    grid[r][c] = '0'; // 방문 처리와 동시에 물을 만들어 중복 DFS를 방지한다.
     markIsland(grid, r + 1, c);
     markIsland(grid, r - 1, c);
     markIsland(grid, r, c + 1);

@@ -26,9 +26,9 @@ using namespace std;
 int lisLength(const vector<int>& a) {
     vector<int> tails;
     for (int x : a) {
-        auto it = lower_bound(tails.begin(), tails.end(), x);
-        if (it == tails.end()) tails.push_back(x);
-        else *it = x;
+        auto it = lower_bound(tails.begin(), tails.end(), x); // x가 들어갈 수 있는 가장 왼쪽 길이를 찾는다.
+        if (it == tails.end()) tails.push_back(x);            // 모든 tail보다 크면 LIS 길이가 늘어난다.
+        else *it = x;                                         // 더 작은 tail로 바꿔 이후 확장 가능성을 키운다.
     }
     return (int)tails.size();
 }
@@ -44,9 +44,9 @@ int editDistance(const string& a, const string& b) {
     for (int i = 1; i <= n; ++i) {
         for (int j = 1; j <= m; ++j) {
             if (a[i - 1] == b[j - 1]) {
-                dp[i][j] = dp[i - 1][j - 1];
+                dp[i][j] = dp[i - 1][j - 1]; // 마지막 문자가 같으면 추가 비용이 없다.
             } else {
-                dp[i][j] = 1 + min({dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]});
+                dp[i][j] = 1 + min({dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]}); // delete, insert, replace 중 최소다.
             }
         }
     }
@@ -63,9 +63,9 @@ int tspBitmask(const vector<vector<int>>& cost) {
         for (int u = 0; u < n; ++u) {
             if (dp[mask][u] == INF) continue;
             for (int v = 0; v < n; ++v) {
-                if (mask & (1 << v)) continue;
+                if (mask & (1 << v)) continue; // 이미 방문한 도시는 다시 방문하지 않는다.
                 int nextMask = mask | (1 << v);
-                dp[nextMask][v] = min(dp[nextMask][v], dp[mask][u] + cost[u][v]);
+                dp[nextMask][v] = min(dp[nextMask][v], dp[mask][u] + cost[u][v]); // u에서 v로 이동해 방문 집합을 확장한다.
             }
         }
     }

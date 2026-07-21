@@ -26,19 +26,19 @@ using namespace std;
 class DSU {
 public:
     explicit DSU(int n) : parent(n), size(n, 1) {
-        iota(parent.begin(), parent.end(), 0);
+        iota(parent.begin(), parent.end(), 0); // 처음에는 각 정점이 자기 자신을 대표자로 가진다.
     }
 
     int find(int x) {
         if (parent[x] == x) return x;
-        return parent[x] = find(parent[x]);
+        return parent[x] = find(parent[x]); // 경로 압축으로 다음 find 비용을 줄인다.
     }
 
     bool unite(int a, int b) {
         a = find(a);
         b = find(b);
         if (a == b) return false;
-        if (size[a] < size[b]) swap(a, b);
+        if (size[a] < size[b]) swap(a, b); // 작은 트리를 큰 트리 밑에 붙여 높이 증가를 억제한다.
         parent[b] = a;
         size[a] += size[b];
         return true;
@@ -62,14 +62,14 @@ struct Edge {
 pair<bool, long long> kruskalMst(int n, vector<Edge> edges) {
     sort(edges.begin(), edges.end(), [](const Edge& a, const Edge& b) {
         return a.w < b.w;
-    });
+    }); // Kruskal은 가장 싼 간선부터 cycle 없이 선택한다.
 
     DSU dsu(n);
     long long cost = 0;
     int used = 0;
 
     for (const Edge& e : edges) {
-        if (!dsu.unite(e.u, e.v)) continue;
+        if (!dsu.unite(e.u, e.v)) continue; // 이미 연결된 두 정점을 잇는 간선은 cycle을 만든다.
         cost += e.w;
         ++used;
         if (used == n - 1) break;
@@ -80,7 +80,7 @@ pair<bool, long long> kruskalMst(int n, vector<Edge> edges) {
 pair<int, int> firstRedundantEdge(int n, const vector<pair<int, int>>& edges) {
     DSU dsu(n);
     for (auto [u, v] : edges) {
-        if (!dsu.unite(u, v)) return {u, v};
+        if (!dsu.unite(u, v)) return {u, v}; // unite 실패는 두 정점이 이미 같은 컴포넌트였다는 뜻이다.
     }
     return {-1, -1};
 }

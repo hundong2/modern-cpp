@@ -22,22 +22,22 @@ Chapter 02. 누적합, 차분 배열, prefix hash
 using namespace std;
 
 vector<long long> buildPrefix(const vector<int>& a) {
-    vector<long long> prefix(a.size() + 1, 0);
+    vector<long long> prefix(a.size() + 1, 0); // prefix[0]=0을 두면 l=0 구간도 같은 식으로 처리된다.
     for (int i = 0; i < (int)a.size(); ++i) {
-        prefix[i + 1] = prefix[i] + a[i];
+        prefix[i + 1] = prefix[i] + a[i]; // prefix[i+1]은 원소 i까지 포함한 합이다.
     }
     return prefix;
 }
 
 long long rangeSum(const vector<long long>& prefix, int l, int r) {
-    return prefix[r + 1] - prefix[l];
+    return prefix[r + 1] - prefix[l]; // [0..r] 합에서 [0..l-1] 합을 빼면 [l..r]만 남는다.
 }
 
 vector<long long> applyRangeAdds(int n, const vector<tuple<int, int, int>>& queries) {
     vector<long long> diff(n + 1, 0);
     for (auto [l, r, v] : queries) {
-        diff[l] += v;
-        if (r + 1 < n) diff[r + 1] -= v;
+        diff[l] += v;                    // l부터 v가 적용되기 시작한다.
+        if (r + 1 < n) diff[r + 1] -= v; // r 다음 칸에서 적용 효과를 되돌린다.
     }
 
     vector<long long> result(n);
@@ -58,9 +58,9 @@ long long countSubarraysWithSumK(const vector<int>& a, long long k) {
     long long answer = 0;
     for (int x : a) {
         prefix += x;
-        auto it = seen.find(prefix - k);
+        auto it = seen.find(prefix - k); // currentPrefix - oldPrefix = k인 oldPrefix를 찾는다.
         if (it != seen.end()) answer += it->second;
-        ++seen[prefix];
+        ++seen[prefix]; // 현재 prefix는 이후 원소들의 왼쪽 경계 후보가 된다.
     }
     return answer;
 }
@@ -71,7 +71,7 @@ vector<vector<long long>> build2DPrefix(const vector<vector<int>>& grid) {
     vector<vector<long long>> ps(n + 1, vector<long long>(m + 1, 0));
     for (int r = 0; r < n; ++r) {
         for (int c = 0; c < m; ++c) {
-            ps[r + 1][c + 1] = grid[r][c] + ps[r][c + 1] + ps[r + 1][c] - ps[r][c];
+            ps[r + 1][c + 1] = grid[r][c] + ps[r][c + 1] + ps[r + 1][c] - ps[r][c]; // 겹친 좌상단 영역은 한 번 빼준다.
         }
     }
     return ps;

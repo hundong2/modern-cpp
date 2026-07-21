@@ -32,10 +32,10 @@ bool isValidParentheses(const string& s) {
 
     for (char c : s) {
         if (c == '(' || c == '[' || c == '{') {
-            st.push(c);
+            st.push(c); // 닫는 괄호가 나올 때까지 최근 여는 괄호를 기억한다.
         } else if (match.count(c)) {
             if (st.empty() || st.top() != match[c]) return false;
-            st.pop();
+            st.pop(); // 가장 안쪽 괄호부터 짝이 맞아야 전체도 올바르다.
         }
     }
     return st.empty();
@@ -47,10 +47,10 @@ vector<int> nextGreaterElements(const vector<int>& a) {
 
     for (int i = 0; i < (int)a.size(); ++i) {
         while (!pending.empty() && a[pending.top()] < a[i]) {
-            answer[pending.top()] = a[i];
+            answer[pending.top()] = a[i]; // 현재 값이 pending top의 첫 번째 오른쪽 큰 값이다.
             pending.pop();
         }
-        pending.push(i);
+        pending.push(i); // 아직 next greater를 못 찾은 인덱스를 보관한다.
     }
     return answer;
 }
@@ -60,8 +60,8 @@ vector<int> slidingWindowMaximum(const vector<int>& a, int k) {
     vector<int> result;
 
     for (int i = 0; i < (int)a.size(); ++i) {
-        while (!dq.empty() && dq.front() <= i - k) dq.pop_front();
-        while (!dq.empty() && a[dq.back()] <= a[i]) dq.pop_back();
+        while (!dq.empty() && dq.front() <= i - k) dq.pop_front(); // 창 밖 인덱스는 후보에서 제거한다.
+        while (!dq.empty() && a[dq.back()] <= a[i]) dq.pop_back(); // 더 작거나 같은 값은 앞으로 최댓값이 될 수 없다.
         dq.push_back(i);
         if (i >= k - 1) result.push_back(a[dq.front()]);
     }
@@ -72,7 +72,7 @@ vector<int> topKLargest(const vector<int>& a, int k) {
     priority_queue<int, vector<int>, greater<int>> minHeap;
     for (int x : a) {
         minHeap.push(x);
-        if ((int)minHeap.size() > k) minHeap.pop();
+        if ((int)minHeap.size() > k) minHeap.pop(); // k개만 유지하면 top은 현재 top-k 중 가장 작은 값이다.
     }
 
     vector<int> result;

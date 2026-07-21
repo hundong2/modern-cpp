@@ -32,11 +32,11 @@ long long uniquePathsWithObstacles(const vector<vector<int>>& blocked) {
     for (int r = 0; r < n; ++r) {
         for (int c = 0; c < m; ++c) {
             if (blocked[r][c]) {
-                dp[r][c] = 0;
+                dp[r][c] = 0; // 장애물 칸은 어떤 경로도 지나갈 수 없다.
                 continue;
             }
-            if (r > 0) dp[r][c] += dp[r - 1][c];
-            if (c > 0) dp[r][c] += dp[r][c - 1];
+            if (r > 0) dp[r][c] += dp[r - 1][c]; // 위에서 내려오는 경우다.
+            if (c > 0) dp[r][c] += dp[r][c - 1]; // 왼쪽에서 오는 경우다.
         }
     }
     return dp[n - 1][m - 1];
@@ -50,8 +50,8 @@ int minPathSum(const vector<vector<int>>& cost) {
 
     for (int r = 0; r < n; ++r) {
         for (int c = 0; c < m; ++c) {
-            if (r > 0) dp[r][c] = min(dp[r][c], dp[r - 1][c] + cost[r][c]);
-            if (c > 0) dp[r][c] = min(dp[r][c], dp[r][c - 1] + cost[r][c]);
+            if (r > 0) dp[r][c] = min(dp[r][c], dp[r - 1][c] + cost[r][c]); // 마지막 이동이 아래 방향인 경우다.
+            if (c > 0) dp[r][c] = min(dp[r][c], dp[r][c - 1] + cost[r][c]); // 마지막 이동이 오른쪽 방향인 경우다.
         }
     }
     return dp[n - 1][m - 1];
@@ -60,7 +60,7 @@ int minPathSum(const vector<vector<int>>& cost) {
 int zeroOneKnapsack(const vector<int>& weight, const vector<int>& value, int capacity) {
     vector<int> dp(capacity + 1, 0);
     for (int i = 0; i < (int)weight.size(); ++i) {
-        for (int w = capacity; w >= weight[i]; --w) {
+        for (int w = capacity; w >= weight[i]; --w) { // 역순 순회라 같은 물건을 한 번만 쓴다.
             dp[w] = max(dp[w], dp[w - weight[i]] + value[i]);
         }
     }
@@ -70,7 +70,7 @@ int zeroOneKnapsack(const vector<int>& weight, const vector<int>& value, int cap
 int unboundedKnapsack(const vector<int>& weight, const vector<int>& value, int capacity) {
     vector<int> dp(capacity + 1, 0);
     for (int i = 0; i < (int)weight.size(); ++i) {
-        for (int w = weight[i]; w <= capacity; ++w) {
+        for (int w = weight[i]; w <= capacity; ++w) { // 정순 순회라 같은 물건을 여러 번 사용할 수 있다.
             dp[w] = max(dp[w], dp[w - weight[i]] + value[i]);
         }
     }

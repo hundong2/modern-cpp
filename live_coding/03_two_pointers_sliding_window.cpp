@@ -28,10 +28,10 @@ int minLengthAtLeastS(const vector<int>& a, int s) {
     int left = 0;
 
     for (int right = 0; right < n; ++right) {
-        sum += a[right];
+        sum += a[right]; // 오른쪽 포인터를 늘려 조건을 만족할 때까지 창을 확장한다.
         while (sum >= s) {
             answer = min(answer, right - left + 1);
-            sum -= a[left++];
+            sum -= a[left++]; // 양수 배열이므로 왼쪽을 줄이면 합이 반드시 감소한다.
         }
     }
     return answer == INT_MAX ? 0 : answer;
@@ -44,8 +44,8 @@ int longestUniqueSubstring(const string& s) {
 
     for (int right = 0; right < (int)s.size(); ++right) {
         unsigned char ch = static_cast<unsigned char>(s[right]);
-        if (last[ch] >= left) left = last[ch] + 1;
-        last[ch] = right;
+        if (last[ch] >= left) left = last[ch] + 1; // 현재 창 안의 중복이면 left를 중복 다음으로 건너뛴다.
+        last[ch] = right;                          // 마지막 등장 위치를 항상 최신으로 유지한다.
         best = max(best, right - left + 1);
     }
     return best;
@@ -59,7 +59,7 @@ long long maxFixedWindowSum(const vector<int>& a, int k) {
 
     long long best = cur;
     for (int right = k; right < (int)a.size(); ++right) {
-        cur += a[right] - a[right - k];
+        cur += a[right] - a[right - k]; // 새 원소를 더하고 창 밖으로 나간 원소를 뺀다.
         best = max(best, cur);
     }
     return best;
@@ -74,7 +74,7 @@ vector<int> findAnagramStarts(const string& text, const string& pattern) {
     int k = (int)pattern.size();
     for (int i = 0; i < (int)text.size(); ++i) {
         ++have[text[i] - 'a'];
-        if (i >= k) --have[text[i - k] - 'a'];
+        if (i >= k) --have[text[i - k] - 'a']; // 창 크기를 pattern 길이로 고정한다.
         if (i >= k - 1 && have == need) result.push_back(i - k + 1);
     }
     return result;

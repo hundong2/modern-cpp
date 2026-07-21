@@ -23,8 +23,8 @@ using namespace std;
 
 int countOccurrences(vector<int> a, int x) {
     sort(a.begin(), a.end());
-    auto lo = lower_bound(a.begin(), a.end(), x);
-    auto hi = upper_bound(a.begin(), a.end(), x);
+    auto lo = lower_bound(a.begin(), a.end(), x); // x 이상이 처음 나오는 위치다.
+    auto hi = upper_bound(a.begin(), a.end(), x); // x 초과가 처음 나오는 위치다.
     return (int)(hi - lo);
 }
 
@@ -35,16 +35,16 @@ long long minimumSpeed(const vector<int>& works, long long maxHours) {
     auto possible = [&](long long speed) {
         long long hours = 0;
         for (int w : works) {
-            hours += (w + speed - 1) / speed;
+            hours += (w + speed - 1) / speed; // 정수 나눗셈에서 올림을 구현하는 관용식이다.
             if (hours > maxHours) return false;
         }
         return true;
     };
 
     while (lo < hi) {
-        long long mid = lo + (hi - lo) / 2;
-        if (possible(mid)) hi = mid;
-        else lo = mid + 1;
+        long long mid = lo + (hi - lo) / 2; // overflow 안전한 중간값 계산이다.
+        if (possible(mid)) hi = mid;        // 가능한 속도면 더 작은 속도도 가능한지 왼쪽을 본다.
+        else lo = mid + 1;                  // 불가능하면 속도를 반드시 키워야 한다.
     }
     return lo;
 }
@@ -54,10 +54,10 @@ vector<pair<int, int>> mergeIntervals(vector<pair<int, int>> intervals) {
     vector<pair<int, int>> merged;
 
     for (auto [start, end] : intervals) {
-        if (merged.empty() || merged.back().second < start) {
+        if (merged.empty() || merged.back().second < start) { // 마지막 구간과 겹치지 않으면 새 구간을 연다.
             merged.push_back({start, end});
         } else {
-            merged.back().second = max(merged.back().second, end);
+            merged.back().second = max(merged.back().second, end); // 겹치면 끝점만 확장한다.
         }
     }
     return merged;
@@ -68,8 +68,8 @@ int lowerBoundManual(const vector<int>& a, int target) {
     int hi = (int)a.size();
     while (lo < hi) {
         int mid = lo + (hi - lo) / 2;
-        if (a[mid] >= target) hi = mid;
-        else lo = mid + 1;
+        if (a[mid] >= target) hi = mid; // mid도 답 후보이므로 버리지 않는다.
+        else lo = mid + 1;              // target보다 작으면 mid 이하가 모두 답이 아니다.
     }
     return lo;
 }
