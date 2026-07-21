@@ -6,13 +6,19 @@
 
 // 입력 계층이 발견한 오류다. 구조체는 관련 데이터를 하나의 타입으로 묶는다.
 struct ParseError {
+    // struct의 멤버는 기본적으로 public이므로 외부에서 error.message로 읽을 수 있다.
     std::string message;  // 오류 객체가 문자의 수명을 직접 소유한다.
 };
 
 // 도메인 계층이 사용하는 유효한 주문 수량이다.
 class Quantity {
+// class의 멤버는 기본적으로 private이다. public: 아래만 외부에 공개된다.
 public:
-    // explicit은 int가 Quantity로 암시적으로 바뀌는 실수를 막는다.
+    // 생성자는 반환형을 쓰지 않고 객체가 만들어질 때 초기 상태를 정한다.
+    // explicit은 int 하나가 Quantity로 암시적으로 변환되는 일을 막는다.
+    // 따라서 Quantity quantity = 3;은 금지되고 Quantity quantity{3};처럼 의도를 밝혀야 한다.
+    // int value는 호출자가 준 정수를 복사해 받는 매개변수다.
+    // 콜론 뒤 멤버 초기화 목록은 본문 실행 전에 value_를 value로 직접 초기화한다.
     explicit Quantity(int value) : value_{value} {}
 
     // 반환형 int는 호출자에게 정수 값을 복사해 돌려준다.
@@ -20,14 +26,18 @@ public:
     [[nodiscard]] int value() const { return value_; }
 
 private:
+    // private 멤버는 클래스 밖에서 직접 읽거나 바꿀 수 없다.
+    // 이렇게 내부 표현을 감추면 이후 검증 규칙을 한곳에서 유지하기 쉽다.
     int value_{};  // 중괄호 초기화는 기본값 0을 명확히 한다.
 };
 
-// 성공하면 Quantity, 실패하면 ParseError를 갖는 합 타입이다.
+// using은 새 클래스를 만드는 문법이 아니라 긴 타입에 읽기 좋은 별칭을 붙인다.
+// expected의 첫 타입은 성공값, 둘째 타입은 오류값이다.
 using ParseResult = std::expected<Quantity, ParseError>;
 
 // text는 const 참조처럼 읽지만 소유하지 않는다. 호출 중 원본이 살아 있어야 한다.
 [[nodiscard]] ParseResult parse_quantity(std::string_view text) {
+    // [[nodiscard]]는 호출자가 반환한 성공/실패 결과를 무시하면 경고하도록 돕는다.
     if (text.empty()) {  // 크기를 읽고 비교한 뒤 조건에 따라 분기하는 코드가 될 수 있다.
         // unexpected 임시 객체는 prvalue이며 반환 결과의 오류 저장소를 초기화한다.
         return std::unexpected(ParseError{"입력이 비어 있습니다."});
@@ -67,14 +77,17 @@ make_order_message(std::string_view raw) {
 }
 
 int main() {
+    // main은 프로그램이 시작되는 특별한 함수다. int 반환값은 종료 상태를 뜻한다.
     // 배열의 각 std::string은 문자열 버퍼의 소유권을 가진다.
     const std::string inputs[]{"12", "0", "1x"};
 
     for (const std::string& input : inputs) {  // const 참조로 각 원소의 복사를 피한다.
         auto result{make_order_message(input)};  // auto는 긴 expected 타입을 추론한다.
         if (result) {
+            // << 연산자는 오른쪽 값을 출력 스트림으로 차례로 보낸다.
             std::cout << "[성공] " << *result << '\n';
         } else {
+            // else는 바로 앞 if 조건이 거짓, 즉 오류 상태일 때 실행된다.
             std::cout << "[실패] " << result.error().message << '\n';
         }
     }
