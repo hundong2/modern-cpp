@@ -1,21 +1,9 @@
-/*
-Daily Modern C++ Syntax Drill - 2026-07-15
-
-Problem:
-  Given server load samples, find the first sample at or above a threshold and
-  compute the average load.
-
-Why this is useful:
-  The code repeats std::span, std::optional, vector initialization, range-based
-  for loops, and simple asserts.
-*/
-
-#include <cassert>
-#include <iomanip>
-#include <iostream>
-#include <optional>
-#include <span>
-#include <vector>
+#include <cassert>   // assert로 예상 결과를 실행 중 검증한다.
+#include <iomanip>   // 소수점 출력 형식을 조정하는 setprecision을 사용한다.
+#include <iostream>  // cout 표준 출력 스트림을 사용한다.
+#include <optional>  // 값 또는 값 없음을 나타내는 optional을 사용한다.
+#include <span>      // vector 원소를 소유하지 않고 읽는 span을 사용한다.
+#include <vector>    // 여러 부하 값을 연속 메모리에 소유한다.
 
 std::optional<std::size_t> first_index_at_least(
     // size_t는 음수가 없는 크기 타입이고 optional은 인덱스 부재를 별도 상태로 표현한다.
@@ -23,6 +11,7 @@ std::optional<std::size_t> first_index_at_least(
     int threshold) {
 
     for (std::size_t index = 0; index < values.size(); ++index) {
+        // for는 index를 0부터 시작해 크기보다 작은 동안 1씩 증가시킨다.
         // values[index]는 컨테이너 안 int를 가리키는 lvalue다. 여기서는 읽기만 한다.
         if (values[index] >= threshold) {
             return index;
@@ -35,6 +24,7 @@ std::optional<std::size_t> first_index_at_least(
 std::optional<double> average(std::span<const int> values) {
     // span은 원소를 소유하지 않는 읽기 전용 뷰이므로 원본이 호출 중 살아 있어야 한다.
     if (values.empty()) {
+        // empty는 원소 수가 0인지 bool로 반환하고 true면 조기 반환한다.
         return std::nullopt;
     }
 
@@ -48,6 +38,7 @@ std::optional<double> average(std::span<const int> values) {
 }
 
 void run_tests() {
+    // assert 조건은 디버그 빌드에서 거짓이면 프로그램을 중단해 실패를 드러낸다.
     {
         const std::vector<int> loads = {22, 48, 65, 81, 44};
         const auto index = first_index_at_least(loads, 80);
@@ -91,6 +82,7 @@ int main() {
 
     const auto mean = average(loads);
     if (mean) {
+        // fixed와 setprecision(1)은 이후 부동소수점 출력을 소수 첫째 자리로 맞춘다.
         std::cout << "average load: " << std::fixed << std::setprecision(1) << *mean << '\n';
     }
 

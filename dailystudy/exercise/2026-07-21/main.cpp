@@ -46,6 +46,7 @@ using ParseResult = std::expected<Quantity, ParseError>;
     int number{0};  // 지역 자동 객체이며 함수 호출이 끝나면 수명이 끝난다.
     for (const char ch : text) {  // 반복마다 문자를 값으로 복사해 검사한다.
         if (ch < '0' || ch > '9') {
+            // ||는 왼쪽이 참이면 오른쪽 비교를 생략하는 단락 평가 논리합이다.
             return std::unexpected(ParseError{"숫자가 아닌 문자가 있습니다."});
         }
         // number는 이름 있는 객체이므로 lvalue다. 오른쪽 계산 결과는 prvalue다.
@@ -53,6 +54,7 @@ using ParseResult = std::expected<Quantity, ParseError>;
     }
 
     if (number < 1 || number > 100) {
+        // 유효 범위를 벗어나면 Quantity를 만들지 않고 오류 경로로 조기 반환한다.
         return std::unexpected(ParseError{"수량은 1~100이어야 합니다."});
     }
 
@@ -73,6 +75,7 @@ make_order_message(std::string_view raw) {
 
     // operator* 결과는 Quantity&인 lvalue다. const 참조는 복사 없이 그 객체에 바인딩된다.
     const Quantity& quantity{*parsed};
+    // to_string은 int를 소유 string prvalue로 바꾸고 +는 새 결과 문자열을 만든다.
     return std::string{"주문 수량: "} + std::to_string(quantity.value());
 }
 
@@ -93,6 +96,7 @@ int main() {
     }
 
     auto movable{make_order_message("3")};
+    // auto는 expected<string, ParseError> 타입을 추론한다. movable은 이름 있는 lvalue다.
     // std::move(movable).value()는 저장된 string을 가리키는 xvalue를 만든다.
     // 새 문자열이 버퍼 소유권을 이동받는다. movable은 유효하지만 값은 미지정 상태다.
     std::string owned_message{std::move(movable).value()};

@@ -16,6 +16,7 @@ using DivideResult = std::expected<int, DivideError>;
     // [[nodiscard]]는 나눗셈의 성공/실패 결과를 버리는 실수를 경고하게 한다.
     // TODO 연습: denominator가 0이면 std::unexpected와 한글 오류를 반환하라.
     if (denominator == 0) {  // 비교 결과에 따라 나눗셈 여부를 조건 분기한다.
+        // unexpected prvalue가 DivideError를 expected의 오류 저장소에 구성한다.
         return std::unexpected(DivideError{"0으로 나눌 수 없습니다."});
     }
 
@@ -37,6 +38,7 @@ int main() {
     }
 
     if (failure || failure.error().reason.empty()) {
+        // failure가 성공이면 왼쪽만으로 참이라 오른쪽 error 접근을 실행하지 않는다.
         // empty()는 문자열 길이가 0인지 bool로 알려주는 const 멤버 함수다.
         std::cout << "[검증 실패] 오류 경로를 확인하세요.\n";
         return 1;
@@ -44,6 +46,7 @@ int main() {
 
     // *success는 const int&로 얻는 lvalue 식이며 값을 새로 만들지 않는다.
     std::cout << "20 / 4 = " << *success << '\n';
+    // '\n'은 줄바꿈 문자 하나이며 endl과 달리 스트림 강제 flush를 요구하지 않는다.
     std::cout << "오류: " << failure.error().reason << '\n';
     std::cout << "[검증 완료] 성공값과 오류값을 모두 확인했습니다.\n";
 

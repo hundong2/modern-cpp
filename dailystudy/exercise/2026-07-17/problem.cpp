@@ -1,8 +1,8 @@
-#include <charconv>
-#include <cstdlib>
-#include <iostream>
-#include <optional>
-#include <string_view>
+#include <charconv>     // 예외 없이 문자를 정수로 바꾸는 from_chars를 사용한다.
+#include <cstdlib>      // std::exit와 EXIT_FAILURE로 검증 실패를 종료한다.
+#include <iostream>     // cout과 cerr로 결과·오류를 출력한다.
+#include <optional>     // 유효한 양수 또는 값 없음 상태를 표현한다.
+#include <string_view>  // 입력 문자를 복사하거나 소유하지 않고 읽는다.
 
 // 변환 실패는 정상적인 입력 결과다. -1 같은 마법 값이나 예외 대신 optional로 표현한다.
 [[nodiscard]] std::optional<int> parse_positive_count(std::string_view text) {
@@ -14,6 +14,7 @@
     const auto [next, error] = std::from_chars(first, last, value);
 
     if (error != std::errc{} || next != last || value <= 0) {
+        // 세 조건 중 하나라도 참이면 전체 입력이 유효한 양수가 아니다.
         return std::nullopt;
     }
     return value;
@@ -27,6 +28,7 @@
 }
 
 void require(bool condition, std::string_view explanation) {
+    // 실패 설명 view는 호출 중 문자열 리터럴을 빌리며 별도 할당이 없다.
     if (!condition) {
         std::cerr << "[FAILED] " << explanation << '\n';
         std::exit(EXIT_FAILURE);
@@ -45,6 +47,7 @@ int main() {
     require(!mixed, "the whole input must be numeric");
     require(pages_to_read(valid, 3) == 36, "present optionals are used");
     require(pages_to_read(std::nullopt, 3) == 30, "empty optionals use the default");
+    // nullopt는 optional의 '값 없음' 상태를 명시적으로 만드는 태그 객체다.
 
     std::cout << "valid daily pages: " << *valid << '\n';
     std::cout << "three-day fallback plan: " << pages_to_read(std::nullopt, 3) << '\n';

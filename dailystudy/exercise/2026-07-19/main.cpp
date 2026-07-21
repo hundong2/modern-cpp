@@ -1,10 +1,10 @@
-#include <cassert>
-#include <iostream>
-#include <memory>
-#include <string>
-#include <string_view>
-#include <utility>
-#include <vector>
+#include <cassert>      // assert로 소유권 이전과 저장 결과를 검증한다.
+#include <iostream>     // cout으로 저장된 메시지를 출력한다.
+#include <memory>       // 단독 소유 스마트 포인터 unique_ptr와 make_unique를 사용한다.
+#include <string>       // 수신자와 본문 문자 버퍼를 소유한다.
+#include <string_view>  // 이름과 주소를 복사하지 않고 읽는다.
+#include <utility>      // std::move로 소유권 이동 후보인 xvalue를 만든다.
+#include <vector>       // RecordingSink가 Message 목록을 소유한다.
 
 struct Message {
     // struct 멤버는 기본 public이며 두 string이 문자 버퍼를 각각 소유한다.
@@ -16,6 +16,7 @@ class MessageSink {
 public:
     // = 0은 순수 가상 함수 계약이며 가상 소멸자는 다형 삭제에 필요하다.
     virtual ~MessageSink() = default; // 가상 함수 테이블(vtable)을 쓰는 구현이 일반적이나 표준이 강제하지는 않는다.
+    // const Message&는 메시지를 소유하지 않고 읽으며 =0은 구현을 파생 클래스에 맡긴다.
     virtual void send(const Message& message) = 0;
 };
 
@@ -23,9 +24,11 @@ class RecordingSink final : public MessageSink {
 public:
     // final은 추가 상속을 막고 override는 기반 함수와 서명을 검사하게 한다.
     void send(const Message& message) override { messages_.push_back(message); } // lvalue message를 vector에 복사한다.
+    // const 참조 반환은 vector 복사를 피하지만 RecordingSink보다 오래 보관하면 안 된다.
     [[nodiscard]] const std::vector<Message>& messages() const { return messages_; }
 
 private:
+    // private vector가 모든 복사된 Message와 그 string 버퍼의 수명을 관리한다.
     std::vector<Message> messages_;
 };
 
@@ -40,7 +43,9 @@ public:
     }
 
     void welcome(std::string_view name, std::string_view address) {
+        // name과 address는 호출자가 소유한 문자를 잠시 빌리며 함수 밖에 저장하지 않는다.
         std::string body = "Hello ";
+        // +=는 기존 body 버퍼 뒤에 문자를 덧붙이며 필요하면 버퍼를 재할당한다.
         body += name;
         body += ", welcome!";
         // Message{...}는 prvalue. body는 xvalue로 전달되어 문자열 버퍼 이전이 가능하다.
@@ -54,8 +59,10 @@ private:
 };
 
 int main() {
+    // main은 프로그램 진입점이며 끝까지 도달하면 정상 종료 코드 0을 반환한다.
     auto recorder = std::make_unique<RecordingSink>(); // 반환 unique_ptr prvalue로 recorder를 직접 초기화한다.
     RecordingSink* observer = recorder.get(); // 비소유 포인터. recorder/service보다 오래 사용하면 댕글링된다.
+    // get은 소유권을 넘기지 않고 같은 객체 주소만 돌려준다. delete를 직접 호출하면 안 된다.
 
     WelcomeService service{std::move(recorder)}; // recorder의 소유권이 service로 이동한다.
     assert(recorder == nullptr);
@@ -65,6 +72,7 @@ int main() {
     assert(observer->messages().front().body == "Hello Mina, welcome!");
 
     const Message& saved = observer->messages().front();
+    // front는 첫 Message의 lvalue 참조를 돌려준다. saved는 vector 원소 수명에 의존한다.
     std::cout << "To: " << saved.recipient << '\n' << saved.body << '\n';
     std::cout << "[TESTS] ownership architecture example passed\n";
 }

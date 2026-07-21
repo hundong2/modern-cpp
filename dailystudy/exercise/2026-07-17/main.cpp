@@ -1,11 +1,11 @@
-#include <algorithm>
-#include <cstdlib>
-#include <iostream>
-#include <optional>
-#include <string>
-#include <string_view>
-#include <utility>
-#include <vector>
+#include <algorithm>    // 조건에 맞는 원소를 찾는 std::find_if를 사용한다.
+#include <cstdlib>      // 실패 시 std::exit와 EXIT_FAILURE를 사용한다.
+#include <iostream>     // cout과 cerr로 결과와 오류를 출력한다.
+#include <optional>     // 책을 찾았거나 못 찾은 상태를 optional로 표현한다.
+#include <string>       // 책 식별자·제목·메시지의 문자를 소유한다.
+#include <string_view>  // 조회 문자열을 복사하지 않고 읽는다.
+#include <utility>      // std::move로 소유권 이동 후보를 만든다.
+#include <vector>       // 메모리 저장소가 Book 목록을 소유한다.
 
 struct Book {
     // struct 멤버는 기본 public이며 두 string이 문자 저장 공간을 직접 소유한다.
@@ -19,7 +19,9 @@ class BookRepository {
 public:
     // 가상 소멸자는 기반 포인터로 파생 객체를 삭제할 때 전체 소멸을 보장한다.
     virtual ~BookRepository() = default; // 기반 포인터 삭제 시 파생 소멸자까지 호출되도록 가상화한다.
+    // virtual과 =0은 파생 저장소가 구현해야 하는 순수 가상 함수 계약이다.
     [[nodiscard]] virtual std::optional<Book> find_by_id(std::string_view id) const = 0;
+    // Book을 값으로 받아 저장소가 복사 또는 이동을 통해 독립 소유하게 한다.
     virtual void save(Book book) = 0;
 };
 
@@ -33,6 +35,7 @@ public:
     }
 
     [[nodiscard]] std::optional<Book> find_by_id(std::string_view id) const override {
+        // override는 기반 클래스의 가상 함수 서명과 정확히 일치하는지 검사한다.
         // [id]는 string_view를 람다 객체 안에 값 복사한다. book은 각 vector 원소의 const lvalue 참조다.
         const auto found = std::find_if(books_.begin(), books_.end(), [id](const Book& book) {
             return book.id == id;
@@ -45,6 +48,7 @@ public:
     }
 
     void save(Book book) override {
+        // &book 캡처는 지역 매개변수의 주소를 빌린다. 람다는 이 함수 호출 안에서만 사용된다.
         const auto found = std::find_if(books_.begin(), books_.end(), [&book](const Book& stored) {
             return stored.id == book.id;
         });
@@ -62,6 +66,7 @@ private:
 };
 
 enum class LoanStatus {
+    // enum class는 대출 결과를 제한된 이름 집합으로 만들고 정수와의 혼용을 막는다.
     borrowed,
     returned,
     not_found,
@@ -70,8 +75,8 @@ enum class LoanStatus {
 };
 
 struct LoanResult {
-    LoanStatus status;
-    std::string message;
+    LoanStatus status;    // 결과 분기에 사용하는 타입 안전한 상태다.
+    std::string message;  // 사용자 메시지의 문자 버퍼를 결과가 소유한다.
 };
 
 class LendingService {
@@ -86,6 +91,7 @@ public:
         // 반환 optional prvalue로 지역 객체를 초기화한다. 저장소와 독립된 Book 복사본을 소유한다.
         auto book = repository_.find_by_id(id);
         if (!book) {
+            // optional이 비었으면 조기 반환해 이후 -> 접근을 안전하게 막는다.
             return {LoanStatus::not_found, "book was not found"};
         }
         if (book->is_borrowed) {
@@ -93,6 +99,7 @@ public:
         }
 
         book->is_borrowed = true;
+        // ->는 optional 내부 Book의 public 멤버에 접근한다.
         const std::string title = book->title;
         repository_.save(std::move(*book));
         return {LoanStatus::borrowed, title + " was borrowed"};
@@ -114,10 +121,12 @@ public:
     }
 
 private:
+    // private 비소유 참조는 외부 저장소 구현을 감추고 인터페이스에만 의존한다.
     BookRepository& repository_;
 };
 
 void require(bool condition, std::string_view explanation) {
+    // bool 조건이 거짓일 때만 오류를 출력하고 프로세스를 실패 코드로 종료한다.
     if (!condition) {
         std::cerr << "[FAILED] " << explanation << '\n';
         std::exit(EXIT_FAILURE);
@@ -129,6 +138,7 @@ void print_result(const LoanResult& result) {
 }
 
 int main() {
+    // 중첩 중괄호는 vector<Book> 매개변수와 그 안 Book 원소들을 직접 초기화한다.
     InMemoryBookRepository repository{{
         {"cpp-101", "C++ Foundations", false},
         {"arch-20", "Small Software Architecture", true},

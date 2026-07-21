@@ -1,15 +1,15 @@
-#include <cassert>
-#include <iostream>
-#include <string>
-#include <variant>
+#include <cassert>      // assert로 각 상태의 출력 메시지를 검증한다.
+#include <iostream>     // cout으로 최종 검증 문구를 출력한다.
+#include <string>       // 성공 값과 반환 메시지 문자를 소유한다.
+#include <variant>      // Loading, Success, Failure 중 하나를 저장한다.
 
 struct Loading {};
 // 빈 구조체도 서로 다른 상태를 타입으로 구분하며 멤버는 기본 public이다.
 struct Success {
-    std::string value;
+    std::string value;  // 성공 결과 문자 버퍼를 직접 소유한다.
 };
 struct Failure {
-    int error_code{};
+    int error_code{};  // 오류 코드를 0으로 값 초기화한다.
 };
 
 using Result = std::variant<Loading, Success, Failure>; // 동시에 한 후보 객체의 수명만 활성 상태다.
@@ -24,6 +24,7 @@ std::string message(const Result& result) {
         [](const auto& current) -> std::string {
             using T = std::decay_t<decltype(current)>; // const T&에서 실제 상태 타입 T만 얻는다.
             if constexpr (std::is_same_v<T, Loading>) {
+                // if constexpr는 T에 맞지 않는 다른 멤버 접근 분기를 인스턴스화하지 않는다.
                 return "불러오는 중";
             } else if constexpr (std::is_same_v<T, Success>) {
                 return "성공: " + current.value;
@@ -35,6 +36,7 @@ std::string message(const Result& result) {
 }
 
 int main() {
+    // main은 프로그램 진입점이며 끝까지 실행되면 정상 종료 코드 0이다.
     // Success{...}는 prvalue이며 Result 내부의 활성 저장소를 초기화한다.
     Result result{Loading{}}; // 오른쪽 빈 객체는 prvalue, result는 저장 공간을 가진 지역 lvalue다.
     assert(message(result) == "불러오는 중");
@@ -44,6 +46,7 @@ int main() {
     assert(message(result) == "성공: 설정 저장됨");
 
     result = Failure{404};
+    // 대입은 Success와 내부 string 수명을 끝낸 뒤 Failure를 활성화한다.
     assert(message(result) == "실패: 오류 404");
 
     std::cout << "[검증 완료] Result 연습 문제가 통과했습니다.\n";

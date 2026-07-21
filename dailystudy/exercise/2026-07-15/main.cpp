@@ -1,26 +1,13 @@
-/*
-Daily Modern C++ Exercise - 2026-07-15
-
-Theme:
-  Route tiny server commands while practicing architecture boundaries.
-
-What to notice:
-  - parse_command owns parsing and returns std::expected.
-  - CommandRouter owns business rules.
-  - MemoryLogger is an output adapter used by tests and the demo.
-  - RouteScope uses RAII to keep active route counting correct.
-*/
-
-#include <algorithm>
-#include <cassert>
-#include <concepts>
-#include <expected>
-#include <iostream>
-#include <span>
-#include <string>
-#include <string_view>
-#include <utility>
-#include <vector>
+#include <algorithm>    // 범위에서 값을 찾는 std::ranges::find를 사용한다.
+#include <cassert>      // assert로 예상 결과를 실행 중 검증한다.
+#include <concepts>     // concept 반환형 조건 std::same_as를 사용한다.
+#include <expected>     // 성공값 또는 오류 문자열을 담는 expected를 사용한다.
+#include <iostream>     // cout과 cerr 표준 스트림에 결과를 출력한다.
+#include <span>         // 컨테이너를 소유하지 않고 바라보는 span을 사용한다.
+#include <string>       // 문자 버퍼를 소유하는 string을 사용한다.
+#include <string_view>  // 문자를 복사하지 않는 읽기 전용 view를 사용한다.
+#include <utility>      // 이동 가능성을 표시하는 std::move를 사용한다.
+#include <vector>       // 명령과 로그를 동적 연속 배열로 저장한다.
 
 enum class CommandKind {
     // enum class는 열거자 이름을 타입 안에 가두고 정수와의 암시적 변환을 막는다.
@@ -37,8 +24,8 @@ struct Command {
 };
 
 struct RouteReport {
-    int success_count{};
-    int failure_count{};
+    int success_count{};  // {}로 성공 횟수를 0으로 값 초기화한다.
+    int failure_count{};  // 실패 횟수도 독립된 정수 상태로 저장한다.
 };
 
 template <typename Logger>
@@ -52,12 +39,15 @@ public:
     // 생성자는 반환형이 없다. explicit은 int가 RouteScope로 저절로 변환되는 것을 막는다.
     // 초기화 목록은 참조 멤버를 매개변수가 가리키는 원본에 바인딩한다.
     explicit RouteScope(int& active_routes) : active_routes_{active_routes} { // &는 원본 카운터에 바인딩한다.
+        // 전위 ++는 원본 카운터를 즉시 1 증가시킨 뒤 증가된 값을 나타낸다.
         ++active_routes_;
     }
 
+    // RAII 객체의 중복 감소를 막기 위해 복사 생성과 대입을 컴파일 단계에서 금지한다.
     RouteScope(const RouteScope&) = delete;
     RouteScope& operator=(const RouteScope&) = delete;
 
+    // 소멸자는 반환형이 없고 모든 반환 경로에서 자동 호출되어 카운터를 복원한다.
     ~RouteScope() {
         --active_routes_;
     }
@@ -69,10 +59,12 @@ private:
 
 class MemoryLogger {
 public:
+    // string_view는 빌린 문자이고 emplace_back은 vector 안에 소유 string을 직접 만든다.
     void write(std::string_view message) {
         messages_.emplace_back(message);
     }
 
+    // 반환 span은 vector를 소유하지 않는다. Logger가 살아 있고 재할당되지 않는 동안만 유효하다.
     [[nodiscard]] std::span<const std::string> messages() const {
         return messages_;
     }
@@ -82,6 +74,7 @@ private:
 };
 
 std::expected<CommandKind, std::string> parse_kind(std::string_view word) {
+    // 각 if는 문자열을 비교하고 참이면 해당 enum 값을 즉시 반환한다.
     if (word == "start") {
         return CommandKind::start;
     }
@@ -97,11 +90,13 @@ std::expected<CommandKind, std::string> parse_kind(std::string_view word) {
 }
 
 std::expected<Command, std::string> parse_command(std::string_view line) {
+    // size_t는 길이와 위치를 나타내는 부호 없는 정수 타입이다.
     const std::size_t space = line.find(' ');
     if (space == std::string_view::npos) {
         return std::unexpected("expected format: <start|stop|status> <target>");
     }
 
+    // substr 결과 view는 line의 문자를 빌리므로 원본보다 오래 사용하면 안 된다.
     const std::string_view kind_text = line.substr(0, space);
     const std::string_view target_text = line.substr(space + 1);
     if (target_text.empty()) {
@@ -113,10 +108,12 @@ std::expected<Command, std::string> parse_command(std::string_view line) {
         return std::unexpected(kind.error());
     }
 
+    // string(target_text)는 문자를 복사해 소유하는 prvalue이고 Command를 직접 초기화한다.
     return Command{*kind, std::string(target_text)};
 }
 
 std::string_view to_text(CommandKind kind) {
+    // switch는 enum 값을 비교해 일치하는 case로 분기한다. 각 return이 함수를 끝낸다.
     switch (kind) {
     case CommandKind::start:
         return "start";
@@ -130,6 +127,7 @@ std::string_view to_text(CommandKind kind) {
 }
 
 bool is_allowed_target(std::string_view target) {
+    // constexpr 배열은 컴파일 시간에도 사용할 수 있는 고정 허용 목록이다.
     constexpr std::string_view allowed_targets[] = {"api", "database", "cache"};
     return std::ranges::find(allowed_targets, target) != std::ranges::end(allowed_targets);
 }
@@ -137,10 +135,12 @@ bool is_allowed_target(std::string_view target) {
 template <CommandLogger Logger>
 class CommandRouter {
 public:
+    // 참조 멤버는 logger와 카운터를 소유하지 않으므로 두 객체가 router보다 오래 살아야 한다.
     CommandRouter(Logger& logger, int& active_routes)
         : logger_{logger}, active_routes_{active_routes} {}
 
     std::expected<RouteReport, std::string> route(std::span<const std::string_view> lines) {
+        // RouteScope 지역 객체가 조기 반환에서도 활성 경로 수를 원래 값으로 복구한다.
         RouteScope scope{active_routes_};
         RouteReport report{};
 
@@ -153,6 +153,7 @@ public:
             }
 
             if (!is_allowed_target(parsed->target)) {
+                // ->는 expected 내부 Command의 public 멤버를 참조한다.
                 ++report.failure_count;
                 return std::unexpected(
                     "line " + std::to_string(index + 1) + ": target is not allowed: " +
@@ -169,11 +170,13 @@ public:
     }
 
 private:
+    // private 멤버는 외부 코드가 직접 접근할 수 없는 구현 세부사항이다.
     Logger& logger_;
     int& active_routes_;
 };
 
 void run_tests() {
+    // 중괄호 블록은 테스트마다 지역 객체 수명을 분리한다.
     {
         const auto parsed = parse_command("start api");
         assert(parsed.has_value());
@@ -223,6 +226,7 @@ void run_tests() {
 }
 
 int main() {
+    // main은 프로그램 진입점이고 0은 정상, 0이 아닌 값은 실패 종료를 뜻한다.
     run_tests();
 
     MemoryLogger logger;
@@ -247,6 +251,7 @@ int main() {
     std::cout << "  active routes      : " << active_routes << '\n';
 
     for (const std::string& message : logger.messages()) {
+        // const 참조로 각 로그 문자열의 버퍼 복사를 피한다.
         std::cout << "[LOG] " << message << '\n';
     }
 
