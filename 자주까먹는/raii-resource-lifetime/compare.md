@@ -3,6 +3,28 @@
 네 언어 모두 자원을 안전하게 반환하는 관용구가 있지만, 메모리 회수와 파일·락 같은 외부
 자원의 **결정적 반환(deterministic release)**을 같은 것으로 취급하면 안 된다.
 
+## 이 비교에서 가장 중요한 질문
+
+**“변수가 안 보이게 되는 순간, 메모리와 파일이 모두 즉시 정리되는가?”**를 언어마다
+따로 묻는다. 메모리 회수와 파일·락 반환은 같은 일이 아니다.
+
+```mermaid
+flowchart TD
+    A["스코프를 떠남"] --> Q{"언어와 자원 종류"}
+    Q --> CPP["C++<br/>소유 객체 소멸자 실행"]
+    Q --> CS["C#<br/>using이면 Dispose 실행<br/>메모리는 GC가 나중에 회수"]
+    Q --> PY["Python<br/>with이면 __exit__ 실행<br/>메모리는 런타임 관리"]
+    Q --> RS["Rust<br/>소유 값의 Drop 실행"]
+    CPP --> R["파일 닫기·락 반환"]
+    CS --> R
+    PY --> R
+    RS --> R
+```
+
+- 결정적 반환은 “정해진 코드 지점에서 반환 함수가 실행된다”는 뜻이다.
+- GC(Garbage Collection)는 더 이상 도달할 수 없는 관리 메모리를 런타임이 찾는 방식이다.
+- 모르는 용어는 [공통 용어집](../GLOSSARY.md)에서 먼저 확인한다.
+
 ## 핵심 비교
 
 | 관점 | C++ | C# | Python | Rust |
@@ -14,6 +36,12 @@
 | 공유 소유 | `shared_ptr/weak_ptr` | GC reachability/`WeakReference` | 런타임 참조+`weakref` | `Rc/Weak`, `Arc/Weak` |
 | 누수 가능성 | 가능 | 가능 | 가능 | 가능 |
 
+초보자가 기억할 결론은 다음과 같다.
+
+- C++와 Rust는 일반적인 스코프 종료가 소유 객체의 정리와 직접 연결된다.
+- C#과 Python도 파일·락에는 각각 `using`, `with`라는 명시적인 범위 도구를 쓴다.
+- 네 언어 모두 순환 참조, 강제 종료, 잘못된 소유권 설계로 자원 누수가 생길 수 있다.
+
 ## C++: 객체 수명이 자원 수명
 
 ```cpp
@@ -24,6 +52,9 @@ use_shared_state();
 `lock`의 생성자가 mutex를 잠그고 소멸자가 푼다. 복사·이동 가능 여부, 소멸 순서, storage
 duration을 타입 시스템과 코드 구조로 직접 제어한다. 메모리에는 `unique_ptr`보다 표준
 컨테이너와 값 타입이 더 단순할 수 있다. C API 핸들은 반드시 짝이 맞는 deleter가 필요하다.
+
+여기서 mutex(mutual exclusion)는 한 번에 한 스레드만 공유 데이터에 들어가게 하는 잠금이고,
+deleter는 소유 객체가 파괴될 때 실제 반환 함수를 호출하는 삭제 정책이다.
 
 ## C#: `IDisposable`과 `using`
 
@@ -95,10 +126,10 @@ C++ `lock_guard`, C# `lock`/`Monitor`의 `try/finally`, Python `with lock:`, Rus
 불변식을 위한 mutex가 아니라는 점, Rust mutex poisoning 정책, C++ mutex 소유 스레드와
 소멸 규칙 등 세부 계약에 있다. 어떤 언어든 guard보다 보호 데이터가 오래 살아야 한다.
 
-## FFI 경계 체크리스트
+## FFI(Foreign Function Interface) 경계 체크리스트
 
 - 할당한 런타임과 해제하는 런타임/API를 일치시킨다.
 - C++ 소멸자, C# `Dispose`, Python context manager, Rust `Drop` 중 최종 책임자를 하나만 둔다.
 - raw handle을 넘기면 소유권 이전인지 단순 대여인지 함수 이름과 문서로 표시한다.
-- C ABI 밖으로 C++ 예외나 Rust panic을 그대로 넘기지 않는다.
+- C ABI(Application Binary Interface, 이진 호출 규약) 밖으로 C++ 예외나 Rust panic을 그대로 넘기지 않는다.
 - 비동기 callback이 wrapper보다 오래 살 수 있으면 공유 상태·취소·join 정책을 별도로 둔다.

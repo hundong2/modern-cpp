@@ -5,6 +5,37 @@
 객체와 자원이 메모리에서 언제 살아 있고, CPU와 운영체제가 어디에 개입하는지를
 구분하는 것이 목표다.
 
+## 한 줄 요약과 읽는 순서
+
+**이 문서는 “안전한 객체를 만들고, 자원을 복사하지 않고 넘기며, 여러 작업자가 안전하게
+사용하고, 실행할 함수를 효율적으로 고르는 방법”을 설명한다.**
+
+처음 읽는다면 다음 용어만 먼저 이해하면 된다.
+
+| 용어 | 가장 간단한 뜻 |
+|---|---|
+| 객체(object) | 타입과 수명을 가진 데이터 상자 |
+| 자원(resource) | 사용 후 반드시 돌려줘야 하는 메모리·파일·락 |
+| 소유권(ownership) | 자원을 마지막에 돌려줄 책임 |
+| 스레드(thread) | 한 프로세스 안에서 실행되는 작업자 |
+| 컴파일 타임 | 프로그램을 실행하기 전, 컴파일러가 코드를 검사하는 때 |
+| 런타임 | 완성된 프로그램이 실제로 실행되는 때 |
+
+그 밖의 `RAII`, `ABI`, `CRTP`, `CAS`, `SSO`, `IOCP` 같은 축약어는
+[공통 용어집](../GLOSSARY.md)에서 전체 이름과 비유를 확인한다.
+
+```mermaid
+flowchart TD
+    A["1. 클래스 안전성<br/>잘못된 객체 생성 차단"] --> B["2. 이동<br/>큰 자원의 소유권 이전"]
+    B --> C["3. 스마트 포인터<br/>반환 책임 자동화"]
+    C --> D["4. 동시성<br/>여러 스레드의 안전한 공유"]
+    D --> E["5. 다형성<br/>실행할 구현 선택"]
+    E --> F["6. 이벤트 I/O와 코루틴<br/>많은 대기 작업 처리"]
+```
+
+각 단계는 앞 단계를 사용한다. 예를 들어 코루틴도 내부 상태를 가진 객체이므로 객체 수명과
+소유권을 이해하지 못하면 중단된 코루틴 프레임을 언제 파괴해야 하는지 판단하기 어렵다.
+
 ## 먼저 바로잡을 핵심 표현
 
 제공된 설명은 좋은 직관을 담고 있지만 다음 문장을 절대 법칙처럼 이해하면 안 된다.
@@ -13,18 +44,19 @@
   포인터를 통한 논리적 변경을 제한하고, `noexcept`는 예외 전파 계약과 일부 라이브러리의
   이동 선택에 영향을 준다. 인라인 여부는 최적화기와 호출 지점 정보가 결정한다.
 - 이동은 일반적으로 “포인터 하나를 훔치는 것”만은 아니다. 타입마다 이동 구현이 다르고,
-  작은 문자열 최적화(SSO)처럼 내부 바이트를 복사할 수도 있다. 이동된 원본은 파괴 및
+  작은 문자열 최적화(SSO, Small String Optimization)처럼 내부 바이트를 복사할 수도 있다. 이동된 원본은 파괴 및
   대입 가능한 유효하지만 값이 미지정된 상태(valid but unspecified state)인 것이 보통이다.
 - `unique_ptr`의 기본 삭제자는 일반 구현에서 raw pointer와 같은 크기와 비용이지만 표준이
   모든 ABI에 “오버헤드 0”을 보장하는 것은 아니다. 상태 있는 deleter는 객체 크기를 늘린다.
 - `std::atomic<T>`와 원자적 `shared_ptr` 연산이 항상 lock-free인 것은 아니다.
   `is_lock_free()` 또는 `is_always_lock_free`로 확인해야 한다. 높은 경합에서는 캐시 라인
   소유권 이동 때문에 원자 연산도 비싸다.
-- `counter++`는 x86에서 `lock add`나 `lock xadd`가 될 수 있고 CAS 반복문이 될 수도 있다.
+- `counter++`는 x86에서 `lock add`나 `lock xadd`가 될 수 있고
+  CAS(Compare-And-Swap, 비교 후 교환) 반복문이 될 수도 있다.
   반드시 `LOCK CMPXCHG` 하나로 번역된다고 단정할 수 없다.
 - `final`은 역가상화(devirtualization)에 도움을 주는 정보이지 최적화를 보장하지 않는다.
   반대로 컴파일러가 구체 타입을 이미 알면 `final` 없이도 가상 호출을 직접 호출로 바꿀 수 있다.
-- C++ 코루틴은 I/O, 스케줄러, 스레드 풀을 제공하지 않는다. `co_await`가 호출 스레드를
+- C++ 코루틴은 I/O(Input/Output, 입출력), 스케줄러, 스레드 풀을 제공하지 않는다. `co_await`가 호출 스레드를
   운영체제에 “반환”하는 것도 아니다. awaiter와 epoll/IOCP 같은 런타임의 연결이 있어야 한다.
 
 ## 학습 순서와 파일 목차
@@ -38,7 +70,10 @@
 5. [`compare.md`](./compare.md): 같은 문제를 C#과 Python에서는 어떻게 해결하는지 비교한다.
 6. [`CMakeLists.txt`](./CMakeLists.txt): C++17 대상 두 개와 C++20 대상을 경고 옵션과 함께 빌드한다.
 
-## 전체 그림: 소스에서 CPU 실행까지
+## 전체 그림: 소스에서 CPU(Central Processing Unit) 실행까지
+
+CPU(Central Processing Unit)는 기계어 명령을 실제로 실행하는 중앙 처리 장치다.
+다음 화살표는 사람이 작성한 텍스트가 실행 가능한 명령으로 변환되는 순서를 뜻한다.
 
 ```text
 .cpp
@@ -57,6 +92,21 @@ C++ 한 줄과 어셈블리 한 줄은 일대일 대응하지 않는다. 생성�
 ## 1. 방어적 클래스 설계와 안전성
 
 ### 왜 필요한가
+
+한 줄 요약: **잘못된 객체를 먼저 만든 뒤 검사하지 말고, 잘못된 객체가 아예 만들어지지
+않게 타입을 설계한다.**
+
+호텔이 “아무 종이나 객실 카드로 인정한 뒤 나중에 확인”하면 사고가 난다. `explicit`은
+정식 카드 발급 절차를 거치게 하고, `= delete`는 복제하면 안 되는 마스터키의 복사기를
+없애는 것과 비슷하다.
+
+```mermaid
+flowchart LR
+    A["입력값<br/>크기·이름"] --> B{"생성자에서<br/>조건 검사"}
+    B -->|"유효함"| C["완성된 객체<br/>항상 사용 가능"]
+    B -->|"잘못됨"| D["생성 실패<br/>외부에 객체 없음"]
+    C --> E["소멸자<br/>보유 자원 반환"]
+```
 
 컴파일러가 생성하는 변환과 특수 멤버 함수는 단순 값 타입에는 편리하지만, 파일·락·힙
 버퍼 같은 유일 자원에는 잘못된 의미를 만들 수 있다. 런타임에서 이중 해제나 불변식
@@ -82,6 +132,25 @@ ABI 세부다. `explicit`과 `= delete`는 주로 컴파일 타임 규칙이므�
 
 ### 왜 필요한가
 
+한 줄 요약: **큰 창고의 물건을 전부 복사하지 않고, 창고 열쇠와 반납 책임을 새 객체에
+넘기는 방법이다.**
+
+```mermaid
+flowchart TB
+    subgraph Before["이동 전"]
+        A["원본 객체<br/>주소와 크기 보유"] --> H["힙 메모리<br/>큰 데이터"]
+        B["새 객체<br/>아직 없음"]
+    end
+    subgraph After["이동 후"]
+        C["원본 객체<br/>빈 유효 상태"]
+        D["새 객체<br/>주소와 크기 보유"] --> H2["같은 힙 메모리<br/>데이터 복사 없음"]
+    end
+    Before -->|"소유권 이전"| After
+```
+
+그림의 핵심은 힙 데이터가 움직인 것이 아니라 **주소와 반환 책임이 옮겨졌다**는 점이다.
+단, 모든 타입이 이런 구조는 아니므로 이동 비용은 타입 구현을 확인해야 한다.
+
 복사만 가능하면 반환값이나 컨테이너 재배치 때 자원을 새로 만들고 내용을 복제해야 할 수
 있다. 이동 생성자는 곧 수명이 끝나거나 사용권을 포기한 객체의 표현을 재사용할 통로다.
 `std::move(x)` 자체는 대략 `static_cast<T&&>(x)`인 값 범주 변환이며 어떤 생성자나
@@ -98,7 +167,8 @@ ABI 세부다. `explicit`과 `= delete`는 주로 컴파일 타임 규칙이므�
   forwarding reference 문맥의 `std::forward`가 필요하다.
 - 이동 후 원본의 구체 값은 타입 계약에 따르며, 표준 타입도 항상 “null”은 아니다.
 - 반환값에는 먼저 `return local;`을 사용한다. 불필요한 `std::move(local)`는 NRVO를
-  방해할 수 있다.
+  방해할 수 있다. NRVO(Named Return Value Optimization)는 이름 있는 지역 반환값을
+  호출자의 결과 공간에 바로 만들어 복사·이동을 생략하는 최적화다.
 
 ## 3. 스마트 포인터와 RAII
 
@@ -106,6 +176,22 @@ ABI 세부다. `explicit`과 `= delete`는 주로 컴파일 타임 규칙이므�
 [RAII 전용 심화 가이드](../raii-resource-lifetime/README.md)에서 이어서 다룬다.
 
 ### 왜 필요한가
+
+한 줄 요약: **주소만 저장하는 포인터에 “누가 언제 자원을 반납하는가”라는 규칙을
+추가한 것이 스마트 포인터다.**
+
+```mermaid
+flowchart LR
+    U["unique_ptr<br/>유일 소유자 1명"] -->|"파괴되면 delete"| O["힙 객체"]
+    S1["shared_ptr A<br/>공동 소유"] --> C["제어 블록<br/>소유자 수 기록"]
+    S2["shared_ptr B<br/>공동 소유"] --> C
+    C -->|"강한 소유자 0명"| O2["공유 힙 객체 파괴"]
+    W["weak_ptr<br/>관찰만 함"] -.-> C
+```
+
+RAII(Resource Acquisition Is Initialization)는 자원 획득을 객체 초기화와 묶고 소멸자에서
+반환하는 기법이다. 제어 블록(control block)은 `shared_ptr` 소유자 수와 삭제 방법을
+기록하는 별도 관리 정보다.
 
 제어 흐름에는 정상 반환뿐 아니라 예외, 조기 반환, 여러 분기가 있다. 모든 경로에 수동
 `delete`를 정확히 배치하는 대신 자동 저장 기간 객체의 소멸자에 정리를 연결하면 스코프
@@ -128,6 +214,29 @@ C++20의 `atomic<shared_ptr<T>>`가 필요하다.
 
 ### 왜 `int++`가 깨지는가
 
+한 줄 요약: **`++` 기호 하나도 CPU에서는 읽기 → 더하기 → 쓰기의 여러 단계가 될 수 있어
+두 스레드가 중간에 끼어들 수 있다.**
+
+아래 시간은 위에서 아래로 흐른다. 두 작업자가 모두 0을 읽으면 두 번 증가했는데도 최종
+메모리에는 1만 남는다.
+
+```mermaid
+sequenceDiagram
+    participant M as 공유 메모리 counter
+    participant A as 스레드 A
+    participant B as 스레드 B
+    A->>M: 0 읽기
+    B->>M: 0 읽기
+    A->>A: 1 더하기
+    B->>B: 1 더하기
+    A->>M: 1 쓰기
+    B->>M: 1 쓰기
+    Note over M: 기대값 2, 실제값 1 가능
+```
+
+`std::atomic`은 C++ 메모리 모델이 정한 원자 연산을 제공한다. 원자적이라는 말은 다른
+스레드가 연산의 찢어진 중간 상태를 보지 않는다는 뜻이지, 항상 락이 없거나 공짜라는 뜻은 아니다.
+
 일반적인 증가에는 이전 값 읽기, 덧셈, 결과 저장이 필요하다. 두 스레드의 연산이 겹치면
 lost update가 생길 뿐 아니라, C++ 메모리 모델에서 동기화 없는 동일 메모리의 동시 쓰기는
 **데이터 레이스이며 프로그램 전체가 정의되지 않은 동작**이다. 단지 결과가 가끔 작게
@@ -135,7 +244,7 @@ lost update가 생길 뿐 아니라, C++ 메모리 모델에서 동기화 없는
 
 원자 연산은 언어 차원에서 수정 순서(modification order)를 만들고 하드웨어별 명령과
 메모리 장벽으로 내려간다. x86-64는 비교적 강한 메모리 모델을 갖지만 ARM은 더 약하므로
-소스의 memory order가 중요하다.
+소스의 memory order(메모리 순서)가 중요하다.
 
 - `memory_order_relaxed`: 해당 원자 변수의 값이 찢어지지 않고 수정이 유실되지 않는다는
   것만 필요할 때 쓴다. 통계 카운터처럼 다른 데이터 게시와 관계없는 경우가 대표적이다.
@@ -150,6 +259,22 @@ lost update가 생길 뿐 아니라, C++ 메모리 모델에서 동기화 없는
 ## 5. 동적 다형성과 정적 다형성
 
 ### 가상 호출의 실제 비용
+
+한 줄 요약: **실행 중 주소표에서 함수를 찾을지, 컴파일 중 실제 함수를 미리 정할지의
+선택이다.**
+
+```mermaid
+flowchart TB
+    Call["process() 호출"] --> Q{"구현을 언제 고르는가?"}
+    Q -->|"런타임"| V["virtual 동적 다형성<br/>vtable 주소표를 통해 호출"]
+    Q -->|"컴파일 타임"| T["템플릿 정적 다형성<br/>CRTP로 직접 호출 후보"]
+    V --> VUse["플러그인·서로 다른 객체"]
+    T --> TUse["닫힌 타입 집합·인라인 중시"]
+```
+
+vptr(virtual pointer)는 객체에서 가상 함수 표를 찾기 위한 숨은 포인터이고,
+vtable(virtual function table)은 실제 함수 주소를 모은 표다. CRTP(Curiously Recurring
+Template Pattern)는 `Child : Base<Child>`처럼 자식이 자기 타입을 부모 템플릿에 넘기는 패턴이다.
 
 C++ 표준은 vptr/vtable 구현을 강제하지 않지만 주요 ABI는 객체의 숨은 vptr이 vtable을
 가리키는 방식을 사용한다. 기반 포인터를 통한 호출은 보통 vptr load, 함수 주소 load,
@@ -172,15 +297,39 @@ CRTP는 `Derived` 타입이 컴파일 시점에 정해져 직접 호출과 인�
 
 ### 스레드당 연결 모델의 비용
 
+한 줄 요약: **기다리는 연결마다 작업자 한 명을 세워 두지 말고, 소수 작업자가 “준비된
+연결”만 번갈아 처리하게 한다.**
+
+OS(Operating System)는 운영체제, I/O(Input/Output)는 입출력이다.
+
+```mermaid
+flowchart LR
+    subgraph Old["연결마다 스레드"]
+        C1["연결 1"] --> T1["스레드 1<br/>대기"]
+        C2["연결 2"] --> T2["스레드 2<br/>대기"]
+        C3["연결 N"] --> T3["스레드 N<br/>대기"]
+    end
+    subgraph Event["이벤트 기반"]
+        E1["많은 연결"] --> L["epoll 또는 IOCP<br/>준비·완료 통지"]
+        L --> P["소수 작업 스레드"]
+        P --> F["코루틴 재개<br/>이어서 실행"]
+    end
+```
+
+epoll은 Linux의 준비 상태 알림 API다. IOCP(Input/Output Completion Port)는 Windows의
+입출력 완료 통지 방식이다. C10K(10,000 Concurrent Connections)는 동시 연결 1만 개를
+어떻게 처리할지 묻는 확장성 문제다.
+
 OS 스레드는 스택 가상 주소 공간, 커널 스케줄링 상태, 레지스터 문맥을 가진다. runnable
-스레드가 코어보다 지나치게 많으면 스케줄링, TLB·캐시 교란, 문맥 교환 비용이 커진다.
+스레드가 코어보다 지나치게 많으면 스케줄링,
+TLB(Translation Lookaside Buffer, 가상 주소 변환 캐시)·캐시 교란, 문맥 교환 비용이 커진다.
 하지만 C10K의 원인이 오직 레지스터 저장만은 아니며 메모리, 블로킹 I/O, 스케줄러,
 애플리케이션 구조가 함께 작용한다. 적절한 스레드 수 역시 정확히 코어 수와 같다고
 고정할 수 없다. CPU-bound인지 I/O-bound인지에 따라 달라진다.
 
-- Linux `epoll`은 주로 파일 디스크립터의 **readiness**를 알려 준다. 통지 뒤 실제
-  `read`/`write`를 수행하고 `EAGAIN`을 처리한다.
-- Windows IOCP는 겹친 I/O 작업의 **completion**을 큐로 전달하는 모델이다.
+- Linux `epoll`은 주로 파일 디스크립터의 **readiness(준비 상태)**를 알려 준다. 통지 뒤 실제
+  `read`/`write`를 수행하고 `EAGAIN(Error: try Again, 지금은 불가능하니 다시 시도)`을 처리한다.
+- Windows IOCP는 겹친 I/O 작업의 **completion(완료)**을 큐로 전달하는 모델이다.
 - 이벤트 루프는 적은 스레드가 많은 연결 상태를 관리하게 하지만, 긴 CPU 작업을 이벤트
   스레드에서 실행하면 다른 연결도 지연된다.
 
@@ -196,6 +345,52 @@ C++20 컴파일러는 코루틴의 지역 변수, 재개 위치, promise 등을 
 [`coroutine_example.cpp`](./coroutine_example.cpp)는 이벤트를 수동으로 흉내 낸다. 실제 서버는
 Boost.Asio 같은 런타임 또는 직접 만든 epoll/IOCP awaiter, 취소, timeout, executor, 프레임
 수명 정책이 추가로 필요하다.
+
+## 통합 예제 코드를 읽는 지도
+
+[`example.cpp`](./example.cpp)를 첫 줄부터 모두 이해하려 하지 않는다. `main()`에서 시작해
+다음 화살표를 따라 필요한 클래스 정의로 거슬러 올라간다.
+
+```mermaid
+flowchart TD
+    M["main<br/>설정·로거·서비스 생성"] --> S["ProcessingService<br/>요청 처리 중심"]
+    S --> C["ServiceConfig<br/>최대 크기와 버전"]
+    S --> L["Logger<br/>출력 방법을 동적으로 선택"]
+    S --> P["PacketBuffer<br/>입력 바이트 유일 소유"]
+    S --> A["AdditiveChecksum<br/>CRTP 정적 정책"]
+    M --> T["작업 스레드 4개"]
+    T -->|"각 250회"| H["service.handle"]
+    H -->|"총 1000회"| R["completed=1000<br/>checksum=294000"]
+```
+
+첫 번째 읽기에서는 다음 다섯 줄기만 확인한다.
+
+1. `main()`이 `ServiceConfig`, `ConsoleLogger`, `ProcessingService`를 만든다.
+2. 네 스레드가 같은 `service`를 참조하지만 각 요청의 `PacketBuffer`는 따로 만든다.
+3. 설정은 불변 객체이며 `shared_ptr` 스냅샷으로 수명을 유지한다.
+4. 완료 횟수와 체크섬 합계는 `atomic`으로 갱신해 증가를 잃지 않는다.
+5. 모든 스레드를 `join()`한 뒤에만 최종 결과를 읽는다.
+
+두 번째 읽기에서 이동 생성자, acquire/release 메모리 순서, virtual과 CRTP를 각각 찾는다.
+세 번째 읽기에서만 주석의 레지스터·캐시·ABI 설명을 읽는다.
+
+### 코루틴 예제의 상태 변화
+
+`ManualTask`는 코루틴 프레임의 파괴 책임을 가진 RAII 객체다. 시간은 왼쪽에서 오른쪽으로 흐른다.
+
+```mermaid
+stateDiagram-v2
+    [*] --> Created: handle_client 호출
+    Created --> Started: 첫 resume
+    Started --> Waiting: co_await에서 suspend
+    Waiting --> Resumed: I/O 이벤트를 흉내 낸 두 번째 resume
+    Resumed --> Completed: 함수 본문 종료
+    Completed --> Destroyed: ManualTask 소멸자가 destroy
+    Destroyed --> [*]
+```
+
+실제 I/O 예제와 다른 핵심은 `EventAwaiter::await_suspend`가 어디에도 핸들을 등록하지
+않는다는 점이다. 여기서는 `main()`이 직접 두 번째 `resume()`을 호출해 이벤트 루프를 흉내 낸다.
 
 ## 빌드와 실행
 
@@ -243,7 +438,8 @@ g++ -std=c++20 -O2 -S -masm=intel coroutine_example.cpp -o coroutine-O2.s
 - `AdditiveChecksum::process`와 `do_process`가 `-O2`에서 인라인됐는가?
 - 코루틴에 resume/destroy 함수와 상태에 따른 분기가 생성됐는가?
 
-Windows x64, GCC 버전, ABI, LTO 사용 여부에 따라 심볼과 명령이 달라진다. 관찰 결과는
+Windows x64, GCC(GNU Compiler Collection) 버전, ABI,
+LTO(Link-Time Optimization, 링크 시점 최적화) 사용 여부에 따라 심볼과 명령이 달라진다. 관찰 결과는
 해당 빌드의 증거이지 C++ 표준의 보장은 아니다.
 
 ## 실습 문제

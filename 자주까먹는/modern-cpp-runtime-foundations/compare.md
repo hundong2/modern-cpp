@@ -1,9 +1,28 @@
 # C++·C#·Python 비교: 수명, 동시성, 다형성과 비동기
 
 이 문서는 문법 모양보다 실행 모델과 소유권 차이를 중심으로 여섯 주제를 비교한다.
-C#은 보통 CLR의 JIT/AOT와 추적식 GC 위에서, Python은 보통 CPython 바이트코드 인터프리터와
-참조 카운팅 및 순환 GC 위에서 실행된다. Python 구현은 CPython만 있는 것이 아니므로
-GIL과 객체 배치 설명은 구현 의존적이다.
+C#은 보통 CLR(Common Language Runtime)의 JIT(Just-In-Time) 또는
+AOT(Ahead-Of-Time) 컴파일과 GC(Garbage Collection) 위에서 실행된다. Python은 보통
+CPython 바이트코드 인터프리터와 참조 카운팅 및 순환 GC 위에서 실행된다. Python 구현은
+CPython만 있는 것이 아니므로 GIL(Global Interpreter Lock)과 객체 배치 설명은 구현 의존적이다.
+
+## 비교 문서를 읽기 전에
+
+**같은 코드 모양이라도 언어마다 “누가 메모리를 관리하는가”와 “언제 기계어가 되는가”가
+다르다.** 먼저 실행 경로를 그림으로 구분한다.
+
+```mermaid
+flowchart LR
+    CPP["C++ 소스"] --> Native["컴파일러"] --> EXE["네이티브 기계어 실행 파일"]
+    CS["C# 소스"] --> IL["IL 중간 언어"] --> CLR["CLR 런타임<br/>JIT 또는 AOT"] --> CPU1["CPU 실행"]
+    PY["Python 소스"] --> BC["바이트코드"] --> VM["Python 인터프리터"] --> CPU2["CPU 실행"]
+```
+
+- CLR(Common Language Runtime)은 .NET 프로그램을 실행하는 공통 언어 런타임이다.
+- IL(Intermediate Language)은 C#이 먼저 변환되는 중간 언어다.
+- JIT(Just-In-Time)는 실행 도중 컴파일, AOT(Ahead-Of-Time)는 실행 전에 미리 컴파일한다.
+- GC(Garbage Collection)는 도달할 수 없는 관리 메모리를 런타임이 회수하는 방식이다.
+- 모르는 용어는 [공통 용어집](../GLOSSARY.md)에서 비유와 함께 확인한다.
 
 ## 한눈에 보는 차이
 
@@ -16,6 +35,17 @@ GIL과 객체 배치 설명은 구현 의존적이다.
 | 다형성 | 가상 호출과 템플릿/CRTP를 선택 | virtual/interface 및 제네릭 | duck typing, protocol, 상속 |
 | 원자·메모리 모델 | 표준 memory order를 세밀하게 선택 | `Interlocked`, `Volatile`, `lock` | `threading.Lock`; GIL은 데이터 불변식 잠금이 아님 |
 | 비동기 | 코루틴 언어 기반만 제공, 런타임 별도 | `Task`, `async`/`await`, 런타임 통합 | coroutine, `asyncio` 이벤트 루프 |
+
+표의 핵심은 우열이 아니라 **책임의 위치**다. C++는 많은 결정을 타입과 컴파일 단계에
+드러내고, C#과 Python은 더 많은 관리 기능을 런타임에 맡긴다.
+
+```mermaid
+flowchart TB
+    Q["자원 정리 책임은 어디에 있는가?"]
+    Q --> C1["C++<br/>소유 객체의 소멸자"]
+    Q --> C2["C#<br/>메모리는 GC<br/>외부 자원은 using과 Dispose"]
+    Q --> C3["Python<br/>메모리는 런타임<br/>외부 자원은 with"]
+```
 
 ## 1. 방어적 클래스 설계
 
@@ -109,6 +139,9 @@ SafeHandle, `IDisposable`, capsule/finalizer 등 명시적인 경계 수명 정�
 
 ## 4. 동시성과 메모리 모델
 
+동시성(concurrency)은 여러 작업의 실행 시간이 겹칠 수 있는 상태다. 병렬성(parallelism)은
+실제로 여러 CPU 코어에서 같은 시각에 실행되는 경우다. 두 단어는 관련 있지만 같지 않다.
+
 C#에서는 원자 증감에 `Interlocked`를 사용한다.
 
 ```csharp
@@ -125,7 +158,7 @@ with counter_lock:
     counter += 1
 ```
 
-CPython의 GIL은 한 시점에 Python 바이트코드를 실행하는 스레드를 제한하지만, 여러
+CPython의 GIL(Global Interpreter Lock, 전역 인터프리터 잠금)은 한 시점에 Python 바이트코드를 실행하는 스레드를 제한하지만, 여러
 바이트코드로 된 불변식을 보호하는 애플리케이션 mutex가 아니다. C extension은 GIL을
 해제할 수 있고 I/O 사이에도 스레드가 교체된다. 또한 Python 버전과 구현의 free-threading
 지원 여부에 따라 전제가 달라진다.
@@ -179,9 +212,12 @@ executor와 I/O 등록을 라이브러리가 정해야 한다. 표준 `Task`나 
 대기 중 스레드를 점유하지 않을 수 있지만, resume 이후 코드는 어떤 executor/thread에서
 실행되는지 확인해야 한다. CPU-bound 작업은 별도 풀, 프로세스 또는 명시적 병렬화가 필요하다.
 
-## 오류 전달과 FFI 주의점
+## 오류 전달과 FFI(Foreign Function Interface) 주의점
 
-- C++ 예외를 C ABI 경계 밖으로 전파하지 않는다. 상태 코드나 명시적인 결과 타입으로
+FFI(Foreign Function Interface)는 서로 다른 언어의 코드가 함수를 호출하는 연결 경계다.
+이 경계에서는 어느 언어가 자원을 마지막으로 해제할지 반드시 하나로 정해야 한다.
+
+- C++ 예외를 C ABI(Application Binary Interface, 이진 호출 규약) 경계 밖으로 전파하지 않는다. 상태 코드나 명시적인 결과 타입으로
   변환하고 모든 RAII 정리를 경계 안에서 끝낸다.
 - C# P/Invoke로 받은 native 포인터는 `SafeHandle` 같은 소유 타입에 넣고 dispose/finalizer
   정책을 명확히 한다. 관리 객체 주소는 GC 이동 가능성을 고려해 필요한 동안만 pin한다.

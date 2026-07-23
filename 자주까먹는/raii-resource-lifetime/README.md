@@ -4,6 +4,24 @@ RAII(Resource Acquisition Is Initialization)는 “자원 획득에 성공한 �
 끝나면 그 객체가 자원 반환 책임까지 가진다”는 C++ 설계 기법이다. 흔히 “스코프를 나가면
 자동 정리”로 요약하지만 핵심은 **자원의 수명과 객체의 수명을 하나의 불변식으로 묶는 것**이다.
 
+## 30초 요약과 선행 용어
+
+**RAII는 “자원을 빌린 순간 반납 담당 객체를 만들고, 그 객체가 사라질 때 자동 반납한다”는
+규칙이다.**
+
+먼저 다음 다섯 단어만 기억한다.
+
+| 단어 | 초보자용 뜻 |
+|---|---|
+| 자원(resource) | 메모리, 파일, 락처럼 사용 후 돌려줘야 하는 것 |
+| 객체(object) | 타입과 수명을 가진 데이터 상자 |
+| 생성자(constructor) | 객체가 태어날 때 실행되는 함수 |
+| 소멸자(destructor) | 객체 수명이 끝날 때 실행되는 함수 |
+| 스코프(scope) | 이름과 자동 객체의 사용 범위를 정하는 `{}` 방 |
+
+`RAII`, `ABI`, `FFI`, `GC` 등 다른 용어는
+[공통 용어집](../GLOSSARY.md)에서 전체 이름과 비유를 먼저 확인할 수 있다.
+
 ## 학습 목표와 파일 목차
 
 1. 이 문서에서 획득·소유·반환, 스택 해제, 소멸 순서와 한계를 이해한다.
@@ -18,6 +36,17 @@ RAII(Resource Acquisition Is Initialization)는 “자원 획득에 성공한 �
 
 ## 1. 스마트 호텔 카드키 비유를 정확히 쓰기
 
+다음 그림에서 화살표는 시간 순서다. 카드키 객체가 살아 있는 동안만 객실 자원을 사용할
+권리와 반납 책임을 가진다.
+
+```mermaid
+flowchart LR
+    A["객실 입장<br/>객체 생성"] --> B["카드키 꽂기<br/>자원 획득"]
+    B --> C["객실 사용<br/>객체가 자원 소유"]
+    C --> D["객실 퇴장<br/>스코프 이탈"]
+    D --> E["카드키 회수<br/>소멸자가 자원 반환"]
+```
+
 - 방에 들어오며 카드키를 꽂는 순간이 **객체 생성과 자원 획득**이다.
 - 카드를 가진 투숙객 한 명이 반환 책임을 가진다는 규칙이 **유일 소유권**이다.
 - 문이나 정상 비상구로 나가는 것이 정상 종료, `return`, C++ 예외에 의한 스택 해제다.
@@ -26,7 +55,8 @@ RAII(Resource Acquisition Is Initialization)는 “자원 획득에 성공한 �
 다만 건물 전원이 강제로 끊기거나 건물이 파괴되는 상황까지 카드키 시스템이 동작한다고
 말하면 틀리다. `std::abort`, `std::_Exit`, 처리되지 않아 `std::terminate`로 끝나는 일부
 경로, 프로세스 강제 종료, 전원 장애에서는 C++ 소멸자가 실행된다고 보장할 수 없다.
-운영체제가 프로세스 핸들을 회수할 수는 있지만 애플리케이션의 flush, commit, 프로토콜상
+OS(Operating System, 운영체제)가 프로세스 핸들을 회수할 수는 있지만 애플리케이션의
+flush(버퍼 내용을 실제 장치로 밀어내기), commit(변경 확정), 프로토콜상
 logout 같은 논리적 정리가 수행됐다는 뜻은 아니다.
 
 ## 2. RAII의 역사와 이름
@@ -52,6 +82,26 @@ initialization”이라는 이름을 붙였다고 회고한다. 생성자에서 
 
 ## 3. 생명주기 시각화
 
+정상 종료, `return`, 처리 가능한 `throw`는 모두 블록을 빠져나가기 전에 완성된 지역
+객체를 생성의 역순으로 파괴한다.
+
+```mermaid
+sequenceDiagram
+    participant Code as 함수 코드
+    participant A as 객체 A
+    participant File as 파일 소유 객체
+    participant B as 객체 B
+    Code->>A: 1. 생성
+    Code->>File: 2. 파일 획득
+    Code->>B: 3. 생성
+    Note over Code: 정상 종료·return·throw 발생
+    Code->>B: 4. 소멸
+    Code->>File: 5. 소멸하며 파일 닫기
+    Code->>A: 6. 소멸
+```
+
+같은 내용을 텍스트로 읽으면 다음과 같다.
+
 ```text
 블록 진입 {
   Trace A 생성
@@ -73,6 +123,10 @@ initialization”이라는 이름을 붙였다고 회고한다. 생성자에서 
 소멸자를 한 번 호출한다” 정도로 단순화하지 않는다.
 
 ## 4. 수동 관리가 제어 흐름에 취약한 이유
+
+`FILE*`는 C 표준 라이브러리가 파일을 나타내기 위해 돌려주는 주소 형태의 핸들이다.
+별표 `*`는 포인터라는 뜻이다. C API(Application Programming Interface, 프로그램 사용
+약속)는 `fopen`으로 열었다면 `fclose`로 닫으라고 요구한다.
 
 수동 코드는 자원을 얻은 뒤 가능한 모든 간선에 `close`를 배치해야 한다.
 
@@ -98,6 +152,18 @@ if (check_error()) { return; } // FileCloser가 fclose 담당
 
 ## 5. 컴파일러와 메모리에서 일어나는 일
 
+다음 그림에서 실선 화살표는 소유 관계다. 작은 `unique_ptr` 객체와 실제로 소유하는 큰
+데이터가 서로 다른 메모리 영역에 있을 수 있다.
+
+```mermaid
+flowchart LR
+    S["함수의 자동 객체<br/>unique_ptr 또는 FileHandle"] -->|"소유"| H["힙 메모리<br/>동적 데이터"]
+    S -->|"소유"| F["운영체제 파일 핸들"]
+    S -->|"소멸자 호출"| D["맞는 반환 함수<br/>delete 또는 fclose"]
+    D --> H
+    D --> F
+```
+
 자동 객체 자체는 흔히 현재 스택 프레임 안에 놓이지만 RAII가 스택 자원만 뜻하지는 않는다.
 `unique_ptr` 객체는 스택에 있고 그것이 가리키는 데이터는 힙에 있을 수 있다. `fstream`은
 작은 C++ 객체 안에 OS 파일 핸들을 간접 보유한다. `lock_guard`는 보통 mutex 참조만 들고
@@ -105,12 +171,26 @@ if (check_error()) { return; } // FileCloser가 fclose 담당
 
 컴파일러는 각 정상 스코프 출구에 소멸자 호출을 배치하고, 예외가 활성화된 구현에서는
 unwind table 또는 landing pad를 생성해 어떤 객체까지 완성됐는지 추적한다. Windows x64는
-예외 처리 메타데이터와 런타임 personality/handler를 이용할 수 있고, ABI마다 구현은 다르다.
+예외 처리 메타데이터와 런타임 handler(처리 함수)를 이용할 수 있고,
+ABI(Application Binary Interface, 컴파일된 코드 사이의 이진 규약)마다 구현은 다르다.
 소멸자가 단순하고 보이면 `-O2`에서 인라인되거나 객체 자체가 제거될 수도 있다. 이는
 관찰 가능한 자원 반환 효과까지 제거한다는 뜻이 아니라 as-if rule 아래 같은 효과를 더
 저렴하게 만든다는 뜻이다.
 
 ## 6. 예외 안전성과 소멸자 규칙
+
+스코프를 떠나는 이유별 차이를 먼저 그림으로 구분한다.
+
+```mermaid
+flowchart TD
+    A["스코프를 떠남"] --> B{"떠나는 이유"}
+    B -->|"블록 끝·return"| C["지역 객체 역순 소멸"]
+    B -->|"catch까지 전달되는 throw"| D["스택 해제하며 역순 소멸"]
+    B -->|"abort·강제 종료"| E["소멸자 실행 보장 없음"]
+    C --> F["자원 반환"]
+    D --> F
+    E --> G["OS 회수와 논리적 정리는 별개"]
+```
 
 - 예외가 `throw`에서 일치하는 `catch`까지 전파될 때 경로의 완성된 자동 객체가 파괴된다.
 - 생성자가 실패하면 그 객체의 소멸자는 호출되지 않는다. 따라서 raw 자원을 먼저 얻고
@@ -125,6 +205,8 @@ unwind table 또는 landing pad를 생성해 어떤 객체까지 완성됐는지
 
 ## 7. 실무 자원별 도구
 
+표를 외우기보다 “이 자원은 어떤 함수로 얻었고, 어떤 함수로 돌려주는가?”를 먼저 묻는다.
+
 | 자원 | C++17 이상 권장 표현 | 핵심 주의점 |
 |---|---|---|
 | 힙 단일 소유 | `std::unique_ptr`, 표준 컨테이너 | 수동 `new/delete`보다 값/컨테이너 우선 |
@@ -137,11 +219,55 @@ unwind table 또는 landing pad를 생성해 어떤 객체까지 완성됐는지
 
 ## 8. RAII가 보장하지 않는 것
 
+RAII는 자동 청소 마법이 아니라 **올바르게 설계한 소유 객체가 일반적인 수명 종료 경로에서
+정리 함수를 실행하게 하는 규칙**이다.
+
 - 공유 소유권 그래프의 순환 참조는 C++ `shared_ptr`와 Rust `Rc/Arc` 모두 누수를 만들 수 있다.
 - 비소유 raw pointer/reference/view의 대상 수명은 자동 연장되지 않는다.
 - 프로세스 강제 종료와 전원 장애에서 소멸자 실행은 보장되지 않는다.
 - 잘못된 deleter, 두 raw owner, `release()` 후 방치 같은 소유권 설계 오류를 자동 수정하지 않는다.
 - 메모리 안전성이 곧 논리적 자원 정리나 영속 데이터 commit을 의미하지 않는다.
+
+## 예제 코드를 읽는 지도
+
+[`example.cpp`](./example.cpp)는 한 파일에서 세 가지를 보여 준다.
+
+```mermaid
+flowchart TD
+    M["main 시작"] --> N["정상 경로<br/>write_record false"]
+    M --> X["예외 경로<br/>write_record true"]
+    M --> T["스레드 4개<br/>SafeCounter 증가"]
+    N --> F1["FileHandle 생성과 자동 fclose"]
+    X --> F2["throw 중에도 FileHandle 자동 fclose"]
+    T --> G["lock_guard가 매번 자동 unlock"]
+    F1 --> O["파괴 순서 출력"]
+    F2 --> O
+    G --> C["counter=4000"]
+```
+
+처음 읽을 때는 `main()`과 출력만 본다.
+
+1. `[normal path]` 아래에서 파일을 열고 정상적으로 닫는 순서를 확인한다.
+2. `[exception path]` 아래에서도 `caught`가 출력되기 전에 파일이 닫히는지 확인한다.
+3. `counter=4000`으로 네 스레드의 증가가 하나도 사라지지 않았는지 확인한다.
+4. 그다음 `FileCloser`, `FileHandle`, `write_record`, `SafeCounter` 순으로 정의를 읽는다.
+
+[`exercise.cpp`](./exercise.cpp)는 실제 소켓 대신 `ResourceCounter`로 열린 자원 수를 센다.
+`Lease`를 이동해도 활성 자원은 두 개 그대로이고, 조기 반환 뒤에는 0이 되어야 한다.
+
+```mermaid
+sequenceDiagram
+    participant C as ResourceCounter
+    participant F as first Lease
+    participant S as second Lease
+    participant M as moved Lease
+    F->>C: acquire, active=1
+    S->>C: acquire, active=2
+    S->>M: 소유권 이동, active=2
+    Note over F,M: 함수에서 조기 return
+    M->>C: release, active=1
+    F->>C: release, active=0
+```
 
 ## 9. 빌드와 실행
 
