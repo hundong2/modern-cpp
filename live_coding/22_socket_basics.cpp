@@ -115,7 +115,7 @@ UniqueSocket connectTcp(const string& host, const string& port) {
     int rc = getaddrinfo(host.c_str(), port.c_str(), &hints, &rawResult); // DNS와 주소 변환을 OS에 맡긴다.
     if (rc != 0) throw runtime_error("getaddrinfo failed");
 
-    unique_ptr<addrinfo, decltype(&freeaddrinfo)> result(rawResult, freeaddrinfo); // freeaddrinfo 누락을 방지한다.
+    unique_ptr<addrinfo, decltype(&freeaddrinfo)> result(rawResult, freeaddrinfo); // unique_ptr은 단독 소유 RAII 포인터이며 custom deleter로 C API 자원을 닫는다.
 
     for (addrinfo* p = result.get(); p != nullptr; p = p->ai_next) {
         UniqueSocket candidate(socket(p->ai_family, p->ai_socktype, p->ai_protocol));
@@ -147,7 +147,7 @@ bool sendAll(SocketHandle socket, const string& data) {
 }
 
 string receiveSome(SocketHandle socket, size_t maxBytes) {
-    vector<char> buffer(maxBytes);
+    vector<char> buffer(maxBytes); // recv용 임시 버퍼는 크기가 런타임에 정해지므로 vector<char>가 안전하다.
 #ifdef _WIN32
     int received = recv(socket, buffer.data(), (int)buffer.size(), 0);
 #else
@@ -158,7 +158,7 @@ string receiveSome(SocketHandle socket, size_t maxBytes) {
 }
 
 string buildHttpGetRequest(const string& host, const string& path) {
-    string request;
+    string request; // std::string은 길이를 따로 저장하므로 중간에 '\0'이 있어도 데이터로 보관할 수 있다.
     request += "GET " + path + " HTTP/1.1\r\n";
     request += "Host: " + host + "\r\n";
     request += "Connection: close\r\n";

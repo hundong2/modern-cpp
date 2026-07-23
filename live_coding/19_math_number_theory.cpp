@@ -25,7 +25,7 @@ using namespace std;
 const long long MOD = 1'000'000'007LL;
 
 long long lcmSafe(long long a, long long b) {
-    return a / gcd(a, b) * b; // 먼저 나누면 a*b overflow 위험을 줄일 수 있다.
+    return a / gcd(a, b) * b; // <numeric>의 std::gcd는 C++17 표준 최대공약수 함수다.
 }
 
 long long addMod(long long a, long long b, long long mod) {
@@ -73,7 +73,7 @@ long long modInversePrime(long long a, long long mod) {
 }
 
 vector<int> sievePrimes(int n) {
-    vector<bool> isPrime(n + 1, true); // isPrime[x]가 true면 아직 합성수로 지워지지 않았다는 뜻이다.
+    vector<bool> isPrime(n + 1, true); // vector<bool>은 bitset처럼 압축되는 특수화라 메모리는 아끼지만 참조 동작이 일반 vector와 다르다.
     if (n >= 0) isPrime[0] = false;
     if (n >= 1) isPrime[1] = false;
 
@@ -107,8 +107,8 @@ public:
 
 private:
     long long mod;
-    vector<long long> fact;
-    vector<long long> invFact;
+    vector<long long> fact;    // factorial 값을 vector에 전처리해 조합 질의를 O(1)에 답한다.
+    vector<long long> invFact; // inverse factorial도 같은 인덱스 체계로 맞춰 둔다.
 };
 
 int main() {

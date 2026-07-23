@@ -51,7 +51,7 @@ bool canJumpToEnd(const vector<int>& jump) {
 }
 
 long long minMergeCost(const vector<int>& sizes) {
-    priority_queue<long long, vector<long long>, greater<long long>> pq(sizes.begin(), sizes.end()); // 가장 작은 두 묶음을 빠르게 꺼낸다.
+    priority_queue<long long, vector<long long>, greater<long long>> pq(sizes.begin(), sizes.end()); // heap adapter다. 일반 queue와 달리 삽입 순서가 아니라 최소 크기부터 꺼낸다.
     long long cost = 0; // 누적 병합 비용은 입력 크기에 따라 int를 넘을 수 있다.
 
     while (pq.size() > 1) {
@@ -66,7 +66,7 @@ long long minMergeCost(const vector<int>& sizes) {
 }
 
 int eraseOverlapIntervals(vector<pair<int, int>> intervals) {
-    sort(intervals.begin(), intervals.end(), [](auto a, auto b) {
+    sort(intervals.begin(), intervals.end(), [](auto a, auto b) { // sort는 comparator가 true인 순서로 원소를 재배치한다.
         return a.second < b.second;
     }); // 최대한 많이 남기는 문제는 회의실 선택과 같은 끝점 greedy로 바꿀 수 있다.
 

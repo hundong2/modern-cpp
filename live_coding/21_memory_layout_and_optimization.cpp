@@ -35,7 +35,7 @@ struct BetterLayout {
 };
 
 long long sumContiguous(const vector<int>& values) {
-    const int* current = values.data();          // vector는 원소가 연속된 메모리에 저장된다.
+    const int* current = values.data();          // vector::data()는 내부 연속 배열의 포인터를 반환한다.
     const int* end = current + values.size();    // 포인터 끝을 미리 계산하면 루프 조건이 단순해진다.
     long long total = 0;
 
@@ -68,7 +68,7 @@ long long sumMatrixColumnMajorAccess(const vector<int>& matrix, int rows, int co
 }
 
 vector<int> buildWithoutReserve(int n) {
-    vector<int> values;
+    vector<int> values; // vector는 capacity가 부족하면 더 큰 버퍼를 새로 잡고 기존 원소를 이동/복사한다.
     for (int i = 0; i < n; ++i) {
         values.push_back(i); // capacity가 부족할 때마다 재할당과 전체 복사가 발생할 수 있다.
     }
@@ -113,7 +113,7 @@ void printAssemblyReadingHints() {
 
 template <typename Func>
 long long elapsedMicroseconds(Func&& func) {
-    auto start = chrono::steady_clock::now(); // wall-clock 대신 monotonic clock을 사용한다.
+    auto start = chrono::steady_clock::now(); // <chrono>의 steady_clock은 시간이 뒤로 가지 않아 짧은 성능 측정에 적합하다.
     volatile long long guard = func();        // 결과를 사용해 최적화로 루프가 사라지는 일을 줄인다.
     (void)guard;
     auto end = chrono::steady_clock::now();
@@ -133,7 +133,7 @@ int main() {
     int rows = 256;
     int cols = 256;
     vector<int> matrix(rows * cols);
-    iota(matrix.begin(), matrix.end(), 1); // 연속 메모리 위에 row-major 2차원 배열을 흉내 낸다.
+    iota(matrix.begin(), matrix.end(), 1); // iota는 시작값부터 1씩 증가하는 값을 iterator 범위에 채운다.
 
     cout << "[row major sum] " << sumMatrixRowMajor(matrix, rows, cols) << '\n';
     cout << "[column access sum] " << sumMatrixColumnMajorAccess(matrix, rows, cols) << '\n';

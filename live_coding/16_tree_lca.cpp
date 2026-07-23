@@ -27,7 +27,7 @@ public:
         : n((int)tree.size()), graph(tree), depth(n, 0) {
         log = 1;
         while ((1 << log) <= n) ++log; // 가장 높은 점프 크기가 n 이상이 되도록 log를 잡는다.
-        up.assign(log, vector<int>(n, root)); // root의 조상은 root로 채워 경계 처리를 단순화한다.
+        up.assign(log, vector<int>(n, root)); // assign은 2차원 vector를 log행 n열로 다시 채우며, LCA sparse table을 만든다.
         dfs(root, root);
     }
 
@@ -75,8 +75,8 @@ private:
 };
 
 pair<int, int> farthestFrom(int start, const vector<vector<int>>& tree) {
-    vector<int> dist(tree.size(), -1); // -1은 아직 방문하지 않은 정점이다.
-    queue<int> q;
+    vector<int> dist(tree.size(), -1); // vector는 노드 번호로 O(1) 접근하기 좋은 거리 배열이다.
+    queue<int> q; // queue는 FIFO라 루트에서 가까운 노드부터 처리하는 BFS에 맞다.
     q.push(start);
     dist[start] = 0;
 
@@ -112,7 +112,7 @@ long long subtreeSumDfs(int u, int parent, const vector<vector<int>>& tree, cons
 }
 
 vector<long long> subtreeSums(const vector<vector<int>>& tree, const vector<int>& value, int root = 0) {
-    vector<long long> sub(tree.size(), 0);
+    vector<long long> sub(tree.size(), 0); // subtree sum은 값 범위가 커질 수 있어 long long vector에 저장한다.
     subtreeSumDfs(root, root, tree, value, sub);
     return sub;
 }

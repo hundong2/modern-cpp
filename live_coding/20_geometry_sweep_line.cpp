@@ -82,8 +82,8 @@ long long polygonArea2(const vector<Point>& poly) {
     return llabs(area2);
 }
 
-vector<Point> convexHull(vector<Point> points) {
-    sort(points.begin(), points.end());
+vector<Point> convexHull(vector<Point> points) { // points를 값으로 받아 정렬/중복 제거해도 호출자 입력은 보존된다.
+    sort(points.begin(), points.end()); // sort는 operator<를 사용해 점들을 x,y 순으로 정렬한다.
     points.erase(unique(points.begin(), points.end()), points.end()); // 중복 점은 hull 계산 전에 제거한다.
     if (points.size() <= 1) return points; // 점이 0/1개면 그 자체가 hull이다.
 
@@ -110,7 +110,7 @@ vector<Point> convexHull(vector<Point> points) {
 }
 
 int maxOverlappingClosedIntervals(const vector<pair<int, int>>& intervals) {
-    vector<pair<int, int>> events;
+    vector<pair<int, int>> events; // pair<좌표,변화량> 형태의 이벤트 목록이다.
     for (auto [l, r] : intervals) {
         events.push_back({l, +1}); // 구간 시작점에서는 활성 구간 수가 증가한다.
         events.push_back({r, -1}); // 닫힌 구간이라 같은 좌표에서는 시작 이벤트를 먼저 처리한다.

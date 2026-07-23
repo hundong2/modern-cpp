@@ -22,8 +22,8 @@ Chapter 18. KMP, Trie, 문자열 탐색
 #include <vector>
 using namespace std;
 
-vector<int> prefixFunction(const string& s) {
-    vector<int> pi(s.size(), 0);
+vector<int> prefixFunction(const string& s) { // string은 size()와 인덱스 접근이 O(1)이라 KMP 전처리에 적합하다.
+    vector<int> pi(s.size(), 0); // prefix 길이를 위치별로 저장하는 동적 배열이다.
     for (int i = 1; i < (int)s.size(); ++i) {
         int j = pi[i - 1];
         while (j > 0 && s[i] != s[j]) j = pi[j - 1]; // 실패하면 다음 가능한 접두사 길이로 되돌아간다.
@@ -81,7 +81,7 @@ public:
 
 private:
     struct Node {
-        array<int, 26> next;
+        array<int, 26> next; // std::array는 크기가 컴파일 타임에 고정된 배열이며 vector보다 작은 고정 테이블에 적합하다.
         bool terminal = false;
         int prefixCount = 0;
 
@@ -90,7 +90,7 @@ private:
         }
     };
 
-    vector<Node> nodes;
+    vector<Node> nodes; // Trie 노드를 vector에 넣으면 정수 인덱스가 포인터 역할을 해 소유권 관리가 단순하다.
 
     int walk(const string& s) const {
         int cur = 0; // 항상 root에서 시작한다.
@@ -105,7 +105,7 @@ private:
 
 vector<int> zFunction(const string& s) {
     int n = (int)s.size();
-    vector<int> z(n, 0);
+    vector<int> z(n, 0); // Z 값은 문자열 위치마다 하나씩 필요하므로 vector가 자연스럽다.
     int left = 0;
     int right = 0; // [left, right]는 현재 알고 있는 가장 오른쪽 Z-box다.
     for (int i = 1; i < n; ++i) {

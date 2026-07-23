@@ -22,7 +22,7 @@ using namespace std;
 
 class Fenwick {
 public:
-    explicit Fenwick(int n) : bit(n + 1, 0) {}
+    explicit Fenwick(int n) : bit(n + 1, 0) {} // vector<long long>을 1-indexed 내부 배열처럼 써 Fenwick 구현을 단순화한다.
 
     void add(int index, long long delta) {
         for (++index; index < (int)bit.size(); index += index & -index) {
@@ -49,7 +49,7 @@ private:
 
 class SegmentTree {
 public:
-    explicit SegmentTree(const vector<int>& a) : n((int)a.size()), tree(4 * n, 0) {
+    explicit SegmentTree(const vector<int>& a) : n((int)a.size()), tree(4 * n, 0) { // segment tree는 보통 원본 크기의 4배 vector면 충분하다.
         build(a, 1, 0, n - 1); // node 1을 루트로 쓰는 1-indexed tree 배열 구현이다.
     }
 
@@ -97,7 +97,7 @@ private:
 
 class LazySegmentTree {
 public:
-    explicit LazySegmentTree(const vector<int>& a) : n((int)a.size()), tree(4 * n, 0), lazy(4 * n, 0) {
+    explicit LazySegmentTree(const vector<int>& a) : n((int)a.size()), tree(4 * n, 0), lazy(4 * n, 0) { // tree와 lazy를 별도 vector로 둬 실제 값과 지연 값을 분리한다.
         build(a, 1, 0, n - 1); // tree는 현재 반영된 합, lazy는 미뤄둔 더하기 값을 저장한다.
     }
 

@@ -24,7 +24,7 @@ Chapter 23. thread, mutex, atomic, false sharing, 병렬 합산 기초
 using namespace std;
 
 struct PackedCounter {
-    atomic<long long> value{0}; // 여러 counter가 배열에 붙어 있으면 같은 cache line을 공유할 수 있다.
+    atomic<long long> value{0}; // std::atomic은 data race 없이 동시 읽기/쓰기를 보장하는 표준 원자 타입이다.
 };
 
 struct alignas(64) PaddedCounter {
@@ -40,11 +40,11 @@ long long sumSingleThread(const vector<int>& values) {
 }
 
 long long sumWithMutexPerElement(const vector<int>& values) {
-    mutex m;
+    mutex m; // std::mutex는 한 번에 한 스레드만 critical section에 들어가게 하는 상호 배제 객체다.
     long long total = 0;
 
     for (int x : values) {
-        lock_guard<mutex> lock(m); // 원소마다 lock을 잡으면 보호 범위는 안전하지만 성능은 나빠진다.
+        lock_guard<mutex> lock(m); // lock_guard는 생성 시 lock, 소멸 시 unlock하는 RAII wrapper라 예외에도 mutex가 풀린다.
         total += x;
     }
     return total;
@@ -55,7 +55,7 @@ long long parallelSum(const vector<int>& values) {
     workers = max(1u, min(workers == 0 ? 2u : workers, 4u)); // 데모에서는 과도한 스레드 생성을 막기 위해 상한을 둔다.
 
     vector<long long> partial(workers, 0); // 각 스레드가 자기 칸에만 쓰면 mutex가 필요 없다.
-    vector<thread> threads;
+    vector<thread> threads; // std::thread는 실행 중인 OS 스레드 handle을 소유하므로 join 또는 detach가 필요하다.
     threads.reserve(workers);
 
     size_t block = (values.size() + workers - 1) / workers; // 마지막 worker가 남은 꼬리 구간을 처리하게 한다.
@@ -76,7 +76,7 @@ long long parallelSum(const vector<int>& values) {
         t.join(); // join 이후 partial 쓰기가 끝났다는 happens-before 관계가 생긴다.
     }
 
-    return accumulate(partial.begin(), partial.end(), 0LL);
+    return accumulate(partial.begin(), partial.end(), 0LL); // <numeric>의 accumulate는 iterator 범위를 왼쪽부터 누적한다.
 }
 
 long long atomicCounterDemo(int iterations) {
