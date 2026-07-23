@@ -23,7 +23,7 @@ using namespace std;
 
 void permuteDfs(const vector<int>& nums, vector<int>& path, vector<bool>& used, vector<vector<int>>& result) {
     if (path.size() == nums.size()) {
-        result.push_back(path);
+        result.push_back(path); // path는 이후 pop으로 바뀌므로 현재 완성본을 복사해 저장한다.
         return;
     }
 
@@ -38,10 +38,10 @@ void permuteDfs(const vector<int>& nums, vector<int>& path, vector<bool>& used, 
 }
 
 vector<vector<int>> permutations(vector<int> nums) {
-    sort(nums.begin(), nums.end());
+    sort(nums.begin(), nums.end()); // 출력 순서를 안정적으로 만들기 위한 정렬이다.
     vector<vector<int>> result;
-    vector<int> path;
-    vector<bool> used(nums.size(), false);
+    vector<int> path;                    // 현재까지 선택한 순열 prefix다.
+    vector<bool> used(nums.size(), false); // vector<bool>은 bit 압축 특수화다. 메모리는 아끼지만 일반 bool&처럼 동작하지 않는 점을 알아둔다.
     permuteDfs(nums, path, used, result);
     return result;
 }
@@ -56,7 +56,7 @@ bool subsetSumDfs(const vector<int>& a, int idx, int target, int current) {
 }
 
 bool hasSubsetSum(vector<int> a, int target) {
-    sort(a.begin(), a.end());
+    sort(a.begin(), a.end()); // pruning 조건 current > target이 잘 작동하도록 양수 작은 값부터 본다.
     return subsetSumDfs(a, 0, target, 0);
 }
 
@@ -65,8 +65,8 @@ int countNQueensDfs(int n, int row, vector<bool>& col, vector<bool>& diag1, vect
 
     int count = 0;
     for (int c = 0; c < n; ++c) {
-        int d1 = row - c + n - 1;
-        int d2 = row + c;
+        int d1 = row - c + n - 1; // 음수가 될 수 있는 대각선 번호를 0 이상으로 보정한다.
+        int d2 = row + c;         // 다른 방향 대각선은 row+col이 같으면 충돌한다.
         if (col[c] || diag1[d1] || diag2[d2]) continue; // 열과 두 대각선 중 하나라도 막히면 놓을 수 없다.
 
         col[c] = diag1[d1] = diag2[d2] = true;
@@ -77,7 +77,7 @@ int countNQueensDfs(int n, int row, vector<bool>& col, vector<bool>& diag1, vect
 }
 
 int countNQueens(int n) {
-    vector<bool> col(n, false), diag1(2 * n - 1, false), diag2(2 * n - 1, false);
+    vector<bool> col(n, false), diag1(2 * n - 1, false), diag2(2 * n - 1, false); // 열/대각선 점유 상태를 O(1)에 확인한다.
     return countNQueensDfs(n, 0, col, diag1, diag2);
 }
 

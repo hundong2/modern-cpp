@@ -20,23 +20,23 @@ Chapter 09. 위상 정렬, DAG DP
 using namespace std;
 
 vector<int> topologicalOrder(int n, const vector<pair<int, int>>& edges) {
-    vector<vector<int>> graph(n);
-    vector<int> indegree(n, 0);
+    vector<vector<int>> graph(n); // u -> v 간선을 저장하는 방향 그래프다.
+    vector<int> indegree(n, 0);   // 아직 처리되지 않은 선행 정점 수다.
     for (auto [u, v] : edges) {
         graph[u].push_back(v);
         ++indegree[v]; // v보다 먼저 끝나야 하는 선행 작업 수다.
     }
 
-    queue<int> q;
+    queue<int> q; // queue는 먼저 들어온 indegree 0 정점부터 꺼내는 FIFO 작업 목록이다.
     for (int i = 0; i < n; ++i) {
         if (indegree[i] == 0) q.push(i); // 지금 바로 처리 가능한 작업부터 시작한다.
     }
 
-    vector<int> order;
+    vector<int> order; // 큐에서 꺼낸 순서가 가능한 위상 정렬 결과다.
     while (!q.empty()) {
         int u = q.front();
         q.pop();
-        order.push_back(u);
+        order.push_back(u); // indegree 0인 정점만 들어오므로 지금 처리해도 안전하다.
 
         for (int v : graph[u]) {
             if (--indegree[v] == 0) q.push(v); // 모든 선행 작업이 끝난 순간 큐에 넣는다.
@@ -56,8 +56,8 @@ int minimumProjectTime(const vector<int>& duration, const vector<pair<int, int>>
         ++indegree[v];
     }
 
-    queue<int> q;
-    vector<int> earliest = duration;
+    queue<int> q; // 위상 정렬 DP에서도 처리 가능한 작업을 FIFO queue에 넣는다.
+    vector<int> earliest = duration; // 선행 작업이 없는 작업은 자기 duration만큼 시간이 걸린다.
     for (int i = 0; i < n; ++i) {
         if (indegree[i] == 0) q.push(i);
     }
@@ -74,12 +74,12 @@ int minimumProjectTime(const vector<int>& duration, const vector<pair<int, int>>
 }
 
 bool hasCycleDirectedDfs(int u, const vector<vector<int>>& graph, vector<int>& color) {
-    color[u] = 1;
+    color[u] = 1; // 1은 현재 DFS call stack 안에 있다는 뜻이다.
     for (int v : graph[u]) {
-        if (color[v] == 1) return true;
+        if (color[v] == 1) return true; // call stack 안의 정점을 다시 만나면 cycle이다.
         if (color[v] == 0 && hasCycleDirectedDfs(v, graph, color)) return true;
     }
-    color[u] = 2;
+    color[u] = 2; // 탐색이 끝난 정점은 다시 들어가도 cycle을 만들지 않는다.
     return false;
 }
 

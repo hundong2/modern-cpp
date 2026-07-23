@@ -53,7 +53,7 @@ vector<int> kmpSearch(const string& text, const string& pattern) {
 class Trie {
 public:
     Trie() {
-        nodes.push_back(Node{});
+        nodes.push_back(Node{}); // 0번 노드를 root로 고정한다.
     }
 
     void insert(const string& word) {
@@ -72,11 +72,11 @@ public:
 
     bool contains(const string& word) const {
         int node = walk(word);
-        return node != -1 && nodes[node].terminal;
+        return node != -1 && nodes[node].terminal; // 경로가 있어도 terminal이 아니면 완전한 단어가 아니다.
     }
 
     bool startsWith(const string& prefix) const {
-        return walk(prefix) != -1;
+        return walk(prefix) != -1; // 접두사는 terminal 여부와 무관하게 경로만 있으면 된다.
     }
 
 private:
@@ -86,17 +86,17 @@ private:
         int prefixCount = 0;
 
         Node() {
-            next.fill(-1);
+            next.fill(-1); // -1은 해당 문자 간선이 없다는 뜻이다.
         }
     };
 
     vector<Node> nodes;
 
     int walk(const string& s) const {
-        int cur = 0;
+        int cur = 0; // 항상 root에서 시작한다.
         for (char ch : s) {
             int idx = ch - 'a';
-            if (idx < 0 || idx >= 26 || nodes[cur].next[idx] == -1) return -1;
+            if (idx < 0 || idx >= 26 || nodes[cur].next[idx] == -1) return -1; // 지원 범위 밖 문자나 없는 경로는 실패다.
             cur = nodes[cur].next[idx];
         }
         return cur;
@@ -107,7 +107,7 @@ vector<int> zFunction(const string& s) {
     int n = (int)s.size();
     vector<int> z(n, 0);
     int left = 0;
-    int right = 0;
+    int right = 0; // [left, right]는 현재 알고 있는 가장 오른쪽 Z-box다.
     for (int i = 1; i < n; ++i) {
         if (i <= right) z[i] = min(right - i + 1, z[i - left]); // 기존 Z-box 안의 정보를 재사용한다.
         while (i + z[i] < n && s[z[i]] == s[i + z[i]]) ++z[i];  // box 밖은 실제 문자 비교로 확장한다.

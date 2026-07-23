@@ -57,23 +57,23 @@ long long modPow(long long base, long long exp, long long mod) {
 
 long long extendedGcd(long long a, long long b, long long& x, long long& y) {
     if (b == 0) {
-        x = 1;
+        x = 1; // a*1 + 0*0 = a
         y = 0;
         return a;
     }
     long long x1, y1;
     long long g = extendedGcd(b, a % b, x1, y1);
-    x = y1;
+    x = y1;                    // 재귀 결과를 한 단계 위 식으로 변환한다.
     y = x1 - (a / b) * y1;
     return g;
 }
 
 long long modInversePrime(long long a, long long mod) {
-    return modPow(a, mod - 2, mod);
+    return modPow(a, mod - 2, mod); // Fermat: a^(mod-1)=1 이므로 역원은 a^(mod-2)다.
 }
 
 vector<int> sievePrimes(int n) {
-    vector<bool> isPrime(n + 1, true);
+    vector<bool> isPrime(n + 1, true); // isPrime[x]가 true면 아직 합성수로 지워지지 않았다는 뜻이다.
     if (n >= 0) isPrime[0] = false;
     if (n >= 1) isPrime[1] = false;
 
@@ -86,7 +86,7 @@ vector<int> sievePrimes(int n) {
 
     vector<int> primes;
     for (int i = 2; i <= n; ++i) {
-        if (isPrime[i]) primes.push_back(i);
+        if (isPrime[i]) primes.push_back(i); // 남아 있는 수가 소수다.
     }
     return primes;
 }
@@ -102,7 +102,7 @@ public:
 
     long long nCr(int n, int r) const {
         if (r < 0 || r > n) return 0;
-        return fact[n] * invFact[r] % mod * invFact[n - r] % mod;
+        return fact[n] * invFact[r] % mod * invFact[n - r] % mod; // n! / (r!(n-r)!)를 모듈러 곱으로 계산한다.
     }
 
 private:

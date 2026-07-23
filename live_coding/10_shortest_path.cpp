@@ -31,11 +31,11 @@ using namespace std;
 const long long INF = (1LL << 60);
 
 vector<long long> dijkstra(int n, const vector<vector<pair<int, int>>>& graph, int start) {
-    vector<long long> dist(n, INF);
-    priority_queue<pair<long long, int>, vector<pair<long long, int>>, greater<pair<long long, int>>> pq;
+    vector<long long> dist(n, INF); // 아직 도달하지 못한 정점은 INF로 표시한다.
+    priority_queue<pair<long long, int>, vector<pair<long long, int>>, greater<pair<long long, int>>> pq; // pair는 거리,정점이고 greater로 가장 짧은 거리 후보가 top이 된다.
 
-    dist[start] = 0;
-    pq.push({0, start});
+    dist[start] = 0;       // 시작점까지의 거리는 0이다.
+    pq.push({0, start});   // min-heap에서 가장 짧은 후보부터 확정한다.
 
     while (!pq.empty()) {
         auto [d, u] = pq.top();
@@ -53,10 +53,10 @@ vector<long long> dijkstra(int n, const vector<vector<pair<int, int>>>& graph, i
 }
 
 pair<bool, vector<long long>> bellmanFord(int n, const vector<tuple<int, int, int>>& edges, int start) {
-    vector<long long> dist(n, INF);
+    vector<long long> dist(n, INF); // 음수 간선이 있어도 도달 불가능 상태는 INF로 둔다.
     dist[start] = 0;
 
-    for (int iter = 0; iter < n - 1; ++iter) {
+    for (int iter = 0; iter < n - 1; ++iter) { // 최단 단순 경로의 간선 수는 최대 V-1개다.
         bool changed = false;
         for (auto [u, v, w] : edges) {
             if (dist[u] == INF) continue;
@@ -70,7 +70,7 @@ pair<bool, vector<long long>> bellmanFord(int n, const vector<tuple<int, int, in
 
     for (auto [u, v, w] : edges) {
         if (dist[u] != INF && dist[v] > dist[u] + w) {
-            return {true, dist};
+            return {true, dist}; // V번째 완화가 가능하면 음수 사이클이 있다.
         }
     }
     return {false, dist};
@@ -78,7 +78,7 @@ pair<bool, vector<long long>> bellmanFord(int n, const vector<tuple<int, int, in
 
 vector<vector<long long>> floydWarshall(vector<vector<long long>> dist) {
     int n = (int)dist.size();
-    for (int k = 0; k < n; ++k) {
+    for (int k = 0; k < n; ++k) { // k까지의 정점을 중간 경유지로 허용한다.
         for (int i = 0; i < n; ++i) {
             if (dist[i][k] == INF) continue;
             for (int j = 0; j < n; ++j) {
@@ -91,8 +91,8 @@ vector<vector<long long>> floydWarshall(vector<vector<long long>> dist) {
 }
 
 vector<int> zeroOneBfs(int n, const vector<vector<pair<int, int>>>& graph, int start) {
-    vector<int> dist(n, INT_MAX);
-    deque<int> dq;
+    vector<int> dist(n, INT_MAX); // 0/1 가중치는 int 거리로 충분한 경우가 많다.
+    deque<int> dq; // deque는 앞/뒤 삽입이 모두 O(1)이라 0-1 BFS에서 0비용은 앞, 1비용은 뒤로 보낼 수 있다.
     dist[start] = 0;
     dq.push_front(start);
 
@@ -101,7 +101,7 @@ vector<int> zeroOneBfs(int n, const vector<vector<pair<int, int>>>& graph, int s
         dq.pop_front();
 
         for (auto [v, w] : graph[u]) {
-            if (dist[v] <= dist[u] + w) continue;
+            if (dist[v] <= dist[u] + w) continue; // 더 짧아지는 경우만 deque에 다시 넣는다.
             dist[v] = dist[u] + w;
             if (w == 0) dq.push_front(v); // 0 비용 간선은 같은 거리 레벨이라 앞에 넣는다.
             else dq.push_back(v);         // 1 비용 간선은 다음 거리 레벨이라 뒤에 넣는다.
@@ -114,7 +114,7 @@ int main() {
     ios::sync_with_stdio(false);
     cin.tie(nullptr);
 
-    vector<vector<pair<int, int>>> graph(5);
+    vector<vector<pair<int, int>>> graph(5); // 각 간선을 pair<도착정점,가중치>로 저장하는 가중치 인접 리스트다.
     auto add = [&](int u, int v, int w) {
         graph[u].push_back({v, w});
         graph[v].push_back({u, w});

@@ -24,9 +24,9 @@ Chapter 14. LIS, Edit Distance, Bitmask DP
 using namespace std;
 
 int lisLength(const vector<int>& a) {
-    vector<int> tails;
+    vector<int> tails; // tails는 길이가 동적으로 늘어나는 배열이며, lower_bound를 쓰려면 항상 정렬 상태를 유지해야 한다.
     for (int x : a) {
-        auto it = lower_bound(tails.begin(), tails.end(), x); // x가 들어갈 수 있는 가장 왼쪽 길이를 찾는다.
+        auto it = lower_bound(tails.begin(), tails.end(), x); // lower_bound는 정렬된 vector에서 O(log N) iterator를 반환한다.
         if (it == tails.end()) tails.push_back(x);            // 모든 tail보다 크면 LIS 길이가 늘어난다.
         else *it = x;                                         // 더 작은 tail로 바꿔 이후 확장 가능성을 키운다.
     }
@@ -36,10 +36,10 @@ int lisLength(const vector<int>& a) {
 int editDistance(const string& a, const string& b) {
     int n = (int)a.size();
     int m = (int)b.size();
-    vector<vector<int>> dp(n + 1, vector<int>(m + 1, 0));
+    vector<vector<int>> dp(n + 1, vector<int>(m + 1, 0)); // dp[i][j]는 a 앞 i글자를 b 앞 j글자로 바꾸는 비용이다.
 
-    for (int i = 0; i <= n; ++i) dp[i][0] = i;
-    for (int j = 0; j <= m; ++j) dp[0][j] = j;
+    for (int i = 0; i <= n; ++i) dp[i][0] = i; // b가 비어 있으면 i번 삭제해야 한다.
+    for (int j = 0; j <= m; ++j) dp[0][j] = j; // a가 비어 있으면 j번 삽입해야 한다.
 
     for (int i = 1; i <= n; ++i) {
         for (int j = 1; j <= m; ++j) {
@@ -56,8 +56,8 @@ int editDistance(const string& a, const string& b) {
 int tspBitmask(const vector<vector<int>>& cost) {
     int n = (int)cost.size();
     const int INF = 1e9;
-    vector<vector<int>> dp(1 << n, vector<int>(n, INF));
-    dp[1][0] = 0;
+    vector<vector<int>> dp(1 << n, vector<int>(n, INF)); // 큰 2차원 vector는 메모리 사용량이 커서 N 제한을 먼저 확인해야 한다.
+    dp[1][0] = 0; // 0번 도시만 방문하고 0번에 있는 시작 상태다.
 
     for (int mask = 0; mask < (1 << n); ++mask) {
         for (int u = 0; u < n; ++u) {
@@ -70,10 +70,10 @@ int tspBitmask(const vector<vector<int>>& cost) {
         }
     }
 
-    int all = (1 << n) - 1;
+    int all = (1 << n) - 1; // 모든 도시를 방문한 mask다.
     int answer = INF;
     for (int u = 0; u < n; ++u) {
-        answer = min(answer, dp[all][u] + cost[u][0]);
+        answer = min(answer, dp[all][u] + cost[u][0]); // 마지막 도시에서 시작 도시로 돌아오는 비용을 더한다.
     }
     return answer;
 }

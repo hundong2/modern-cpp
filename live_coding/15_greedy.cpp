@@ -51,8 +51,8 @@ bool canJumpToEnd(const vector<int>& jump) {
 }
 
 long long minMergeCost(const vector<int>& sizes) {
-    priority_queue<long long, vector<long long>, greater<long long>> pq(sizes.begin(), sizes.end());
-    long long cost = 0;
+    priority_queue<long long, vector<long long>, greater<long long>> pq(sizes.begin(), sizes.end()); // 가장 작은 두 묶음을 빠르게 꺼낸다.
+    long long cost = 0; // 누적 병합 비용은 입력 크기에 따라 int를 넘을 수 있다.
 
     while (pq.size() > 1) {
         long long a = pq.top();
@@ -68,12 +68,12 @@ long long minMergeCost(const vector<int>& sizes) {
 int eraseOverlapIntervals(vector<pair<int, int>> intervals) {
     sort(intervals.begin(), intervals.end(), [](auto a, auto b) {
         return a.second < b.second;
-    });
+    }); // 최대한 많이 남기는 문제는 회의실 선택과 같은 끝점 greedy로 바꿀 수 있다.
 
     int kept = 0;
-    int end = INT_MIN;
+    int end = INT_MIN; // 아직 선택한 구간이 없음을 표현한다.
     for (auto [l, r] : intervals) {
-        if (l >= end) {
+        if (l >= end) { // 겹치지 않는 구간만 유지한다.
             ++kept;
             end = r;
         }
@@ -85,7 +85,7 @@ int main() {
     ios::sync_with_stdio(false);
     cin.tie(nullptr);
 
-    vector<pair<int, int>> meetings = {{1, 4}, {2, 3}, {3, 5}, {6, 8}, {5, 7}};
+    vector<pair<int, int>> meetings = {{1, 4}, {2, 3}, {3, 5}, {6, 8}, {5, 7}}; // pair는 회의 시작/끝처럼 작은 구조를 빠르게 표현한다.
     cout << "[max meetings] " << maxNonOverlappingMeetings(meetings) << '\n';
     cout << "[can jump] " << boolalpha << canJumpToEnd({2, 3, 1, 1, 4}) << '\n';
     cout << "[merge cost] " << minMergeCost({10, 20, 30}) << '\n';

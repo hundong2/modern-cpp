@@ -26,8 +26,8 @@ public:
     explicit LCA(const vector<vector<int>>& tree, int root = 0)
         : n((int)tree.size()), graph(tree), depth(n, 0) {
         log = 1;
-        while ((1 << log) <= n) ++log;
-        up.assign(log, vector<int>(n, root));
+        while ((1 << log) <= n) ++log; // 가장 높은 점프 크기가 n 이상이 되도록 log를 잡는다.
+        up.assign(log, vector<int>(n, root)); // root의 조상은 root로 채워 경계 처리를 단순화한다.
         dfs(root, root);
     }
 
@@ -39,14 +39,14 @@ public:
             if (diff & (1 << k)) a = up[k][a]; // 깊이 차이만큼 a를 위로 올려 두 노드의 깊이를 맞춘다.
         }
 
-        if (a == b) return a;
+        if (a == b) return a; // 깊이를 맞춘 뒤 같아졌다면 그 노드가 LCA다.
         for (int k = log - 1; k >= 0; --k) {
             if (up[k][a] != up[k][b]) {
                 a = up[k][a]; // 조상이 달라지는 가장 큰 점프부터 동시에 올린다.
                 b = up[k][b];
             }
         }
-        return up[0][a];
+        return up[0][a]; // 서로 다른 자식까지 올렸으므로 바로 위 부모가 LCA다.
     }
 
     int getDepth(int node) const {
@@ -75,7 +75,7 @@ private:
 };
 
 pair<int, int> farthestFrom(int start, const vector<vector<int>>& tree) {
-    vector<int> dist(tree.size(), -1);
+    vector<int> dist(tree.size(), -1); // -1은 아직 방문하지 않은 정점이다.
     queue<int> q;
     q.push(start);
     dist[start] = 0;
@@ -84,7 +84,7 @@ pair<int, int> farthestFrom(int start, const vector<vector<int>>& tree) {
     while (!q.empty()) {
         int u = q.front();
         q.pop();
-        if (dist[u] > dist[best]) best = u;
+        if (dist[u] > dist[best]) best = u; // BFS 중 가장 먼 정점을 계속 갱신한다.
         for (int v : tree[u]) {
             if (dist[v] != -1) continue;
             dist[v] = dist[u] + 1; // 트리 간선 수 기준 거리라 부모 거리 + 1이다.

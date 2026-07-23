@@ -19,8 +19,8 @@ Chapter 08. 그래프 BFS/DFS, 격자 탐색
 #include <vector>
 using namespace std;
 
-int countComponents(int n, const vector<pair<int, int>>& edges) {
-    vector<vector<int>> graph(n);
+int countComponents(int n, const vector<pair<int, int>>& edges) { // pair<int,int>는 간선의 양 끝점처럼 두 값을 묶는 표준 타입이다.
+    vector<vector<int>> graph(n); // 인접 리스트는 vector 안에 vector를 둬 각 정점의 이웃 목록을 저장한다.
     for (auto [u, v] : edges) {
         graph[u].push_back(v);
         graph[v].push_back(u); // 무방향 그래프라 양쪽 인접 리스트에 모두 넣는다.
@@ -32,7 +32,7 @@ int countComponents(int n, const vector<pair<int, int>>& edges) {
     for (int start = 0; start < n; ++start) {
         if (visited[start]) continue;
         ++components;
-        queue<int> q;
+        queue<int> q; // queue는 FIFO라 먼저 발견한 정점부터 처리한다. BFS의 레벨 순서와 정확히 맞다.
         q.push(start);
         visited[start] = true; // 큐에 넣는 순간 방문 처리해 중복 삽입을 막는다.
 
@@ -52,17 +52,17 @@ int countComponents(int n, const vector<pair<int, int>>& edges) {
 int shortestPathInGrid(const vector<string>& grid) {
     int n = (int)grid.size();
     int m = (int)grid[0].size();
-    pair<int, int> start{-1, -1}, goal{-1, -1};
+    pair<int, int> start{-1, -1}, goal{-1, -1}; // 찾지 못한 상태를 -1로 표시해 디버깅하기 쉽게 한다.
 
     for (int r = 0; r < n; ++r) {
         for (int c = 0; c < m; ++c) {
-            if (grid[r][c] == 'S') start = {r, c};
-            if (grid[r][c] == 'G') goal = {r, c};
+            if (grid[r][c] == 'S') start = {r, c}; // 시작점은 BFS 큐의 첫 원소가 된다.
+            if (grid[r][c] == 'G') goal = {r, c};  // 목표에 도달하면 즉시 최단 거리 반환이 가능하다.
         }
     }
 
-    vector<vector<int>> dist(n, vector<int>(m, -1));
-    queue<pair<int, int>> q;
+    vector<vector<int>> dist(n, vector<int>(m, -1)); // -1은 미방문 상태와 거리 0을 구분한다.
+    queue<pair<int, int>> q; // 격자 좌표는 pair<row,col>로 큐에 넣어 한 칸을 하나의 상태로 다룬다.
     q.push(start);
     dist[start.first][start.second] = 0;
 
@@ -72,7 +72,7 @@ int shortestPathInGrid(const vector<string>& grid) {
     while (!q.empty()) {
         auto [r, c] = q.front();
         q.pop();
-        if (make_pair(r, c) == goal) return dist[r][c];
+        if (make_pair(r, c) == goal) return dist[r][c]; // BFS라 처음 꺼낸 목표 거리가 최단이다.
 
         for (int dir = 0; dir < 4; ++dir) {
             int nr = r + dr[dir];
@@ -89,7 +89,7 @@ int shortestPathInGrid(const vector<string>& grid) {
 void markIsland(vector<string>& grid, int r, int c) {
     int n = (int)grid.size();
     int m = (int)grid[0].size();
-    if (r < 0 || r >= n || c < 0 || c >= m || grid[r][c] != '1') return;
+    if (r < 0 || r >= n || c < 0 || c >= m || grid[r][c] != '1') return; // 범위 밖/물/방문済이면 종료한다.
 
     grid[r][c] = '0'; // 방문 처리와 동시에 물을 만들어 중복 DFS를 방지한다.
     markIsland(grid, r + 1, c);
@@ -99,7 +99,7 @@ void markIsland(vector<string>& grid, int r, int c) {
 }
 
 int countIslands(vector<string> grid) {
-    int count = 0;
+    int count = 0; // grid를 값으로 받아 원본을 망가뜨리지 않고 방문 표시한다.
     for (int r = 0; r < (int)grid.size(); ++r) {
         for (int c = 0; c < (int)grid[0].size(); ++c) {
             if (grid[r][c] == '1') {

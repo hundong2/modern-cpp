@@ -25,12 +25,12 @@ Chapter 20. 기하, CCW, 선분 교차, 볼록 껍질, 스위프 라인
 using namespace std;
 
 struct Point {
-    long long x;
+    long long x; // 좌표 곱이 int를 넘기 쉬워 long long을 기본으로 둔다.
     long long y;
 
     bool operator<(const Point& other) const {
         if (x != other.x) return x < other.x;
-        return y < other.y;
+        return y < other.y; // x가 같을 때 y로 정렬해야 convex hull 순서가 안정적이다.
     }
 
     bool operator==(const Point& other) const {
@@ -39,11 +39,11 @@ struct Point {
 };
 
 Point operator-(const Point& a, const Point& b) {
-    return {a.x - b.x, a.y - b.y};
+    return {a.x - b.x, a.y - b.y}; // 벡터 b->a를 만들어 외적 계산에 사용한다.
 }
 
 long long cross(Point a, Point b) {
-    return a.x * b.y - a.y * b.x;
+    return a.x * b.y - a.y * b.x; // 2D 외적의 z성분이다.
 }
 
 long long ccw(Point a, Point b, Point c) {
@@ -84,8 +84,8 @@ long long polygonArea2(const vector<Point>& poly) {
 
 vector<Point> convexHull(vector<Point> points) {
     sort(points.begin(), points.end());
-    points.erase(unique(points.begin(), points.end()), points.end());
-    if (points.size() <= 1) return points;
+    points.erase(unique(points.begin(), points.end()), points.end()); // 중복 점은 hull 계산 전에 제거한다.
+    if (points.size() <= 1) return points; // 점이 0/1개면 그 자체가 hull이다.
 
     vector<Point> lower, upper;
     for (Point p : points) {
@@ -103,7 +103,7 @@ vector<Point> convexHull(vector<Point> points) {
         upper.push_back(p);
     }
 
-    lower.pop_back();
+    lower.pop_back(); // 시작/끝 점이 lower와 upper에 중복으로 들어가므로 하나씩 제거한다.
     upper.pop_back();
     lower.insert(lower.end(), upper.begin(), upper.end());
     return lower;
@@ -119,7 +119,7 @@ int maxOverlappingClosedIntervals(const vector<pair<int, int>>& intervals) {
     sort(events.begin(), events.end(), [](auto a, auto b) {
         if (a.first != b.first) return a.first < b.first;
         return a.second > b.second;
-    });
+    }); // 같은 좌표에서는 +1을 -1보다 먼저 처리해 닫힌 구간 겹침을 반영한다.
 
     int cur = 0;
     int best = 0;

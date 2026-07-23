@@ -21,19 +21,19 @@ Chapter 04. 정렬, lower/upper bound, 매개변수 탐색
 #include <vector>
 using namespace std;
 
-int countOccurrences(vector<int> a, int x) {
-    sort(a.begin(), a.end());
-    auto lo = lower_bound(a.begin(), a.end(), x); // x 이상이 처음 나오는 위치다.
-    auto hi = upper_bound(a.begin(), a.end(), x); // x 초과가 처음 나오는 위치다.
+int countOccurrences(vector<int> a, int x) { // vector를 값으로 받으면 복사본을 만들기 때문에 원본 보존은 되지만 O(N) 비용이 든다.
+    sort(a.begin(), a.end()); // 값으로 받은 복사본을 정렬하므로 호출자 배열은 바뀌지 않는다.
+    auto lo = lower_bound(a.begin(), a.end(), x); // lower_bound는 정렬된 iterator 범위에서 x 이상 첫 위치를 이분 탐색한다.
+    auto hi = upper_bound(a.begin(), a.end(), x); // upper_bound는 x 초과 첫 위치라 두 iterator 차이가 등장 횟수다.
     return (int)(hi - lo);
 }
 
 long long minimumSpeed(const vector<int>& works, long long maxHours) {
-    long long lo = 1;
-    long long hi = *max_element(works.begin(), works.end());
+    long long lo = 1; // 속도 0은 나눗셈이 불가능하므로 최소 후보는 1이다.
+    long long hi = *max_element(works.begin(), works.end()); // 가장 큰 일을 1시간에 끝내는 속도면 항상 충분하다.
 
     auto possible = [&](long long speed) {
-        long long hours = 0;
+        long long hours = 0; // 누적 시간이 int 범위를 넘을 수 있어 long long을 쓴다.
         for (int w : works) {
             hours += (w + speed - 1) / speed; // 정수 나눗셈에서 올림을 구현하는 관용식이다.
             if (hours > maxHours) return false;
@@ -49,8 +49,8 @@ long long minimumSpeed(const vector<int>& works, long long maxHours) {
     return lo;
 }
 
-vector<pair<int, int>> mergeIntervals(vector<pair<int, int>> intervals) {
-    sort(intervals.begin(), intervals.end());
+vector<pair<int, int>> mergeIntervals(vector<pair<int, int>> intervals) { // pair는 interval의 start/end처럼 의미가 명확한 두 값을 묶기 좋다.
+    sort(intervals.begin(), intervals.end()); // pair 기본 정렬은 first, then second 오름차순이다.
     vector<pair<int, int>> merged;
 
     for (auto [start, end] : intervals) {
@@ -65,9 +65,9 @@ vector<pair<int, int>> mergeIntervals(vector<pair<int, int>> intervals) {
 
 int lowerBoundManual(const vector<int>& a, int target) {
     int lo = 0;
-    int hi = (int)a.size();
+    int hi = (int)a.size(); // [lo, hi) 반열린 구간을 유지하면 삽입 위치 n도 표현된다.
     while (lo < hi) {
-        int mid = lo + (hi - lo) / 2;
+        int mid = lo + (hi - lo) / 2; // 매 반복마다 탐색 구간을 절반으로 줄인다.
         if (a[mid] >= target) hi = mid; // mid도 답 후보이므로 버리지 않는다.
         else lo = mid + 1;              // target보다 작으면 mid 이하가 모두 답이 아니다.
     }

@@ -26,7 +26,7 @@ using namespace std;
 class DSU {
 public:
     explicit DSU(int n) : parent(n), size(n, 1) {
-        iota(parent.begin(), parent.end(), 0); // 처음에는 각 정점이 자기 자신을 대표자로 가진다.
+        iota(parent.begin(), parent.end(), 0); // <numeric>의 iota는 0,1,2... 연속 값을 채운다. 초기 parent 배열 생성에 딱 맞다.
     }
 
     int find(int x) {
@@ -45,7 +45,7 @@ public:
     }
 
     bool same(int a, int b) {
-        return find(a) == find(b);
+        return find(a) == find(b); // 연결성 질의는 대표자가 같은지만 보면 된다.
     }
 
 private:
@@ -64,9 +64,9 @@ pair<bool, long long> kruskalMst(int n, vector<Edge> edges) {
         return a.w < b.w;
     }); // Kruskal은 가장 싼 간선부터 cycle 없이 선택한다.
 
-    DSU dsu(n);
-    long long cost = 0;
-    int used = 0;
+    DSU dsu(n);       // DSU 내부 vector는 parent/size 배열을 연속 메모리로 보관해 find 접근이 빠르다.
+    long long cost = 0; // 간선 비용 합은 int를 넘을 수 있어 long long을 쓴다.
+    int used = 0;     // MST는 정확히 n-1개의 간선을 사용해야 한다.
 
     for (const Edge& e : edges) {
         if (!dsu.unite(e.u, e.v)) continue; // 이미 연결된 두 정점을 잇는 간선은 cycle을 만든다.
@@ -74,7 +74,7 @@ pair<bool, long long> kruskalMst(int n, vector<Edge> edges) {
         ++used;
         if (used == n - 1) break;
     }
-    return {used == n - 1, cost};
+    return {used == n - 1, cost}; // n-1개를 못 골랐다면 그래프가 연결되어 있지 않다.
 }
 
 pair<int, int> firstRedundantEdge(int n, const vector<pair<int, int>>& edges) {
@@ -87,9 +87,9 @@ pair<int, int> firstRedundantEdge(int n, const vector<pair<int, int>>& edges) {
 
 int countComponentsAfterUnions(int n, const vector<pair<int, int>>& unions) {
     DSU dsu(n);
-    int components = n;
+    int components = n; // 처음에는 모든 정점이 독립 컴포넌트다.
     for (auto [u, v] : unions) {
-        if (dsu.unite(u, v)) --components;
+        if (dsu.unite(u, v)) --components; // 실제로 합쳐졌을 때만 컴포넌트 수가 줄어든다.
     }
     return components;
 }

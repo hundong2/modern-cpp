@@ -50,15 +50,15 @@ private:
 class SegmentTree {
 public:
     explicit SegmentTree(const vector<int>& a) : n((int)a.size()), tree(4 * n, 0) {
-        build(a, 1, 0, n - 1);
+        build(a, 1, 0, n - 1); // node 1을 루트로 쓰는 1-indexed tree 배열 구현이다.
     }
 
     void update(int index, int value) {
-        update(1, 0, n - 1, index, value);
+        update(1, 0, n - 1, index, value); // 공개 함수는 사용자가 구간 경계를 몰라도 되게 감싼다.
     }
 
     long long query(int left, int right) const {
-        return query(1, 0, n - 1, left, right);
+        return query(1, 0, n - 1, left, right); // 내부 재귀 함수에 루트 구간을 넘긴다.
     }
 
 private:
@@ -78,7 +78,7 @@ private:
 
     void update(int node, int start, int end, int index, int value) {
         if (start == end) {
-            tree[node] = value;
+            tree[node] = value; // leaf가 실제 배열 원소 하나를 담당한다.
             return;
         }
         int mid = (start + end) / 2;
@@ -98,7 +98,7 @@ private:
 class LazySegmentTree {
 public:
     explicit LazySegmentTree(const vector<int>& a) : n((int)a.size()), tree(4 * n, 0), lazy(4 * n, 0) {
-        build(a, 1, 0, n - 1);
+        build(a, 1, 0, n - 1); // tree는 현재 반영된 합, lazy는 미뤄둔 더하기 값을 저장한다.
     }
 
     void addRange(int left, int right, long long value) {
@@ -136,11 +136,11 @@ private:
     }
 
     void addRange(int node, int start, int end, int left, int right, long long value) {
-        push(node, start, end);
+        push(node, start, end); // 내려가기 전에 현재 노드에 밀린 lazy를 먼저 반영한다.
         if (right < start || end < left) return;
         if (left <= start && end <= right) {
-            lazy[node] += value;
-            push(node, start, end);
+            lazy[node] += value;      // 완전히 포함되면 자식까지 내려가지 않고 lazy만 표시한다.
+            push(node, start, end);   // 현재 노드 합은 바로 최신 상태로 만든다.
             return;
         }
 

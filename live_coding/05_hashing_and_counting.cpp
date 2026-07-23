@@ -26,7 +26,7 @@ Chapter 05. 해시맵, 카운팅, 좌표 압축
 using namespace std;
 
 pair<int, int> twoSumIndices(const vector<int>& a, int target) {
-    unordered_map<int, int> indexOf;
+    unordered_map<int, int> indexOf; // unordered_map은 hash table이라 "값 -> 인덱스" 조회를 평균 O(1)에 처리한다.
     indexOf.reserve(a.size() * 2 + 1); // rehash를 줄여 평균 성능을 안정화한다.
 
     for (int i = 0; i < (int)a.size(); ++i) {
@@ -39,7 +39,7 @@ pair<int, int> twoSumIndices(const vector<int>& a, int target) {
 }
 
 vector<int> coordinateCompress(const vector<int>& a) {
-    vector<int> values = a;
+    vector<int> values = a; // vector 복사는 O(N)이다. 여기서는 원본 순서 보존과 정렬 기준 생성을 위해 의도적으로 복사한다.
     sort(values.begin(), values.end());
     values.erase(unique(values.begin(), values.end()), values.end()); // 압축 좌표의 기준 목록이다.
 
@@ -52,11 +52,11 @@ vector<int> coordinateCompress(const vector<int>& a) {
 }
 
 int mostFrequentSmallestTie(const vector<int>& a) {
-    map<int, int> freq; // 동률일 때 작은 값을 고르기 위해 key 오름차순 순회를 사용한다.
-    for (int x : a) ++freq[x];
+    map<int, int> freq; // map은 red-black tree 기반이라 key 오름차순 순회가 필요할 때 unordered_map보다 적합하다.
+    for (int x : a) ++freq[x]; // map의 operator[]는 없던 키를 0으로 만든 뒤 증가시킨다.
 
     int bestValue = 0;
-    int bestCount = -1;
+    int bestCount = -1; // 빈도 0도 정답 후보가 되지 않도록 -1에서 시작한다.
     for (auto [value, count] : freq) {
         if (count > bestCount) { // map 순서상 같은 count면 먼저 나온 작은 값이 유지된다.
             bestCount = count;
@@ -67,13 +67,13 @@ int mostFrequentSmallestTie(const vector<int>& a) {
 }
 
 bool canFormPalindrome(const string& s) {
-    unordered_map<char, int> freq;
-    for (char c : s) ++freq[c];
+    unordered_map<char, int> freq; // 문자 종류가 작으면 vector<int>(256)도 가능하지만, 여기서는 일반 해시맵 예제로 둔다.
+    for (char c : s) ++freq[c]; // 각 문자의 등장 횟수 parity만 중요하다.
 
     int odd = 0;
     for (const auto& entry : freq) {
         int count = entry.second;
-        odd += count % 2;
+        odd += count % 2; // 홀수 개수 문자가 2개 이상이면 팰린드롬 배치가 불가능하다.
     }
     return odd <= 1;
 }

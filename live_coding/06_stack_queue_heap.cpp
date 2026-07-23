@@ -27,14 +27,14 @@ Chapter 06. 스택, 큐, 덱, 힙
 using namespace std;
 
 bool isValidParentheses(const string& s) {
-    unordered_map<char, char> match = {{')', '('}, {']', '['}, {'}', '{'}};
-    stack<char> st;
+    unordered_map<char, char> match = {{')', '('}, {']', '['}, {'}', '{'}}; // hash table이라 닫는 괄호에서 필요한 여는 괄호를 평균 O(1)에 찾는다.
+    stack<char> st; // stack은 LIFO adapter라 가장 최근 push한 값이 top이다. 괄호의 안쪽부터 닫히는 규칙과 맞다.
 
     for (char c : s) {
         if (c == '(' || c == '[' || c == '{') {
             st.push(c); // 닫는 괄호가 나올 때까지 최근 여는 괄호를 기억한다.
         } else if (match.count(c)) {
-            if (st.empty() || st.top() != match[c]) return false;
+            if (st.empty() || st.top() != match[c]) return false; // 비어 있거나 종류가 다르면 즉시 실패다.
             st.pop(); // 가장 안쪽 괄호부터 짝이 맞아야 전체도 올바르다.
         }
     }
@@ -42,8 +42,8 @@ bool isValidParentheses(const string& s) {
 }
 
 vector<int> nextGreaterElements(const vector<int>& a) {
-    vector<int> answer(a.size(), -1);
-    stack<int> pending;
+    vector<int> answer(a.size(), -1); // 끝까지 못 찾은 원소는 -1로 남긴다.
+    stack<int> pending;               // 값을 직접 넣지 않고 인덱스를 넣어 answer 위치를 갱신한다.
 
     for (int i = 0; i < (int)a.size(); ++i) {
         while (!pending.empty() && a[pending.top()] < a[i]) {
@@ -56,31 +56,31 @@ vector<int> nextGreaterElements(const vector<int>& a) {
 }
 
 vector<int> slidingWindowMaximum(const vector<int>& a, int k) {
-    deque<int> dq;
-    vector<int> result;
+    deque<int> dq;       // deque는 양쪽 끝 삽입/삭제가 O(1)이라 queue보다 슬라이딩 윈도우 후보 관리에 적합하다.
+    vector<int> result;  // i >= k-1부터 창 하나가 완성된다.
 
     for (int i = 0; i < (int)a.size(); ++i) {
         while (!dq.empty() && dq.front() <= i - k) dq.pop_front(); // 창 밖 인덱스는 후보에서 제거한다.
         while (!dq.empty() && a[dq.back()] <= a[i]) dq.pop_back(); // 더 작거나 같은 값은 앞으로 최댓값이 될 수 없다.
-        dq.push_back(i);
-        if (i >= k - 1) result.push_back(a[dq.front()]);
+        dq.push_back(i); // 값이 아니라 인덱스를 넣어 창 밖 여부를 판단할 수 있게 한다.
+        if (i >= k - 1) result.push_back(a[dq.front()]); // deque 앞 인덱스가 현재 창의 최댓값 위치다.
     }
     return result;
 }
 
 vector<int> topKLargest(const vector<int>& a, int k) {
-    priority_queue<int, vector<int>, greater<int>> minHeap;
+    priority_queue<int, vector<int>, greater<int>> minHeap; // priority_queue는 일반 queue처럼 먼저 넣은 값이 아니라 우선순위가 높은 값이 top이다.
     for (int x : a) {
-        minHeap.push(x);
+        minHeap.push(x); // 일단 후보에 넣고 크기가 k를 넘으면 가장 작은 값을 제거한다.
         if ((int)minHeap.size() > k) minHeap.pop(); // k개만 유지하면 top은 현재 top-k 중 가장 작은 값이다.
     }
 
     vector<int> result;
     while (!minHeap.empty()) {
         result.push_back(minHeap.top());
-        minHeap.pop();
+        minHeap.pop(); // heap에서 꺼낸 순서는 오름차순이므로 아래에서 다시 내림차순 정렬한다.
     }
-    sort(result.rbegin(), result.rend());
+    sort(result.rbegin(), result.rend()); // reverse_iterator를 쓰면 별도 comparator 없이 내림차순 정렬할 수 있다.
     return result;
 }
 
