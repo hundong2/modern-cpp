@@ -1,5 +1,21 @@
 # 자주 까먹는 C++ 문법과 기술
 
+## 실행
+
+- [실행 스크립트](./run.sh). 
+
+```sh
+./run.sh type/xxx.cpp 
+```
+
+## 추가자료
+
+- [디버깅 raw level](./Environment.md). 
+- [CPP 확장자 규칙](./ExecuteLibraryArchitecture.md). 
+- [ABI 규칙](./ABI_Architecture.md). 
+- [type관련](./type/README.md). 
+- [project sample template](./template/README.md). 
+
 자주 잊는 C++ 문법, 동작 원리, 실무 패턴을 다시 찾아보기 쉽게 모아 두는
 학습 자료의 최상위 목차입니다. 새 자료를 추가할 때는 주제별 하위 폴더를 만들고,
 아래 목차에도 해당 폴더의 `README.md` 링크와 핵심 학습 내용을 함께 추가합니다.
@@ -36,6 +52,39 @@ flowchart TB
 `API`, `ABI`, `CPU`, `OS` 같은 축약어는
 [공통 용어집](./GLOSSARY.md)에서 전체 이름, 한국어 뜻, 비유를 함께 확인할 수 있습니다.
 
+## `type` 예제 빌드 및 실행
+
+[`run.sh`](./run.sh)는 [`type`](./type/) 폴더의 `.cpp` 파일 하나를 선택하여
+C++23으로 빌드하고 곧바로 실행합니다. 먼저 이 README가 있는 폴더로 이동합니다.
+
+```bash
+cd 자주까먹는
+```
+
+디렉터리와 파일 이름을 두 인수로 전달할 수 있습니다.
+
+```bash
+./run.sh type dynamic_cast.cpp
+```
+
+또는 소스 경로를 하나의 인수로 전달해도 됩니다.
+
+```bash
+./run.sh type/dynamic_cast.cpp
+```
+
+예를 들어 `dynamic_cast.cpp`를 실행하면 다음 결과가 출력됩니다.
+
+```text
+멍멍
+야옹
+```
+
+각 `.cpp` 파일은 독립 실행 파일로 빌드되므로 자체 `main()` 함수가 있어야 합니다.
+빌드 결과는 `build/`에, CMake의 중간 파일은 `build/.cmake/type/`에 생성됩니다.
+새 `.cpp` 파일을 `type/`에 추가하면
+[`CMakeLists.txt`](./type/CMakeLists.txt)가 파일 이름과 같은 실행 타깃을 자동으로 만듭니다.
+
 ## 자료 목차
 
 ### [RAII: 스코프와 객체 수명으로 자원 관리](./raii-resource-lifetime/README.md)
@@ -61,6 +110,23 @@ flowchart TB
   - [`exercise.cpp`](./modern-cpp-runtime-foundations/exercise.cpp): 이동 상태, 메모리 순서, 다형성 선택 실습
 - 빌드 구성
   - [`CMakeLists.txt`](./modern-cpp-runtime-foundations/CMakeLists.txt): C++17/C++20 대상과 경고 옵션
+
+### [Modern C++23 실무 프로젝트 템플릿](./template/README.md)
+
+- 계층형 클래스 구조, 의존성 주입, `vector`/`list`/`map`, ranges 정렬,
+  `unique_ptr`/`shared_ptr`, `const`/`constexpr`, `expected`를 하나의 실행 프로젝트로 연결합니다.
+- 핵심 표준: C++23
+- [C#/Python 비교](./template/compare.md)
+- [템플릿 타입 추론 가이드](./template/template-type-deduction.md):
+  `T`, `auto`, `decltype`, 전달 참조, CTAD와 concept를 기초부터 단계별로 설명
+- 예제 및 실습 코드
+  - [`src/main.cpp`](./template/src/main.cpp): 전체 계층과 소유권을 조립하는 실행 예제
+  - [`src/exercise.cpp`](./template/src/exercise.cpp): ranges 정렬과 view를 직접 작성하는 실습
+  - [`src/boost_example.cpp`](./template/src/boost_example.cpp): 선택적으로 빌드하는 Boost.Container 예제
+- 공개 헤더와 빌드 구성
+  - [`include/modern_cpp`](./template/include/modern_cpp/): domain/application/infrastructure 공개 계약
+  - [`CMakeLists.txt`](./template/CMakeLists.txt): C++23 정적 라이브러리, 실행 파일, 선택적 Boost target
+  - [`Makefile`](./template/Makefile): `make build`, `make run`, `make exercise`, `make boost-run` 단축 명령
 
 ### [공통 용어와 축약어 사전](./GLOSSARY.md)
 
