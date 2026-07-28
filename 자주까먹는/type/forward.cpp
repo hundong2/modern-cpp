@@ -1,0 +1,1 @@
+//return static_cast<T&&>(arg); // rvalue로 캐스팅
