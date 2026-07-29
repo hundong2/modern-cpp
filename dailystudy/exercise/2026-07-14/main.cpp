@@ -28,6 +28,7 @@ template <typename Publisher>
 concept AlertPublisher = requires(Publisher publisher, Alert alert) {
     { publisher.publish(alert) } -> std::same_as<void>;
 };
+//concept는 requires 키워드로 선언하며, requires 뒤에 오는 표현식이 모두 만족해야 한다.
 
 class ProcessingSession {
 public:

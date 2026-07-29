@@ -12,9 +12,18 @@
 - [9. std::forward](#stdforward-reference). 
 - [10. Alias Template](#alias-template). 
 - [11. Alias Template example](#template-alias-example). 
+    - [11.1 remove_reference for user](#remove_reference-example). 
 - [12. override](#override). 
 - [13. C#과 비슷한 Getter 사용법](#csharp과-비슷한-getter-사용-법). 
 - [14. 생성자 초기화(Member Initializer)](#member-initializer-생성자-초기화). 
+- [15. concept](#conceptsame_as)  
+    - [15.1.Concepts auto 제약기능](#concepts-auto-제약-문법-기능). 
+- [16. std::remove_cvref_t<T> ](#stdremove_cvref_t). 
+- [17. std::decay_t<T>](#stddecay_t). 
+- [18. forward reference](#forwarding-reference). 
+- [19. type check](#type-check). 
+- [20. SFINAE](#sfinae스피네이). 
+- [21. c++11에서 template에서 typename](#typename이-왜-앞이-들어가는가). 
 
 
 # Object Dump 
@@ -426,6 +435,32 @@ GroupMap_Legacy<int>::type team_scores;
 
 모던 C++의 `template <typename T> using ...` 구문은 이 불필요한 구조체 껍데기와 `::type`의 굴레를 완벽하게 벗어던지게 해준 혁명적인 문법입니다. 실무에서 STL 컨테이너나 스마트 포인터를 사용할 때, 타이핑을 줄이고 가독성을 높이기 위해 거의 필수적으로 사용하는 패턴입니다.
 
+## remove_reference example
+
+- [example remove reference](./remove_reference.cpp). 
+
+- 아래 코드를 통해 &&, & 로 부터 type을 만드는 &, && 제거 
+
+```cpp
+template<typename T> 
+struct my_remove_reference { 
+    using type = T; 
+};
+
+// 2. 특수화 (좌측값 참조 '&'가 있을 때)
+template<typename T> 
+struct my_remove_reference<T&> { 
+    using type = T; 
+};
+
+// 3. 특수화 (우측값 참조 '&&'가 있을 때)
+template<typename T> 
+struct my_remove_reference<T&&> { 
+    using type = T; 
+};
+
+```
+
 # override 
 
 - [Example code](./override.cpp). 
@@ -621,3 +656,134 @@ C++에서는 성능을 떠나서 **반드시 초기화 리스트를 써야만 �
 | **`int`, `float` 등** | 성능 차이 없음 | 성능 차이 없음 |
 
 **결론:** `int` 같은 기본 타입은 본문에서 대입하나 초기화 리스트를 쓰나 속도가 똑같지만, `std::string`이나 `std::vector` 같은 객체에서는 성능 차이가 극심하게 벌어집니다. 따라서 C++에서는 "멤버 변수 초기화는 무조건 초기화 리스트에서 한다"를 기본 습관으로 들이는 것이 좋습니다.
+
+# Concept(same_as)
+
+- [daily study example](../../dailystudy/2026-07-02/main.cpp)  
+- [same_as example](./same_as.cpp). 
+
+## Concepts auto 제약 문법 기능 
+
+
+
+# std::remove_cvref_t<T> 
+
+- [remove_cvref_t](./cvref_decay.cpp). 
+
+- C++20
+- const, volatile, 그리고 참조(&, &&) 만 딱 떼어낸다. 
+- 특정 배열이나 함수 타입은 원형그대로 유지
+
+# std::decay_t<T> 
+
+- [decay_t](./cvref_decay.cpp). 
+
+- C++14
+- remove_cvref_t가 하는 일에 더해서, C언어 시절부터 내려오던 배열 붕괴(Array Decay)까지 수행 
+- 함수를 값으로 전달(Pass-by-value)할 때 일어나는 타입 변환을 완벽히 흉내낸다. 
+- 배열 (int[5])는 포인터(int*)로, 함수는 함수 포인터로 바뀐다. 
+
+# forwarding reference 
+
+- [forwarding reference](./forward_reference.cpp). 
+- 왜? `void process_normal(std::string&& val)` 가 아닌 `auto&&`를 쓰는걸까?!
+- 좌측값을 아예 받을 수 없다. (일반적인 변수)
+- `std::string&&`는 우측값(임시객체)만 받을 수 있다. 
+- 일반 변수도 받으려면 `void process_normal(const str::string& val)` 오버로딩을 하나더 만들어야 하는 번거로움 발생 
+
+## 해결책
+
+- `auto&&` 포워딩 레퍼런스 사용
+- 템플릿 매개변수에서의 `auto&&`또는 `T&&`는 일반적인 우측값 참조가 아니라 포워딩 레퍼런스(forwarding reference)로 작동하여 좌측값과 우측값 모두를 받아낸다. 
+
+# type check
+
+# SFINAE(스피네이)
+
+- [SFINAE enable_if](./enable_if.cpp). 
+
+- Subsititution Failure Is Not An Error 
+    - 치환 실패는 오류가 아니다 
+
+## SFINAE 가 작동하는 원리 
+
+C++ 컴파일러가 오버로딩된 템플릿 함수들 중에서 어떤 함수를 호출할지 결정하는 과정은 다음과 같습니다.  
+
+- 치환(Substitution): 컴파일러는 사용자가 넘긴 인자의 타입을 보고, 템플릿 매개변수(T 등)에 그 타입을 대입(치환)해 봅니다.
+- 실패(Failure): 타입을 대입해 봤더니 문법적으로 말이 안 되는 코드가 만들어지는 경우가 생깁니다.
+- 오류가 아님(Not An Error): 이때 컴파일러는 "컴파일 에러!"를 외치며 프로그램을 멈추는 대신, "아, 이 템플릿은 이번 호출이랑 안 맞네" 하고 해당 템플릿을 후보군에서 조용히 제외합니다.
+
+이후 남은 후보들 중에서 가장 잘 맞는 함수를 선택하여 컴파일을 계속 진행합니다. (만약 남은 후보가 하나도 없다면 그때서야 진짜 컴파일 에러를 발생시킵니다.)  
+
+가장 대표적인 활용 사례 
+
+- [<type_traits> 헤더에 있는  std::enable_if](./enable_if.cpp). 
+    - [typename이 c++11에서 앞에 붙어 있는 이유????](#typename이-왜-앞이-들어가는가). 
+위 코드에서 print_value(10)을 호출하면, 컴파일러는 두 번째 템플릿에 T = int를 넣어봅니다. 하지만 is_floating_point<int>::value는 false가 되고, enable_if는 내부에 type을 정의하지 않게 됩니다.
+
+결과적으로 typename std::enable_if<false>::type이라는 존재하지 않는 타입을 참조하게 되어 '치환 실패(Substitution Failure)'가 발생합니다. 하지만 SFINAE 원칙 덕분에 컴파일 에러가 나지 않고 두 번째 템플릿만 후보에서 탈락하게 됩니다.
+
+- SFINAE ( Substitution Failure is Not An Error)
+    - 치환 실패는 오류가 아니다.
+
+
+## typename이 왜 앞이 들어가는가?
+
+- [C++ version 별 SFINAE example](./SFINAE.cpp). 
+- result output 
+
+```
+== execute: /자주까먹는/build/SFINAE ==
+
+C++11 typename example: 3.14
+C++14 _v, _t example: 3.14
+C++20 concepts example: 3.14
+C++20 concept example(using auto): 3.14
+1
+0
+```
+
+```cpp
+typename std::enable_if<std::is_floating_point<T>::value>::type
+print_value(T value){
+    //...
+}
+```
+
+- "`type`은 변수나 함수가 아니라 자료형(Type)이다. "라고 명확하게 알려주기 위해
+- 의존적 이름(Dependent Name) 처리 방식 때문이다. 
+- c++에서 `::`범위 연산자 뒤에 오는 이름은 두가지중 하나 
+    - 자료형(type) : typedef 나 using, struct로 정의된 타입 
+    - 값(value) : static 멤버 변수나 멤버 함수 
+
+```cpp
+std::enable_if<std::is_floating_point<T>::value>::type
+```
+
+- 우리는 문맥상 `type`이 함수의 변환형(자료형) 자리에 있다는 것을 알지만, 컴파일러는 `T`가 무엇인지 결정되기 전까지는 이 `type`의 정체를 알 수 없다.  
+
+```cpp
+// 컴파일러의 상상 1: type이 자료형인 경우 (우리가 의도한 바)
+struct enable_if {
+    using type = void; // type은 자료형!
+};
+
+// 컴파일러의 상상 2: type이 정적 변수인 경우
+struct enable_if {
+    static int type;   // type은 변수!
+};
+```
+
+- 만약 위와 같이 `T`에 대하여 `enable_if`클래스 내부가 다음과 같이 구현되어 있다면 타입인지? 변수 인지? 모호한 상태가 생김
+- c++컴파일러의 기본 규칙
+    - 템플릿 인자 T에 의존하는 코드에서 `::`뒤에 오는 이름은, 기본적으로 값(변수)으로 간주한다. 
+
+- 따라서 `typename`을 붙여주지 않으면, 컴파일러는 `type`을 정적 변수로 해석해 버린다. 
+- 이 에러를 막기 위해 `typename` 키워드를 문장 맨 앞에 붙여서 컴파일러의 기본 가정을 뒤집는 것 
+
+- c++14에 들어 typename을 생략 가능하도록 개선이 됨. 
+
+```cpp
+template< bool B, class T = void >
+using enable_if_t = typename std::enable_if<B,T>::type; // 여기에 typename이 숨어있습니다!
+```
