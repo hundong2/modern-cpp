@@ -664,7 +664,16 @@ C++에서는 성능을 떠나서 **반드시 초기화 리스트를 써야만 �
 
 ## Concepts auto 제약 문법 기능 
 
+- [concept_auto](./concepts_auto.cpp). 
 
+- [concept requires](./concept_requires.cpp) 
+- [concept requires2](./concept_requires2.cpp)
+- [concept requires3](./concept_requires3.cpp). 
+- [concept example final](./concept_requires_ex.cpp). 
+
+- 함수 시그니처에서 auto를 쓰면 편리하지만, 함수 내부에서 원래 타입에 접근하려면 std::remove_cvref_t<decltype(user)> 같은 복잡한 코드가 필요해집니다. 따라서 분기 처리가 필요한 템플릿 함수는 template <Concept T> 형태로 작성하는 것이 정석입니다.
+
+- 클래스의 공통 속성(static)을 검사할 때만 requires { T::member }를 쓰고, 각 객체가 가지는 데이터(멤버 변수)를 검사할 때는 requires(T obj) { obj.member }를 사용해야 합니다.
 
 # std::remove_cvref_t<T> 
 

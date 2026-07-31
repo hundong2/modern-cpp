@@ -10,6 +10,7 @@ usage() {
   echo "예:" >&2
   echo "  $0 type dynamic_cast.cpp" >&2
   echo "  $0 type/dynamic_cast.cpp" >&2
+  echo "  $0 cpp23/expected.cpp" >&2
 }
 
 if [[ $# -eq 1 ]]; then
@@ -42,6 +43,7 @@ cmake_file="$source_dir/CMakeLists.txt"
 target="${source_file%.cpp}"
 build_root="$script_dir/build"
 cmake_build_dir="$build_root/.cmake/$source_directory"
+runtime_output_dir="$build_root/$source_directory"
 
 if [[ ! -f "$cmake_file" ]]; then
   echo "오류: CMake 프로젝트를 찾을 수 없습니다: $cmake_file" >&2
@@ -53,17 +55,17 @@ if [[ ! -f "$source_path" ]]; then
   exit 1
 fi
 
-mkdir -p "$build_root"
+mkdir -p "$runtime_output_dir"
 
 cmake \
   -S "$source_dir" \
   -B "$cmake_build_dir" \
   -DCMAKE_BUILD_TYPE=Release \
-  -DCMAKE_RUNTIME_OUTPUT_DIRECTORY="$build_root"
+  -DCMAKE_RUNTIME_OUTPUT_DIRECTORY="$runtime_output_dir"
 
 cmake --build "$cmake_build_dir" --target "$target"
 
-executable="$build_root/$target"
+executable="$runtime_output_dir/$target"
 if [[ ! -x "$executable" ]]; then
   echo "오류: 실행 파일이 생성되지 않았습니다: $executable" >&2
   exit 1
