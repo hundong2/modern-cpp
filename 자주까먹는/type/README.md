@@ -670,6 +670,8 @@ C++에서는 성능을 떠나서 **반드시 초기화 리스트를 써야만 �
 - [concept requires2](./concept_requires2.cpp)
 - [concept requires3](./concept_requires3.cpp). 
 - [concept example final](./concept_requires_ex.cpp). 
+- [concept requires4](./concept_requires4.cpp). 
+- [concept custom](./concept_custom.cpp). 
 
 - 함수 시그니처에서 auto를 쓰면 편리하지만, 함수 내부에서 원래 타입에 접근하려면 std::remove_cvref_t<decltype(user)> 같은 복잡한 코드가 필요해집니다. 따라서 분기 처리가 필요한 템플릿 함수는 template <Concept T> 형태로 작성하는 것이 정석입니다.
 
