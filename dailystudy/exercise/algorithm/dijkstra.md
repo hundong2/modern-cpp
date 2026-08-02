@@ -87,3 +87,4 @@ void dijkstra(int start, const std::vector<std::vector<std::pair<int, int>>>& gr
 
 2026-08-02의 BOJ 1753은 양의 가중치 방향 그래프이다. [`../2026-08-02/icpc_problem.cpp`](../2026-08-02/icpc_problem.cpp)는 `long long` 거리, 인접 리스트, `greater<pair<...>>` 최소 힙, 오래된 항목 건너뛰기를 그대로 구현한다. 평행 간선도 각각 완화하므로 가장 짧은 경로가 자연스럽게 선택된다.
 
+2026-08-03의 Kattis `shortestpath1`도 음이 아닌 가중치 방향 그래프이다. [`../2026-08-03/icpc_problem.cpp`](../2026-08-03/icpc_problem.cpp)는 시작점 하나의 거리 배열을 한 번 계산한 뒤 여러 질의가 공유한다. 따라서 질의마다 다익스트라를 다시 실행하지 않고 `O((V+E) log V + Q)`에 답한다.
