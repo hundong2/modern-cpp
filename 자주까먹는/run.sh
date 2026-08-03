@@ -11,6 +11,7 @@ usage() {
   echo "  $0 type dynamic_cast.cpp" >&2
   echo "  $0 type/dynamic_cast.cpp" >&2
   echo "  $0 cpp23/expected.cpp" >&2
+  echo "  $0 history/decay.cpp" >&2
 }
 
 if [[ $# -eq 1 ]]; then

@@ -52,11 +52,11 @@ flowchart TB
 `API`, `ABI`, `CPU`, `OS` 같은 축약어는
 [공통 용어집](./GLOSSARY.md)에서 전체 이름, 한국어 뜻, 비유를 함께 확인할 수 있습니다.
 
-## `type`과 `cpp23` 예제 빌드 및 실행
+## `type`, `cpp23`, `history` 예제 빌드 및 실행
 
-[`run.sh`](./run.sh)는 [`type`](./type/) 또는 [`cpp23`](./cpp23/) 폴더의 `.cpp`
-파일 하나를 선택하여 C++23으로 빌드하고 곧바로 실행합니다. 먼저 이 README가 있는
-폴더로 이동합니다.
+[`run.sh`](./run.sh)는 [`type`](./type/), [`cpp23`](./cpp23/),
+[`history`](./history/) 폴더의 `.cpp` 파일 하나를 선택하여 C++23으로 빌드하고
+곧바로 실행합니다. 먼저 이 README가 있는 폴더로 이동합니다.
 
 ```bash
 cd 자주까먹는
@@ -74,6 +74,7 @@ cd 자주까먹는
 ./run.sh type/dynamic_cast.cpp
 ./run.sh cpp23/main.cpp
 ./run.sh cpp23/expected.cpp
+./run.sh history/decay.cpp
 ```
 
 예를 들어 `dynamic_cast.cpp`를 실행하면 다음 결과가 출력됩니다.
@@ -84,10 +85,9 @@ cd 자주까먹는
 ```
 
 각 `.cpp` 파일은 독립 실행 파일로 빌드되므로 자체 `main()` 함수가 있어야 합니다.
-실행 파일은 각각 `build/type/`과 `build/cpp23/`에 생성되고, CMake 중간 파일은
-`build/.cmake/type/`과 `build/.cmake/cpp23/`에 분리됩니다. 새 `.cpp` 파일을 두
-폴더 중 하나에 추가하면 각 폴더의 `CMakeLists.txt`가 파일 이름과 같은 실행 타깃을
-자동으로 만듭니다.
+실행 파일은 `build/<폴더>/`에 생성되고 CMake 중간 파일은
+`build/.cmake/<폴더>/`에 분리됩니다. 새 `.cpp` 파일을 해당 폴더에 추가하면 각
+폴더의 `CMakeLists.txt`가 파일 이름과 같은 실행 타깃을 자동으로 만듭니다.
 
 ## 자료 목차
 
