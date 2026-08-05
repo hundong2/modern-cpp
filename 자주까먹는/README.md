@@ -10,6 +10,7 @@
 
 ## 추가자료
 
+- [실무 C++ 서버 프로그래밍 23일 실습 가이드](./실무/README.md): 모던 C++ 문법, TCP/epoll, 동시성, 외부 시스템, 게임 서버 최적화를 라인 주석 코드와 용어 위키로 학습합니다.
 - [디버깅 raw level](./Environment.md). 
 - [CPP 확장자 규칙](./ExecuteLibraryArchitecture.md). 
 - [ABI 규칙](./ABI_Architecture.md). 
