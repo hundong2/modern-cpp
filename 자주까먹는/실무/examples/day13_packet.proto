@@ -1,0 +1,8 @@
+syntax = "proto3"; // proto3 문법으로 스키마를 해석하게 한다.
+package guide; // 생성되는 C++ 타입을 guide namespace에 넣는다.
+
+message LoginRequest { // 로그인 요청의 언어 독립 wire schema를 선언한다.
+  string user_id = 1; // 1은 영구적인 wire field number이며 재사용하면 안 된다.
+  string password = 2; // 비밀번호는 예제 필드이며 실제 로그에 절대 남기지 않는다.
+  uint64 request_id = 3; // 재시도 중복을 식별할 요청 ID를 추가한다.
+} // 메시지 정의를 끝낸다.
