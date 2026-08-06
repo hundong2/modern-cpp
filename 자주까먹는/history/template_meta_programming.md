@@ -3,7 +3,8 @@
 - [01. lambda](#01-lambda-내부-구조)  
 - [02. naming hiding](#02-naming-hiding-using)  
 - [03. variant visit example code](#03-variant_visit). 
-- [04. inline]()
+- [04. inline](#04-inline). 
+- [05. LTO Link Time Optimization](#05-ltolink-time-optimization). 
 
 ## 01. lambda 내부 구조 
 
@@ -187,3 +188,6 @@ fn main() {
 }
 
 ```
+
+## 05. LTO(Link Time Optimization). 
+
