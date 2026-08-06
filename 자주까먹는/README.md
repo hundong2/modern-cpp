@@ -1,12 +1,166 @@
-# 자주 까먹는 C++ 문법과 기술
+# 자주 까먹는 C++와 Rust 문법과 기술
 
 ## 실행
 
-- [실행 스크립트](./run.sh). 
+- [C++ 실행 스크립트](./run.sh)
+- [Rust 실행 스크립트](./run_for_rust.sh)
 
 ```sh
 ./run.sh type/xxx.cpp 
+./run_for_rust.sh rust/xxx.rs
 ```
+
+## Rust 설치와 단일 파일 실행
+
+### 무엇을 설치하는가
+
+Rust 프로젝트는 공식 toolchain 관리자인 `rustup`으로 설치하는 방법을 권장합니다.
+`rustup`은 안정 버전 Rust 컴파일러 `rustc`, 패키지·빌드 도구 `cargo`와 표준 도구를
+함께 관리합니다. 설치 후 먼저 다음 명령으로 상태를 확인합니다.
+
+```bash
+rustup show
+rustc --version
+cargo --version
+```
+
+### macOS
+
+Rust가 최종 실행 파일을 링크할 수 있도록 Apple Command Line Tools를 먼저 준비합니다.
+
+```bash
+xcode-select --install
+```
+
+터미널에서 공식 rustup 설치 스크립트를 실행하고 화면의 기본 설치 항목을 선택합니다.
+
+```bash
+curl --proto '=https' --tlsv1.2 https://sh.rustup.rs -sSf | sh
+```
+
+설치가 끝나면 새 터미널을 열거나 현재 셸에 환경을 반영합니다.
+
+```bash
+source "$HOME/.cargo/env"
+```
+
+### Linux
+
+Rust 링커와 C 코드를 포함한 crate를 빌드하려면 GCC 또는 Clang 계열 개발 도구가
+필요합니다. Ubuntu/Debian 계열에서는 다음과 같이 준비할 수 있습니다.
+
+```bash
+sudo apt update
+sudo apt install curl build-essential
+```
+
+그다음 공식 rustup 설치 스크립트를 실행합니다.
+
+```bash
+curl --proto '=https' --tlsv1.2 https://sh.rustup.rs -sSf | sh
+source "$HOME/.cargo/env"
+```
+
+Fedora, Arch 등은 배포판 패키지 관리자로 GCC 또는 Clang과 linker를 설치한 뒤 같은
+rustup 명령을 사용합니다.
+
+### Windows
+
+1. [공식 Rust 설치 페이지](https://www.rust-lang.org/tools/install)에서 CPU에 맞는
+   `rustup-init.exe`를 내려받아 실행합니다.
+2. 일반 Windows 개발에는 기본값인 MSVC ABI toolchain을 권장합니다.
+3. 설치 프로그램이 Visual Studio 필수 구성 요소 설치를 제안하면 진행합니다. 직접
+   설치할 때는 Visual Studio 2022 Community 또는 Build Tools에서
+   **Desktop development with C++**, 최신 MSVC C++ x64/x86 build tools와 Windows SDK를
+   선택합니다.
+4. 설치가 끝난 뒤 PowerShell, 명령 프롬프트 또는 Git Bash를 새로 엽니다.
+
+`run_for_rust.sh`는 Bash 스크립트이므로 Windows에서는 Git Bash/MSYS2 또는 WSL에서
+실행합니다. PowerShell이나 명령 프롬프트에서는 `rustc`를 직접 사용하거나 Cargo
+명령을 사용합니다.
+
+### PATH 환경 변수
+
+rustup의 기본 도구 위치는 다음과 같습니다.
+
+| 운영체제 | 기본 도구 폴더 |
+|---|---|
+| macOS/Linux | `$HOME/.cargo/bin` |
+| Windows | `%USERPROFILE%\.cargo\bin` |
+
+rustup 설치 프로그램은 일반적으로 이 폴더를 `PATH`에 추가합니다. `rustc --version`이
+실패하면 터미널을 완전히 닫고 다시 엽니다. 그래도 실패하면 다음 설정을 확인합니다.
+
+macOS/Linux의 현재 터미널에만 적용:
+
+```bash
+export PATH="$HOME/.cargo/bin:$PATH"
+```
+
+계속 적용하려면 사용하는 셸의 설정 파일에 같은 줄을 넣습니다.
+
+```bash
+# zsh: ~/.zshrc
+# bash: ~/.bashrc 또는 ~/.bash_profile
+export PATH="$HOME/.cargo/bin:$PATH"
+```
+
+Windows에서는 “시스템 속성 → 환경 변수 → 사용자 변수의 Path”에
+`%USERPROFILE%\.cargo\bin`이 있는지 확인하고, 없다면 새 항목으로 추가합니다.
+
+`CARGO_HOME`이나 `RUSTUP_HOME`을 직접 변경해 설치했다면 기본 경로 대신
+`$CARGO_HOME/bin`이 `PATH`에 있어야 합니다.
+
+### 안정 버전 설치·업데이트
+
+```bash
+rustup default stable
+rustup update stable
+```
+
+### `run_for_rust.sh` 사용법
+
+`자주까먹는` 폴더를 기준으로 `.rs` 파일 경로를 전달합니다.
+
+```bash
+cd 자주까먹는
+
+./run_for_rust.sh rust/hello.rs
+./run_for_rust.sh rust hello.rs
+```
+
+Rust 프로그램에 명령행 인수를 전달하려면 `--` 뒤에 적습니다.
+
+```bash
+./run_for_rust.sh rust/hello.rs -- Alice 3
+```
+
+기본적으로 Rust 2024 Edition, 최적화 수준 2로 컴파일합니다. 필요하면 환경 변수로
+바꿀 수 있습니다.
+
+```bash
+RUST_EDITION=2021 RUST_OPT_LEVEL=0 ./run_for_rust.sh rust/hello.rs
+```
+
+실행 파일은 원본 폴더 구조를 보존해 다음 위치에 생성됩니다.
+
+```text
+rust/hello.rs → build/rust/rust/hello
+```
+
+이 스크립트는 Rust 표준 라이브러리와 로컬 `mod`만 사용하는 단일 파일 학습 예제를
+`rustc`로 빠르게 실행하기 위한 도구입니다. 외부 crate 의존성이나 `Cargo.toml`이 있는
+프로젝트는 해당 프로젝트 폴더에서 다음 명령을 사용합니다.
+
+```bash
+cargo run
+```
+
+공식 참고 자료:
+
+- [The Rust Programming Language: Installation](https://doc.rust-lang.org/book/ch01-01-installation.html)
+- [rustup 설치와 기본 PATH](https://rust-lang.github.io/rustup/installation/)
+- [Windows MSVC 필수 구성 요소](https://rust-lang.github.io/rustup/installation/windows-msvc.html)
 
 ## 추가자료
 
