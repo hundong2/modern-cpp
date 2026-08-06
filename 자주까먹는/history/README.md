@@ -6,7 +6,8 @@
 - [02. remove_cvref_t](#02-decay에서-remove_cvref_t-까지). 
 - [03. std::span](#03-stdspan). 
 - [04. extends](#04-extends). 
- 
+- [05. template meta programming](./template_meta_programming.md). 
+
 ## 빌드 및 실행
 
 `자주까먹는` 폴더에서 `run.sh`에 소스 경로를 전달합니다.
