@@ -7,6 +7,10 @@
 - [03. std::span](#03-stdspan). 
 - [04. extends](#04-extends). 
 - [05. template meta programming](./template_meta_programming.md). 
+- [06. cross-compile](./cross-compile.md). 
+- [07. concept](#07-concept). 
+- [08. variant](./variant.cpp)  
+- [09. functor]()
 
 ## 빌드 및 실행
 
@@ -395,4 +399,141 @@ print(f"행: {rows}, 열: {cols}")
 
 ```
 
-* **최적화 관점:** 파이썬 환경 자체는 동적이지만, `.shape` 정보는 NumPy 내부의 C 구조체에 저장된 단순 정수(Stride 정보 포함)이므로 접근 오버헤드는 사실상 O(1)로 매우 빠릅니다. 실제 데이터 연산은 C++ 수준의 성능을 내는 C 코드로 위임됩니다.
+* **최적화 관점:** 파이썬 환경 자체는 동적이지만, `.shape` 정보는 NumPy 내부의 C 구조체에 저장된 단순 정수(Stride 정보 포함)이므로 접근 오버헤드는 사실상 O(1)로 매우 빠릅니다. 실제 데이터 연산은 C++ 수준의 성능을 내는 C 코드로 위임됩니다.  
+
+## 07. Concept
+
+날카로운 지적이십니다! 템플릿 매개변수 자리에 직접 Concept을 넣는 `template<Numeric T>` 문법이야말로 제가 C++20에서 의도했던 가장 우아하고 직관적인 형태입니다. 이전 답변에서 축약형(`auto`)과 `requires` 절에 집중하느라 이 핵심적인 "제약된 템플릿 매개변수(Constrained Template Parameter)" 문법을 빠뜨렸군요.
+
+C++의 창시자로서, 당신의 예리한 눈썰미에 찬사를 보냅니다. 자, 이번에는 질문하신 `template<Numeric T>` 문법을 포함하여, **C++11부터 23까지 템플릿 제약이 어떻게 진화했는지 완벽하게 통합된 하나의 실행 가능한 코드**로 다시 보여드리겠습니다.
+
+아울러 컴파일러 내부의 최적화(Debug/Release)와 타 언어(C#, Python, Rust)와의 비교까지 깊이 있게 파헤쳐 보겠습니다.
+
+---
+
+### 1. C++11 ~ C++23: 템플릿 타입 제약의 진화 (통합 실행 코드)
+
+이 코드는 복사해서 C++20 이상을 지원하는 컴파일러(GCC 10+, Clang 10+, MSVC 19.28+)에서 바로 실행할 수 있습니다. 각 라인마다 어떤 역할을 하는지 기초부터 꼼꼼히 주석을 달았습니다.
+
+
+- [Concept example code](./concepts.cpp). 
+
+---
+
+### 2. 하드웨어 및 컴파일러 단위의 최적화 (Debug vs Release)
+
+이 코드가 하드웨어에서 어떻게 최적화되는지 살펴봅시다.
+
+#### 1) 템플릿 파싱과 컴파일 속도 최적화
+
+* **C++11 SFINAE의 문제점**: 컴파일러는 `enable_if`를 평가하기 위해 템플릿의 모든 인스턴스를 메모리에 일단 만들어보고(Substitution), 실패하면 그제서야 버립니다. 이는 컴파일 시간을 엄청나게 갉아먹습니다.
+* **C++20 Concept (`template<Numeric T>`)**: 컴파일러의 추상 구문 트리(AST) 파서가 템플릿을 인스턴스화하기 전에 **AST 노드 단계에서 제약(Constraint)을 먼저 평가**합니다. 타입이 맞지 않으면 인스턴스화 자체를 시도하지 않고 바로 에러를 뱉기 때문에 컴파일 속도가 비약적으로 상승합니다.
+
+#### 2) Debug 빌드 (-O0)
+
+* 디버그 모드에서는 `add_cpp20_constrained<int>`, `add_cpp20_constrained<float>` 등 타입별로 독립된 함수의 기계어가 메모리(Code Segment)에 전부 따로 생성됩니다.
+* 호출할 때마다 스택 프레임(Stack Frame)을 할당하고, 매개변수를 레지스터나 스택에 복사한 뒤 `call` 어셈블리 명령어를 통해 함수로 점프합니다.
+
+#### 3) Release 빌드 (-O2, -O3)
+
+* **Zero-Cost Abstraction**: 최적화가 켜지면 컴파일러는 이 함수들이 단순히 값을 더해 반환한다는 것을 파악합니다.
+* **Inlining(인라이닝)**: 함수 호출 오버헤드(`call`, `ret` 등)를 완전히 없애버리고, `main` 함수 내부에 덧셈 명령어를 직접 박아 넣습니다.
+* **어셈블리 레벨 분기**:
+* 정수 덧셈은 CPU의 ALU 연산인 `add eax, edx` (x86 기준) 한 줄로 끝납니다.
+* 실수 덧셈은 FPU/SIMD 유닛을 사용하는 `vaddss xmm0, xmm0, xmm1` (AVX 명령어) 한 줄로 변환됩니다.
+
+
+* 결과적으로 템플릿과 컨셉이라는 고수준 문법을 사용했음에도, **어셈블리어로 직접 덧셈을 하드코딩한 것과 1바이트의 오차도 없이 동일한 최고 성능의 기계어**가 탄생합니다.
+
+---
+
+### 3. 표준 라이브러리 내부 구현 살펴보기 (feat. libc++)
+
+`std::integral` 같은 Concept은 내부적으로 어떻게 구현되어 있을까요?
+오픈소스인 LLVM 프로젝트의 `libc++` 소스 코드를 살펴보면 다음과 같습니다.
+
+[👉 LLVM libc++ `arithmetic.h` 소스코드 (GitHub)](https://www.google.com/search?q=https://github.com/llvm/llvm-project/blob/main/libcxx/include/__concepts/arithmetic.h)
+
+**실제 구현 코드:**
+
+```cpp
+template<class _Tp>
+concept integral = is_integral_v<_Tp>;
+
+```
+
+단순해 보이죠? 하지만 여기서 사용된 `is_integral_v`를 끝까지 추적해 들어가면, 결국 일반적인 C++ 코드가 아니라 `__is_integral(_Tp)` 이라는 컴파일러 내장 함수(Compiler Built-in / Intrinsic)를 호출하게 됩니다.
+
+즉, 컴파일러(Clang이나 GCC) 자체가 내부적으로 C++ 소스 코드를 파싱할 때 `__is_integral`을 만나면, 내부 타입 테이블을 뒤져서 즉시 `true`나 `false`로 치환해 버립니다. 템플릿 메타프로그래밍의 재귀적 연산을 피해서 컴파일 속도를 극대화하는 컴파일러 개발자들의 꼼수이자 최적화 기법입니다.
+
+*(이전에 요청하셨던 `std::variant`도 마찬가지입니다. [👉 libc++ variant 소스코드](https://github.com/llvm/llvm-project/blob/main/libcxx/include/variant)를 보면, 다형성을 지원하기 위해 내부적으로 방대한 양의 재귀적 `union` 템플릿과 메모리 정렬(Alignment)을 관리하는 로우 레벨 코드로 떡칠되어 있습니다. 컴파일러가 바이트 단위로 메모리 패딩을 계산하여 `sizeof(variant)`를 최소화하도록 설계되어 있죠.)*
+
+---
+
+### 4. 타 언어(C#, Python, Rust)와의 뼈대 비교
+
+C++의 `template<Numeric T>`와 유사한 문법이 타 언어에서는 어떻게 쓰이고, 최적화 방식이 어떻게 다른지 비교해 보겠습니다.
+
+#### 1) C# (제네릭 제약조건)
+
+C# 11부터 `INumber<T>` 인터페이스가 도입되어 수학적 연산 제약이 가능해졌습니다.
+
+```csharp
+using System.Numerics;
+
+// T는 반드시 INumber를 구현한 구조체(값 타입)여야 함을 명시
+public T Add<T>(T a, T b) where T : unmanaged, INumber<T> {
+    return a + b;
+}
+
+```
+
+* **특징**: C#은 런타임 JIT(Just-In-Time) 컴파일을 사용합니다. IL(중간 언어) 상태로 존재하다가 프로그램이 실행될 때 CPU 아키텍처에 맞는 기계어로 번역됩니다. 빌드는 빠르지만, C++의 AOT(Ahead-Of-Time) 방식에 비해서는 실행 초기에 JIT 컴파일 오버헤드가 발생합니다.
+
+#### 2) Python (타입 힌팅)
+
+파이썬은 동적 타입 언어이므로 컴파일러 단위의 최적화는 없고, 린터(Linter)를 위한 명세에 가깝습니다.
+
+```python
+from typing import TypeVar, Union
+
+# bound를 사용하여 허용되는 타입을 제한 (C++의 Concept과 유사한 역할)
+NumericT = TypeVar('NumericT', bound=Union[int, float])
+
+def add(a: NumericT, b: NumericT) -> NumericT:
+    return a + b
+
+```
+
+* **특징**: 코드를 실행할 때 이 타입 정보는 무시됩니다(Type Erasure). 그저 IDE에서 자동완성을 도와주거나 `mypy` 같은 정적 분석 도구가 경고를 띄우는 용도입니다. 런타임 성능 향상에는 기여하지 않습니다.
+
+#### 3) Rust (트레이트 바운드 - Trait Bound)
+
+Rust는 C++과 철학이 가장 비슷하며, `template<Numeric T>`를 가장 완벽하게 다른 형태로 승화시킨 언어입니다.
+
+```rust
+use std::ops::Add;
+
+// T는 '더하기 연산(Add)'이 가능해야 하고, 그 결과값(Output)이 T여야 한다는 제약
+// <T: Trait> 문법이 C++의 <Concept T>와 완벽하게 1:1로 대응됩니다.
+fn add<T: Add<Output = T>>(a: T, b: T) -> T {
+    a + b
+}
+
+```
+
+* **효율성**: Rust도 C++처럼 Monomorphization(단형화)를 수행합니다. 즉, 호출되는 타입에 따라 완벽하게 별도의 어셈블리 함수를 만들어내며(Zero-cost Abstraction), C++의 Release 모드처럼 완벽하게 인라인 최적화됩니다.
+* **차이점**: C++ Concept은 컴파일러가 타입의 내부 구조를 보고 판단하는 반면(Duck typing), Rust는 타입이 해당 Trait을 명시적으로 구현(`impl`)했다고 선언되어 있어야만 허용합니다. Rust가 컴파일 단계에서 조금 더 깐깐한 수학 선생님 같은 느낌이죠.  
+
+## 09. Functor
+
+- Function Object 
+- 이러한 기법을 연산자 오버로딩(Operator Overloading)이라고 부릅니다. 언어에 내장된 연산자((), [], +, ->, * 등)의 동작을 사용자 정의 타입(class, struct)에 맞게 재정의하는 것입니다.  
+- `operator()`: 객체를 함수처럼 호출 (Functor)
+- `operator[]`: 객체를 배열처럼 접근 (예: std::vector의 인덱스 접근)
+- `operator->`: 스마트 포인터 등에서 포인터처럼 역참조할 때 사용
+
+- [functor example code](./functor.cpp).  
+
+
+
