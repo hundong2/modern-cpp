@@ -10,7 +10,8 @@
 - [06. cross-compile](./cross-compile.md). 
 - [07. concept](#07-concept). 
 - [08. variant](./variant.cpp)  
-- [09. functor]()
+- [09. functor](#09-functor). 
+- [10. Assembly Basic](./Assembly.md). 
 
 ## 빌드 및 실행
 
