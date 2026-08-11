@@ -1,5 +1,102 @@
 # 자주 까먹는 C++와 Rust 문법과 기술
 
+## 설명
+
+이 폴더의 자료는 처음부터 읽는 **커리큘럼**과, 기억나지 않는 주제를 바로 찾는
+**주제별 메뉴**로 나누어 볼 수 있습니다. 처음이라면 아래 추천 순서를 따르고, 이미
+아는 내용이 있다면 주제별 메뉴에서 필요한 문서로 바로 이동합니다.
+
+### basic
+
+- [const, constexpr, inline](./basic/constexpr_inline_const.cpp). 
+- [explicit의 존재 유무에 대한 차이](./basic/wrong_explicit.cpp)  
+  - [correct version](./basic/correct_explicit.cpp)  
+
+### 처음부터 따라가는 추천 커리큘럼
+
+1. [초보자 공통 용어집](./GLOSSARY.md) — 스택, 힙, 객체 수명, ABI 같은 낯선 용어를 먼저 확인합니다.
+2. [초보자 막힘 해결표](./실무/06-beginner-review.md) — `T*`, `T&`, `auto`, `const`처럼 코드를 읽을 때 자주 막히는 표기를 익힙니다.
+3. [컴퓨터와 C++ 실행 모델](./실무/00-foundations.md) — 소스 코드가 실행 파일이 되고 CPU에서 실행되는 전체 흐름을 배웁니다.
+4. [RAII와 객체 수명](./raii-resource-lifetime/README.md) — 스코프, 소유권, 스마트 포인터와 안전한 자원 관리를 익힙니다.
+5. [Modern C++23 실무 프로젝트 템플릿](./template/README.md) — 클래스 구조, 컨테이너, 알고리즘, 포인터와 CMake를 하나의 프로젝트로 연결합니다.
+6. [템플릿 타입 추론 가이드](./template/template-type-deduction.md) — `T`, `auto`, `decltype`, 전달 참조와 추론 가이드를 기초부터 읽습니다.
+7. [타입 시스템과 템플릿 예제](./type/README.md) — 이동, 전달, CRTP, concepts, SFINAE와 `variant`를 예제로 확인합니다.
+8. [모던 C++ 런타임 기반 6가지](./modern-cpp-runtime-foundations/README.md) — 이동·원자 연산·다형성·코루틴을 메모리와 운영체제 관점까지 확장합니다.
+9. [실무 서버 프로그래밍 23일 과정](./실무/README.md) — TCP, 이벤트 I/O, 동시성, 외부 시스템과 게임 서버 구조를 순서대로 실습합니다.
+
+### 주제별 설명 메뉴
+
+#### C++ 기초, 메모리와 객체 수명
+
+- [공통 용어와 축약어 사전](./GLOSSARY.md)
+- [컴퓨터와 C++ 실행 모델](./실무/00-foundations.md)
+- [메모리·스택·힙·객체 수명](./실무/wiki/memory.md)
+- [값 범주·참조·이동](./실무/wiki/value-categories.md)
+- [RAII와 스마트 포인터 요약](./실무/wiki/raii.md)
+- [RAII 상세 교재](./raii-resource-lifetime/README.md) · [C#/Python/Rust 비교](./raii-resource-lifetime/compare.md) · [예제](./raii-resource-lifetime/example.cpp) · [실습](./raii-resource-lifetime/exercise.cpp)
+- [`std::span`과 비소유 메모리 뷰](./std::span.md)
+
+#### 타입, 템플릿과 모던 C++ 문법
+
+- [CTAD(Class Template Argument Deduction, 클래스 템플릿 인수 추론)](./CTAD.md)
+- [템플릿 타입 추론 입문](./template/template-type-deduction.md)
+- [타입·이동·전달·concepts·SFINAE 예제 모음](./type/README.md)
+- [템플릿 메타프로그래밍과 `overloaded` 패턴](./history/template_meta_programming.md)
+- [C++17: `variant`, TMP, CTAD](./cpp17/REAMDE.md)
+- [C++23: `expected`와 monadic 연산](./cpp23/README.md)
+- [C++23 계층형 프로젝트 전체 교재](./template/README.md) · [C#/Python 비교](./template/compare.md)
+
+#### 표준의 발전과 컴파일러 내부 동작
+
+- [C++ 역사와 타입 변화 예제](./history/README.md)
+- [어셈블리와 CPU 레지스터](./history/Assembly.md)
+- [소스에서 실행 파일까지의 빌드 파이프라인](./실무/wiki/build-pipeline.md)
+- [오브젝트 파일·정적/동적 라이브러리 구조](./ExecuteLibraryArchitecture.md)
+- [ABI(Application Binary Interface, 응용 프로그램 이진 인터페이스)](./ABI_Architecture.md)
+- [크로스 컴파일](./history/cross-compile.md)
+- [디버깅·역어셈블 도구 설치](./Environment.md)
+
+#### 런타임, 운영체제와 동시성
+
+- [모던 C++ 런타임 기반 6가지](./modern-cpp-runtime-foundations/README.md) · [C#/Python 비교](./modern-cpp-runtime-foundations/compare.md) · [예제](./modern-cpp-runtime-foundations/example.cpp) · [실습](./modern-cpp-runtime-foundations/exercise.cpp)
+- [프로세스와 스레드](./실무/wiki/process-thread.md)
+- [동시성·mutex·atomic](./실무/wiki/concurrency.md)
+- [CPU 캐시와 false sharing](./실무/wiki/cpu-cache.md)
+- [lock-free, CAS와 ABA 문제](./실무/wiki/lock-free.md)
+- [시스템 호출과 파일 디스크립터](./실무/wiki/system-call.md)
+
+#### 실무 서버와 게임 프로그래밍 커리큘럼
+
+- [전체 과정 안내와 23일 완주 순서](./실무/README.md)
+- [1장: 모던 C++ 언어와 자원 관리](./실무/01-modern-cpp.md)
+- [2장: TCP 소켓과 이벤트 기반 I/O](./실무/02-networking.md)
+- [3장: 동시성과 비동기 실행](./실무/03-concurrency.md)
+- [4장: 외부 시스템과 계층화](./실무/04-production.md)
+- [5장: 성능과 게임 서버](./실무/05-performance-game.md)
+- [초보자 관점 복습과 오류 해결표](./실무/06-beginner-review.md)
+- [실무 서버 개념의 C#/Python 비교](./실무/compare.md)
+- [실무 용어 위키 전체 메뉴](./실무/wiki/README.md)
+  - [TCP 바이트 스트림과 패킷 프레이밍](./실무/wiki/tcp-stream.md)
+  - [이벤트 루프와 Reactor/Proactor](./실무/wiki/event-loop.md)
+  - [직렬화·엔디언·정렬](./실무/wiki/serialization.md)
+  - [캐시·데이터베이스·커넥션 풀](./실무/wiki/storage.md)
+  - [게임 루프·AOI·보간](./실무/wiki/game-networking.md)
+  - [zero-copy의 여러 의미](./실무/wiki/zero-copy.md)
+
+#### 빌드, 실행과 프로젝트 구성
+
+- [C++ 단일 파일 실행 방법](./README.md#type-cpp23-history-예제-빌드-및-실행)
+- [C++23 프로젝트의 CMake와 Make 사용법](./template/README.md#1-실행부터-확인하기)
+- [CMakeLists.txt 단계별 설명](./template/README.md#8-cmakeliststxt-단계별-설명)
+- [Boost와 외부 라이브러리 설정](./template/README.md#9-boost와-외부-라이브러리-환경-설정)
+- [C++ 실행 스크립트](./run.sh) · [Rust 실행 스크립트](./run_for_rust.sh)
+
+#### Rust 입문
+
+- [OS별 Rust 설치와 환경 변수 설정](./README.md#rust-설치와-단일-파일-실행)
+- [Rust `enum` 예제](./rust/enum.rs)
+- [Rust 단일 파일 실행 스크립트](./run_for_rust.sh)
+
 ## 실행
 
 - [C++ 실행 스크립트](./run.sh)
