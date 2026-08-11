@@ -64,3 +64,6 @@ int main() {
     // 실제 호출은 가상 간접 호출이 될 수 있으나 최적화로 직접화될 수도 있으며 CPU·ABI·컴파일러 옵션에 따라 달라진다.
     return result && result->name == "Bjarne" ? 0 : 1; // && 단락 평가와 ?: 조건 연산자로 종료 코드를 고른다.
 }
+
+//output
+// Bjarne
