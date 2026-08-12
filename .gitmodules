@@ -1,3 +1,6 @@
 [submodule "Boost-Cpp-Application-Development-Cookbook-Second-Edition"]
 	path = Boost-Cpp-Application-Development-Cookbook-Second-Edition
 	url = https://github.com/hundong2/Boost-Cpp-Application-Development-Cookbook-Second-Edition.git
+[submodule "leetcode"]
+	path = leetcode
+	url = https://github.com/hundong2/leetcode.git
