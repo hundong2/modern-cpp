@@ -1,0 +1,8 @@
+execute_process(COMMAND "${EXECUTABLE}" INPUT_FILE "${INPUT_FILE}" OUTPUT_VARIABLE actual RESULT_VARIABLE result OUTPUT_STRIP_TRAILING_WHITESPACE)
+if(NOT result EQUAL 0)
+  message(FATAL_ERROR "program exited with ${result}")
+endif()
+string(REPLACE "\r\n" "\n" actual "${actual}")
+if(NOT actual STREQUAL EXPECTED)
+  message(FATAL_ERROR "expected [${EXPECTED}] but got [${actual}]")
+endif()
