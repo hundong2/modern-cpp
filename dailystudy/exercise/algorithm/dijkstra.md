@@ -34,29 +34,51 @@ while heap is not empty:
 ## 컴파일 가능한 C++ 뼈대
 
 ```cpp
-#include <functional> // std::greater
-#include <queue>      // std::priority_queue
-#include <utility>    // std::pair
-#include <vector>     // std::vector
+#include <functional> // 최소 힙 비교 함수 객체 std::greater를 제공한다.
+#include <iostream>   // 예제 결과를 출력할 std::cout을 제공한다.
+#include <limits>     // 무한대 표식에 쓸 std::numeric_limits를 제공한다.
+#include <queue>      // 최소 후보를 꺼낼 std::priority_queue를 제공한다.
+#include <utility>    // 두 값을 묶는 std::pair를 제공한다.
+#include <vector>     // 인접 리스트와 거리 배열 std::vector를 제공한다.
 
-using State = std::pair<long long, int>; // (거리, 정점)
+using Edge = std::pair<int, int>;       // (도착 정점, 가중치)라는 타입 별칭이다.
+using State = std::pair<long long, int>; // (누적 거리, 정점)이라는 타입 별칭이다.
 
-void dijkstra(int start, const std::vector<std::vector<std::pair<int, int>>>& graph,
-              std::vector<long long>& distance) {
-    std::priority_queue<State, std::vector<State>, std::greater<State>> heap;
-    distance[start] = 0;
-    heap.push({0, start});
-    while (!heap.empty()) {
-        const auto [d, u] = heap.top();
-        heap.pop();
-        if (d != distance[u]) continue; // 오래된 후보 제거
-        for (const auto& [v, weight] : graph[u]) {
-            if (d + weight < distance[v]) {
-                distance[v] = d + weight;
-                heap.push({distance[v], v});
+// start와 graph는 값/const 참조 매개변수이며, 함수는 모든 정점의 최단 거리 벡터를 반환한다.
+[[nodiscard]] std::vector<long long> dijkstra(
+    int start, const std::vector<std::vector<Edge>>& graph) {
+    const long long infinity{std::numeric_limits<long long>::max() / 4}; // 덧셈 여유를 둔 센티널이다.
+    std::vector<long long> distance(graph.size(), infinity); // O(V) 거리표를 무한대로 초기화한다.
+    // 세 템플릿 인자는 원소, 저장 컨테이너, 비교자이며 greater가 최소 힙을 만든다.
+    std::priority_queue<State, std::vector<State>, std::greater<State>> heap{};
+    distance[start] = 0; // 빈 경로의 비용은 0이라는 초기 불변식을 세운다.
+    heap.push(State{0, start}); // 중괄호로 만든 prvalue 후보를 O(log V)에 삽입한다.
+
+    while (!heap.empty()) { // 처리할 후보가 남아 있는 동안 반복한다.
+        const auto [current_distance, vertex]{heap.top()}; // pair를 두 const 값으로 구조적 바인딩한다.
+        heap.pop(); // 현재 최소 후보를 O(log V)에 제거한다.
+        if (current_distance != distance[vertex]) { // 배열보다 큰 오래된 후보인지 비교한다.
+            continue; // 이미 더 좋은 경로가 있으므로 인접 간선을 다시 보지 않는다.
+        }
+        for (const auto& [next, weight] : graph[vertex]) { // const 참조로 간선을 복사 없이 순회한다.
+            const long long candidate{current_distance + weight}; // 현재 경로 뒤에 간선을 이어 붙인다.
+            if (candidate < distance[next]) { // 새 경로가 더 짧은 경우에만 완화한다.
+                distance[next] = candidate; // 발견된 최소 경로라는 거리표 불변식을 갱신한다.
+                heap.push(State{candidate, next}); // 개선된 후보를 최소 힙에 넣는다.
             }
         }
     }
+    return distance; // 지역 벡터 prvalue 반환은 이동 또는 복사 생략의 대상이다.
+}
+
+int main() { // 컴파일과 실행으로 뼈대를 검증하는 작은 예제 진입점이다.
+    std::vector<std::vector<Edge>> graph(4); // 정점 1~3을 쓰는 1 기반 인접 리스트다.
+    graph[1].push_back(Edge{2, 3}); // 1에서 2로 가는 비용 3의 방향 간선을 추가한다.
+    graph[2].push_back(Edge{3, 4}); // 2에서 3으로 가는 비용 4의 방향 간선을 추가한다.
+    graph[1].push_back(Edge{3, 10}); // 직접 가는 더 비싼 경로도 추가한다.
+    const auto distance{dijkstra(1, graph)}; // 반환 prvalue로 const 거리 벡터를 직접 초기화한다.
+    std::cout << distance[3] << '\n'; // 최소 비용 7을 출력한다.
+    return distance[3] == 7 ? 0 : 1; // ?: 연산자로 검증 성공/실패 종료 코드를 고른다.
 }
 ```
 
@@ -90,3 +112,11 @@ void dijkstra(int start, const std::vector<std::vector<std::pair<int, int>>>& gr
 2026-08-02의 BOJ 1753은 양의 가중치 방향 그래프이다. [`../2026-08-02/icpc_problem.cpp`](../2026-08-02/icpc_problem.cpp)는 `long long` 거리, 인접 리스트, `greater<pair<...>>` 최소 힙, 오래된 항목 건너뛰기를 그대로 구현한다. 평행 간선도 각각 완화하므로 가장 짧은 경로가 자연스럽게 선택된다.
 
 2026-08-03의 Kattis `shortestpath1`도 음이 아닌 가중치 방향 그래프이다. [`../2026-08-03/icpc_problem.cpp`](../2026-08-03/icpc_problem.cpp)는 시작점 하나의 거리 배열을 한 번 계산한 뒤 여러 질의가 공유한다. 따라서 질의마다 다익스트라를 다시 실행하지 않고 `O((V+E) log V + Q)`에 답한다.
+
+## 직접 해보기와 초보자 검증
+
+1. 정점 `1→2(10)`, `1→2(3)`, `2→3(4)`, `1→3(20)`을 종이에 그리고 힙과 `distance` 배열이 바뀌는 순서를 적는다. 평행 간선 중 비용 3이 자연스럽게 선택되는지 확인한다.
+2. 뼈대 코드에 `const long long infinity{...}`와 거리 배열 초기화를 추가해 단독 실행 가능한 프로그램으로 완성한다. 누적 거리는 `int`보다 `long long`이 안전한 이유도 적는다.
+3. `if (d != distance[u]) continue;`를 잠시 제거한다. 답은 같아도 오래된 후보의 인접 간선을 다시 훑는 횟수가 늘어나는 입력을 만들어 차이를 관찰한다.
+4. 음수 간선 `1→2(2)`, `1→3(5)`, `3→2(-10)`을 넣고 “최소 후보를 꺼내면 확정”이라는 불변식이 왜 깨지는지 설명한다.
+5. 오늘 코드의 목적지 조기 종료 조건이 오래된 후보 검사보다 뒤에 있어야 하는 이유를 말할 수 있으면 핵심을 이해한 것이다.

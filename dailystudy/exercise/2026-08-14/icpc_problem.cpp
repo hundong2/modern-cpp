@@ -8,12 +8,17 @@
 예제: 5개 도시의 예시에서 1→4→5를 택하면 최소 비용 4가 된다.
 */
 
-// 각 헤더는 최소 힙 비교자, 입출력, 수치 한계, 우선순위 큐, pair, vector를 제공한다.
+// <functional>은 최소 힙 비교에 쓰는 std::greater를 제공한다.
 #include <functional>
+// <iostream>은 표준 입력 std::cin과 표준 출력 std::cout을 제공한다.
 #include <iostream>
+// <limits>는 안전한 무한대 표식을 만들 std::numeric_limits를 제공한다.
 #include <limits>
+// <queue>는 우선순위 큐 std::priority_queue를 제공한다.
 #include <queue>
+// <utility>는 두 값을 묶는 std::pair를 제공한다.
 #include <utility>
+// <vector>는 동적 배열과 인접 리스트를 구성하는 std::vector를 제공한다.
 #include <vector>
 
 // 구현 참고 문서: ../algorithm/dijkstra.md
@@ -64,15 +69,15 @@ int main() {
     std::cin >> city_count >> bus_count; // >> 연산자가 토큰을 변수에 저장한다.
     std::vector<std::vector<Edge>> graph(static_cast<std::size_t>(city_count + 1)); // 1 기반 인접 리스트다.
     for (int index{}; index < bus_count; ++index) { // 조건이 참인 동안 정확히 M번 반복한다.
-        int from{};
-        int to{};
-        int cost{};
-        std::cin >> from >> to >> cost;
+        int from{}; // 기본 타입 int 출발 번호를 0으로 초기화한다.
+        int to{};   // 기본 타입 int 도착 번호를 0으로 초기화한다.
+        int cost{}; // 기본 타입 int 비용을 0으로 초기화한다.
+        std::cin >> from >> to >> cost; // 세 입력 토큰을 각 lvalue 변수에 저장한다.
         graph[from].push_back(Edge{to, cost}); // 방향 간선을 집합 초기화해 끝에 추가한다.
     }
-    int start{};
-    int destination{};
-    std::cin >> start >> destination;
+    int start{};       // 시작 도시 번호를 중괄호 초기화한다.
+    int destination{}; // 도착 도시 번호를 중괄호 초기화한다.
+    std::cin >> start >> destination; // 마지막 두 입력을 변수에 저장한다.
     std::cout << shortest_path(start, destination, graph) << '\n'; // 함수 호출 결과를 출력한다.
     // 로드·저장·비교·분기·호출의 구체 명령은 CPU·ABI·컴파일러·최적화에 따라 달라진다.
     return 0;

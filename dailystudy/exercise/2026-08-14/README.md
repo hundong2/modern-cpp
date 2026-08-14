@@ -5,10 +5,11 @@
 - lvalue·prvalue·xvalue, 참조 바인딩, 이동, 복사 생략을 실제 식과 연결한다.
 
 ## 파일
-- `main.cpp`: 인터페이스와 단일 소유권 의존성 주입
-- `problem.cpp`: 이동 전용 서비스 연습
-- `icpc_problem.cpp`: [BOJ 1916 최소비용 구하기](https://www.acmicpc.net/problem/1916) 제출 풀이
-- `CHECKPOINT.md`: 이해를 증명하는 점검표
+- [`main.cpp`](main.cpp): 인터페이스와 단일 소유권 의존성 주입
+- [`problem.cpp`](problem.cpp): 이동 전용 서비스 연습
+- [`icpc_problem.cpp`](icpc_problem.cpp): [BOJ 1916 최소비용 구하기](https://www.acmicpc.net/problem/1916) 제출 풀이
+- [`CMakeLists.txt`](CMakeLists.txt): 세 실행 파일과 CTest 검증 정의
+- [`CHECKPOINT.md`](CHECKPOINT.md): 이해를 증명하는 점검표
 
 ## 오늘의 ICPC 문제
 - ID·제목·출처: [BOJ 1916 최소비용 구하기](https://www.acmicpc.net/problem/1916), Baekjoon Online Judge
