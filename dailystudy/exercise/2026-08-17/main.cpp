@@ -41,6 +41,7 @@ public:
     void publish(std::shared_ptr<const AppConfig> next) {
         // release 저장은 새 AppConfig 생성 중 일어난 쓰기가 acquire 독자에게 보이게 한다.
         // std::move(next)는 lvalue인 매개변수를 xvalue로 바꿔 shared_ptr 소유권 한 몫을 옮긴다.
+        // atomic::store는 반환값이 없는 멤버 함수이며 포인터 교체와 이전 소유권 감소를 한 원자 변경으로 보이게 한다.
         current_.store(std::move(next), std::memory_order_release);
     }
 
@@ -48,6 +49,7 @@ public:
     [[nodiscard]] std::shared_ptr<const AppConfig> snapshot() const override {
         // acquire 로드는 대응하는 release 게시 이후 완성된 불변 객체를 안전하게 관찰한다.
         // 반환 shared_ptr은 객체 수명을 연장하므로 다음 publish 뒤에도 기존 스냅샷이 유효하다.
+        // atomic::load는 shared_ptr 값을 반환해 공유 참조 횟수 한 몫을 얻으며 논리적으로 상수 시간에 호출한다.
         return current_.load(std::memory_order_acquire);
     }
 
@@ -82,18 +84,20 @@ private:
 
 // main은 운영체제가 호출하는 진입 함수이며 int 종료 코드를 반환한다.
 int main() {
-    // AppConfig{...}는 prvalue이고 make_shared가 const AppConfig를 한 번 할당해 직접 생성한다.
+    // make_shared<const AppConfig>는 AppConfig 값을 생성자 인자로 받아 const 객체와 제어 블록을 만들고
+    // shared_ptr<const AppConfig> prvalue를 반환한다. 보통 한 번 할당하지만 메모리 부족이면 예외가 날 수 있다.
     auto initial{std::make_shared<const AppConfig>(AppConfig{3, "api-v1"})};
     // initial은 이름 있는 lvalue이며 std::move(initial)은 xvalue로 바뀌어 저장소에 소유권을 넘긴다.
     AtomicConfigStore store{std::move(initial)};
     // store는 lvalue이고 RetryService의 const 참조 매개변수 및 멤버에 바인딩된다.
     const RetryService service{store};
 
-    // publish 인자는 make_shared가 만든 shared_ptr prvalue에서 이동되어 불필요한 참조 횟수 증가를 줄인다.
+    // make_shared가 반환한 shared_ptr prvalue는 publish의 값 매개변수를 직접 초기화하고, publish가 원자 저장소로 이동한다.
     store.publish(std::make_shared<const AppConfig>(AppConfig{5, "api-v2"}));
 
     // 함수 호출은 acquire load, shared_ptr 수명 확보, 가상 호출을 거쳐 현재 설정 값을 얻는다.
     // 실제 로드·저장·비교·간접 호출 명령은 CPU, ABI, 표준 라이브러리, 컴파일러와 최적화 옵션에 따라 달라진다.
+    // 각 operator<<는 std::ostream&를 반환해 연쇄되며 '\n'은 개행만 쓰고 강제 flush하지 않는다.
     std::cout << "retry_limit=" << service.retry_limit() << '\n';
     // 0은 정상 종료를 나타내는 int prvalue다.
     return 0;

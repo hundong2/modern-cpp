@@ -12,15 +12,57 @@
 | [2026-07-19](./2026-07-19/README.md) | RAII, `unique_ptr`, 소유권, 의존성 주입 | C++20 |
 | [2026-07-20](./2026-07-20/README.md) | `variant` 상태 모델, `visit`, `if constexpr` | C++17 |
 | [2026-07-21](./2026-07-21/README.md) | `expected`, 명시적 오류 계약, 계층형 처리 파이프라인 | C++23 |
+| [2026-07-22](./2026-07-22/README.md) | `span`, 비소유 범위, concept 경계 | C++20 |
+| [2026-07-23](./2026-07-23/README.md) | `jthread`, `stop_token`, 협력적 취소 | C++20 |
+| [2026-07-24](./2026-07-24/README.md) | 코루틴 프레임, 핸들 소유권, 지연 시퀀스 | C++20 |
+| [2026-07-25](./2026-07-25/README.md) | ranges/views 지연 파이프라인 | C++20 |
+| [2026-07-26](./2026-07-26/README.md) | concept 기반 정책 계약 | C++20 |
+| [2026-07-27](./2026-07-27/README.md) | 삼방향 비교, `tuple`, 정렬 모델 | C++20 |
+| [2026-07-28](./2026-07-28/README.md) | `shared_ptr`, `weak_ptr`, 순환 소유권 | C++20 |
+| [2026-07-29](./2026-07-29/README.md) | `source_location`, 진단 포트 | C++20 |
+| [2026-07-30](./2026-07-30/README.md) | `chrono` 강한 시간 타입, 시계 주입 | C++20 |
+| [2026-07-31](./2026-07-31/README.md) | 수학 상수, 정책 객체, 소유권 주입 | C++20 |
+| [2026-08-01](./2026-08-01/README.md) | `string_view`, 명령 파싱 수명 경계 | C++20 |
+| [2026-08-02](./2026-08-02/README.md) | `optional`, 인터페이스 주입, 다익스트라 | C++20 |
+| [2026-08-03](./2026-08-03/README.md) | 완벽 전달, `variant`, 다익스트라 복습 | C++20 |
+| [2026-08-04](./2026-08-04/README.md) | RAII 소유권과 크루스칼 MST | C++20 |
+| [2026-08-05](./2026-08-05/README.md) | `std::pmr`, 메모리 자원, 그래프 연결 요소 | C++20 |
+| [2026-08-06](./2026-08-06/README.md) | `std::function` 파이프라인, 위상 정렬 | C++20 |
+| [2026-08-07](./2026-08-07/README.md) | `variant` 상태 모델과 격자 BFS | C++20 |
+| [2026-08-08](./2026-08-08/README.md) | `unique_ptr` 의존성 주입, 답 이분 탐색 | C++20 |
+| [2026-08-09](./2026-08-09/README.md) | `span` 서비스 경계와 상태 DP | C++20 |
+| [2026-08-10](./2026-08-10/README.md) | ranges 정렬, 이동, LIS | C++20 |
+| [2026-08-11](./2026-08-11/README.md) | `optional`, 참조 래퍼, 사용자 비교 힙 | C++20 |
+| [2026-08-12](./2026-08-12/README.md) | RAII 타이머, 시계 포트, 슬라이딩 윈도우 | C++20 |
+| [2026-08-13](./2026-08-13/README.md) | 공유·약한 소유권과 Union-Find | C++20 |
+| [2026-08-14](./2026-08-14/README.md) | Strategy, `unique_ptr`, 다익스트라 | C++20 |
+| [2026-08-15](./2026-08-15/README.md) | 읽기-쓰기 잠금과 펜윅 트리 | C++20 |
+| [2026-08-16](./2026-08-16/README.md) | `filesystem`, 오류 코드, 코사라주 SCC | C++20 |
+| [2026-08-17](./2026-08-17/README.md) | atomic 불변 스냅샷과 지연 세그먼트 트리 | C++20 |
+
+## 표준 라이브러리 설명 찾기
+
+- [표준 라이브러리 학습 지도](./standard-library/README.md): 설명 품질 기준과 분야별 대표 문서
+- [날짜별 사용 색인](./standard-library/by-date.md): 현재 35개 날짜, 86개 C++ 파일의 헤더와 `std::` 심볼
+- [심볼 색인](./standard-library/symbol-index.md): 104개 현재 심볼의 역할과 상세 문서 링크
+- [공통 용어](./standard-library/terms.md): 반복자, 뷰, 술어, 소유권, 무효화, 예외 보장, 원자성
+- [표준 헤더](./standard-library/headers.md): 현재 사용하는 41개 헤더와 대표 선언
+
+코드의 인접 주석은 현재 호출의 인자·반환값·상태 변화를 설명한다. 공용 문서는 전제조건, 복잡도, 객체 수명, 참조·반복자 무효화, 오류·예외 계약을 설명한다. 새 심볼은 다음 감사로 누락 여부를 검사한다.
+
+```powershell
+& dailystudy/exercise/tools/audit-standard-library-docs.ps1 -Scope all
+```
 
 ## 공통 학습 순서
 
 1. README의 아키텍처와 예상 출력을 읽습니다.
 2. `main.cpp`의 한글 주석을 따라 객체의 생성·복사·이동·소멸을 표시합니다.
-3. 실행 전에 출력과 assert 결과를 종이에 예측합니다.
-4. 로컬 w64devkit으로 구성·빌드하고 CTest를 실행합니다.
-5. `problem.cpp`를 일부 가린 뒤 직접 다시 작성합니다.
-6. CHECKPOINT를 자료 없이 풀고, 실기 변경까지 통과해야 다음 날짜로 넘어갑니다.
+3. 그날의 표준 심볼을 날짜별 색인에서 찾아 매개변수·반환값·복잡도·무효화 규칙을 확인합니다.
+4. 실행 전에 출력과 assert 결과를 종이에 예측합니다.
+5. 로컬 w64devkit으로 구성·빌드하고 CTest와 표준 라이브러리 문서 감사를 실행합니다.
+6. `problem.cpp`를 일부 가린 뒤 직접 다시 작성합니다.
+7. CHECKPOINT를 자료 없이 풀고, 실기 변경까지 통과해야 다음 날짜로 넘어갑니다.
 
 ## 전체 검증
 
@@ -29,12 +71,13 @@
 ```powershell
 $kit = (Resolve-Path tools/w64devkit/bin).Path
 $env:Path = "$kit;$env:Path"
-$dates = Get-ChildItem dailystudy/exercise -Directory
+$dates = Get-ChildItem dailystudy/exercise -Directory | Where-Object Name -Match '^\d{4}-\d{2}-\d{2}$'
 foreach ($date in $dates) {
     cmake -S $date.FullName -B "$($date.FullName)/build" -G "MinGW Makefiles" "-DCMAKE_CXX_COMPILER=g++.exe"
     cmake --build "$($date.FullName)/build"
     ctest --test-dir "$($date.FullName)/build" --output-on-failure
 }
+& dailystudy/exercise/tools/audit-standard-library-docs.ps1 -Scope all
 ```
 
 `build/`는 생성 파일이므로 Git에 커밋하지 않습니다.

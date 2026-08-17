@@ -25,18 +25,20 @@ public:
     void record_accepted() noexcept {
         // fetch_add는 기존 값 읽기와 +1 저장을 쪼갤 수 없는 하나의 원자 연산으로 수행한다.
         // 통계 카운터끼리 다른 데이터의 순서를 전달하지 않으므로 가장 약한 relaxed 순서면 충분하다.
+        // 반환값은 증가 전 uint64_t지만 여기서는 새 값이 필요 없어 의도적으로 버린다.
         accepted_.fetch_add(1U, std::memory_order_relaxed);
     }
 
     // 거절 요청 한 건을 독립 원자 카운터에 기록하고 반환값은 없다.
     void record_rejected() noexcept {
         // 1U는 부호 없는 int 리터럴이고 atomic<uint64_t>의 값 타입으로 안전하게 변환된다.
+        // 이 fetch_add도 증가 전 값을 반환하며 relaxed라 다른 객체의 쓰기 순서는 게시하지 않는다.
         rejected_.fetch_add(1U, std::memory_order_relaxed);
     }
 
     // const 함수는 카운터를 바꾸지 않고 현재 두 값을 새 값 객체로 복사해 반환한다.
     [[nodiscard]] RequestSnapshot snapshot() const noexcept {
-        // 각 load는 데이터 경쟁 없이 한 카운터의 값을 읽지만 두 값을 한 시점에 묶는 트랜잭션은 아니다.
+        // 각 atomic::load는 uint64_t 값을 반환해 데이터 경쟁 없이 읽지만 두 값을 한 시점에 묶는 트랜잭션은 아니다.
         const std::uint64_t accepted{accepted_.load(std::memory_order_relaxed)};
         const std::uint64_t rejected{rejected_.load(std::memory_order_relaxed)}; // 두 번째 원자 로드다.
         // RequestSnapshot{...} prvalue가 반환 객체를 직접 초기화해 C++17 이후 복사 생략 대상이 된다.

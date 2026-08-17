@@ -21,6 +21,17 @@
 - [ ] 포트 `IConfigSnapshotSource`와 어댑터 `AtomicConfigStore`를 분리했을 때 테스트와 구현 교체가 쉬워지는 이유를 말한다.
 - [ ] 가상 함수 호출, 원자 load/store, 조건 분기의 실제 기계 명령은 CPU·ABI·컴파일러·최적화에 따라 달라짐을 설명한다.
 
+## 표준 라이브러리 호출 계약
+
+- 공용 문서: [표준 라이브러리 학습 지도](../standard-library/README.md)
+- [ ] `atomic::store`는 무엇을 반환하며 `release`가 현재 설정 게시에서 어떤 쓰기를 공개하는지 설명한다.
+- [ ] `atomic::load`가 반환한 `shared_ptr`가 다음 게시 뒤에도 옛 설정 수명을 유지하는 이유를 설명한다.
+- [ ] `fetch_add(1)`의 반환값이 증가 전 값이라는 점과 새 값을 얻는 식을 쓴다.
+- [ ] `make_shared<const AppConfig>`의 템플릿 인자, 생성자 인자, 반환형, 할당·수명 역할을 구분한다.
+- [ ] `vector(count, value)`와 `vector{count, value}`가 다른 원소 구성을 만들 수 있는 이유를 생성자 오버로드로 설명한다.
+- [ ] `string::append`가 문자 소유권·크기·용량을 어떻게 바꾸며 어떤 관찰자를 무효화할 수 있는지 설명한다.
+- [ ] `sync_with_stdio(false)`와 `cin.tie(nullptr)`의 반환값, 상태 변화, 사용 시 주의점을 설명한다.
+
 ## 오늘의 ICPC 문제
 
 - 문제: [UVa 11402 Ahoy, Pirates!](https://onlinejudge.org/index.php?Itemid=8&option=com_onlinejudge&page=show_problem&problem=2397)

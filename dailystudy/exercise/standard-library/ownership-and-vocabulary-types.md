@@ -1,0 +1,126 @@
+# 소유권, 어휘 타입, 타입 특성
+
+## `std::unique_ptr<T>`와 `std::make_unique<T>` — `<memory>`
+
+- `unique_ptr`는 객체 하나의 독점 소유권을 표현한다. 복사는 금지되고 이동만 가능하다.
+- 소유 포인터가 파괴되거나 `reset`되면 저장된 deleter로 객체를 해제한다.
+- `operator*`와 `operator->`는 가리키는 객체에 접근한다. 빈 포인터에서 사용하면 안 된다.
+- `get()`은 비소유 원시 포인터를 반환하고 소유권을 넘기지 않는다.
+- `release()`는 포인터를 반환하며 자동 해제를 포기한다. 호출자가 새 소유자를 즉시 정하지 않으면 누수가 난다.
+- `reset(next)`은 기존 객체를 해제하고 새 포인터를 소유한다.
+- `make_unique<T>(args...)`는 `T`를 동적 생성하고 `unique_ptr<T>` prvalue를 반환한다. 직접 `new`보다 예외 안전성과 가독성이 좋다.
+- 파생 객체를 기반 `unique_ptr<Base>`로 소유해 기반 포인터로 삭제한다면 기반 소멸자는 보통 가상이어야 한다.
+
+## `std::shared_ptr<T>`, `std::weak_ptr<T>`, `std::make_shared<T>`
+
+- `shared_ptr` 복사는 공유 참조 횟수를 늘리고 마지막 소유자가 사라질 때 객체를 파괴한다.
+- 이동은 소유권 몫을 옮기며 원본은 보통 빈 상태가 된다.
+- 참조 횟수 조작 자체는 스레드 안전하게 조정되지만 가리키는 `T`의 동시 변경까지 보호하지 않는다.
+- 순환 참조는 참조 횟수가 0이 되지 않아 누수된다. 순환의 비소유 방향을 `weak_ptr`로 표현한다.
+- `weak_ptr::lock()`은 객체가 살아 있으면 임시 `shared_ptr`, 만료됐으면 빈 `shared_ptr`를 반환한다. 검사와 수명 연장을 한 동작으로 묶는다.
+- `expired()` 직후 다른 스레드에서 소멸할 수 있으므로 실제 사용에는 `lock()` 결과를 검사한다.
+- `make_shared<T>(args...)`는 보통 객체와 제어 블록을 한 할당으로 만들며 `shared_ptr<T>`를 반환한다.
+- 별도 자원 해제 정책이나 매우 큰 객체의 메모리 반환 시점 때문에 직접 생성이 필요한 경우도 있지만 기본 선택은 `make_shared`다.
+
+## `std::optional<T>`와 `std::nullopt` — `<optional>`
+
+- 값 `T`가 있거나 없는 두 상태를 표현하며 동적 할당은 필수가 아니다.
+- `has_value()`와 `operator bool`은 값 존재 여부를 반환한다.
+- `operator*`와 `operator->`는 값 존재를 호출자가 보장해야 한다. 빈 상태 접근은 잘못이다.
+- `value()`는 값 참조를 반환하고 비어 있으면 `std::bad_optional_access`를 던진다.
+- `value_or(fallback)`는 값이 있으면 복사/이동한 값, 없으면 대체값을 값으로 반환한다.
+- `std::nullopt`는 빈 상태를 명시하는 태그 객체다.
+- `optional<reference_wrapper<T>>`는 선택적 비소유 참조를 표현하지만 원본 수명을 연장하지 않는다.
+
+## `std::expected<T, E>`와 `std::unexpected<E>` — `<expected>`
+
+- 성공값 `T` 또는 오류값 `E` 중 정확히 하나를 보관하는 C++23 어휘 타입이다.
+- `has_value()`와 `operator bool`은 성공 여부를 확인한다.
+- `operator*`, `operator->`, `value()`는 성공값에 접근한다. `value()`는 오류 상태면 `bad_expected_access`를 던진다.
+- `error()`는 오류 상태에서 `E`에 접근한다. 성공 상태에서 호출하지 않는다.
+- `std::unexpected(error)`는 오류 상태를 명시적으로 구성한다.
+- 예외를 던지지 않는다고 자동 보장하는 타입이 아니다. `T`/`E`의 생성·복사·이동이 예외를 던질 수 있다.
+- 호출자가 성공과 실패를 처리하도록 함수 서명에 계약을 드러내는 장점이 있다.
+
+## `std::variant<Ts...>`, `std::visit`, `std::get`, `std::get_if`
+
+- `variant`는 후보 타입 중 하나를 같은 저장소에 보관하는 태그된 합 타입이다.
+- 기본 생성은 첫 대안이 기본 생성 가능하면 그 타입을 보관한다.
+- `std::holds_alternative<T>(value)`는 현재 대안이 `T`인지 반환한다.
+- `std::get<T>(value)`는 `T` 참조를 반환하지만 다른 대안이면 `bad_variant_access`를 던진다.
+- `std::get_if<T>(&value)`는 맞으면 포인터, 아니면 `nullptr`를 반환해 예외 없이 분기한다.
+- `std::visit(visitor,value)`는 활성 대안을 방문자에 전달한다. 방문자는 가능한 모든 대안 조합에서 유효해야 한다.
+- `visit`는 분기나 점프 테이블, 인라인 코드 등으로 구현될 수 있으며 구체 기계 형태는 구현과 최적화에 따라 다르다.
+
+## `std::pair`, `std::tuple`, 구조적 바인딩
+
+- `pair<T,U>`는 두 값을 `first`, `second`로 묶는다.
+- `tuple<Ts...>`는 여러 서로 다른 타입을 위치 기반으로 묶는다.
+- `std::get<I>(tuple)` 또는 `std::get<T>(tuple)`로 원소에 접근한다. 타입 기반 접근은 해당 타입이 정확히 한 번 있어야 한다.
+- `auto [left,right] = pair;`는 값을 복사할 수 있고 `auto& [left,right]`는 기존 원소에 참조 바인딩한다.
+- 우선순위 큐의 `(거리,정점)`처럼 작은 관계 값에 적합하지만 필드 의미가 중요하면 이름 있는 `struct`가 더 읽기 쉽다.
+
+## `std::reference_wrapper<T>`와 `std::ref`/`std::cref`
+
+- 일반 객체처럼 복사 가능하면서 내부에는 비소유 참조 의미를 보관한다.
+- `get()`은 원본 `T&`를 반환하고 `operator T&` 변환도 제공한다.
+- `std::ref(object)`는 `reference_wrapper<T>`, `std::cref(object)`는 읽기 전용 `reference_wrapper<const T>`를 만든다.
+- 원본 수명을 연장하지 않으므로 컨테이너나 `optional`에 오래 저장할 때 수명을 검증한다.
+
+## `std::function<Signature>` — `<functional>`
+
+- 지정한 호출 서명을 만족하는 함수, 람다, 함수 객체를 타입 소거해 값으로 보관한다.
+- 복사 가능한 호출 대상을 요구하며 내부 작은 객체 최적화 여부는 구현에 따라 다르다.
+- 빈 `std::function`을 호출하면 `std::bad_function_call`을 던진다.
+- 간접 호출·동적 할당 가능성이 있어 성능이 중요한 템플릿 경로에서는 구체 호출 타입이나 `auto` 매개변수를 검토한다.
+- 서로 다른 명령을 한 컨테이너에 저장하거나 런타임 교체 가능한 콜백 경계에 유용하다.
+
+## 타입 특성과 concept
+
+- `std::is_same_v<A,B>`는 두 타입이 정확히 같은지 나타내는 컴파일 시간 `bool` 상수다.
+- `std::remove_cvref_t<T>`는 최상위 `const`/`volatile`과 참조를 제거한 타입 별칭이다.
+- `std::decay_t<T>`는 값 매개변수 전달과 비슷하게 배열·함수 변환과 cv/ref 제거를 적용한다.
+- `std::same_as<T,U>`는 같은 타입임을 요구하는 C++20 concept다.
+- `std::integral<T>`은 `bool`, 문자, 정수 등 표준 정수 타입 범주를 제약한다.
+- `std::convertible_to<From,To>`는 명시·암시 변환 가능성과 의미 요구를 나타낸다.
+- concept 실패는 런타임 분기가 아니라 템플릿 후보가 요구사항을 만족하지 않는 컴파일 오류다.
+
+## `std::source_location` — `<source_location>`
+
+- 호출 파일명, 함수명, 줄, 열 정보를 값으로 보관한다.
+- 기본 인자 `std::source_location::current()`를 함수 선언에 두면 함수 본문이 아니라 호출 위치를 캡처한다.
+- 문자열 포인터의 유효 기간은 구현 계약을 따르며 일반적으로 정적 저장 기간 정보로 사용한다.
+- 로깅 API가 매번 `__FILE__`, `__LINE__` 매크로를 받지 않게 하지만 보안상 경로 노출 여부를 고려한다.
+
+## `std::strong_ordering` — `<compare>`
+
+- C++20 삼방향 비교 결과 중 강한 전체 순서 범주다.
+- `less`, `equal/equivalent`, `greater` 상태를 표현하며 같음과 동등함이 일치한다.
+- 사용자 정의 `operator<=>`의 반환형으로 사용하면 여러 관계 연산자가 합성될 수 있다.
+
+## 최소 예제
+
+```cpp
+#include <expected>
+#include <memory>
+#include <string>
+
+std::expected<std::unique_ptr<std::string>, std::string> make_name(bool valid) {
+    if (!valid) {
+        return std::unexpected(std::string{"invalid name"});
+    }
+    return std::make_unique<std::string>("codex");
+}
+
+int main() {
+    auto result{make_name(true)};
+    return result && **result == "codex" ? 0 : 1;
+}
+```
+
+## 직접 검증
+
+1. `unique_ptr`를 함수에 값으로 넘길 때 호출부에 `std::move`가 필요한 이유를 설명한다.
+2. `shared_ptr`의 참조 횟수가 스레드 안전하다는 말과 `T`의 멤버가 데이터 경쟁에서 안전하다는 말을 구분한다.
+3. `optional::value`, `operator*`, `value_or`의 실패·복사 계약을 비교한다.
+4. `get_if`가 반환한 포인터가 variant에 새 값을 대입한 뒤 유효한지 설명한다.

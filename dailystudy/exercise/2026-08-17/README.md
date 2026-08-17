@@ -18,6 +18,27 @@
 - [`CHECKPOINT.md`](CHECKPOINT.md): 문법·수명·메모리 순서·알고리즘 이해 검증
 - [`../algorithm/lazy-segment-tree.md`](../algorithm/lazy-segment-tree.md): 중복 검사 후 추가한 지연 전파 세그먼트 트리 대표 문서
 
+## 오늘 사용한 표준 라이브러리
+
+공통 계약과 용어는 [`../standard-library/README.md`](../standard-library/README.md), 현재 날짜의 전체 심볼은 [`../standard-library/by-date.md`](../standard-library/by-date.md)에서 찾는다.
+
+| 심볼·헤더 | 종류와 현재 역할 | 반환·복잡도·수명 주의점 |
+|---|---|---|
+| `std::atomic<T>` `<atomic>` | 원자 값을 보관하는 클래스 템플릿 | `load/store/fetch_add`는 중간 상태를 노출하지 않지만 주변 비원자 데이터까지 자동 보호하지 않는다. |
+| `std::memory_order_release/acquire` `<atomic>` | 원자 연산 순서 상수 | 완성된 설정 객체를 게시·관찰하는 happens-before 관계를 만든다. |
+| `std::memory_order_relaxed` `<atomic>` | 가장 약한 원자 순서 | 카운터 한 값의 원자성은 유지하지만 다른 메모리 공개 순서를 만들지 않는다. |
+| `std::shared_ptr<T>` `<memory>` | 공유 소유권 클래스 템플릿 | 복사는 참조 횟수를 늘리고 이동은 소유권 한 몫을 넘긴다. 가리키는 `T`의 동시 변경은 별도 보호가 필요하다. |
+| `std::make_shared<T>` `<memory>` | 객체와 제어 블록을 만드는 함수 템플릿 | `shared_ptr<T>` prvalue를 반환하며 보통 한 번의 할당으로 생성한다. |
+| `std::move` `<utility>` | xvalue 캐스트 함수 템플릿 | 직접 데이터를 옮기지 않고 이동 생성·대입이 선택될 기회를 준다. |
+| `std::vector<T>` `<vector>` | 트리 노드를 소유하는 동적 연속 컨테이너 | 인덱스 접근 `O(1)`, 재할당 시 기존 포인터·참조·반복자가 무효화될 수 있다. |
+| `std::string` `<string>` | 압축 해제한 0/1 문자를 소유 | `append`는 선형으로 문자를 추가하며 용량 부족 시 재할당한다. |
+| `std::size_t` `<cstddef>` | 크기와 인덱스용 부호 없는 타입 | 음수 `int`를 변환하기 전에 유효 범위를 확인한다. |
+| `std::uint64_t` `<cstdint>` | 정확히 64비트인 경우 제공되는 부호 없는 타입 | 카운터 범위를 넓히지만 산술 오버플로는 모듈러로 감싼다. |
+| `std::cin`, `std::cout` `<iostream>` | 표준 입출력 스트림 객체 | `>>`, `<<`는 스트림 참조를 반환해 연쇄하며 입력 실패 상태와 flush 정책을 확인한다. |
+| `std::ios::sync_with_stdio(false)` `<iostream>` | C/C++ 스트림 동기화 설정 함수 | 이전 설정을 `bool`로 반환하며 호출 뒤 C stdio와 임의로 섞지 않는다. |
+
+세부 설명: [동시성](../standard-library/concurrency-time-filesystem.md), [컨테이너](../standard-library/containers-and-views.md), [소유권](../standard-library/ownership-and-vocabulary-types.md), [입출력·유틸리티](../standard-library/io-parsing-and-utilities.md).
+
 ## Modern C++와 실무 아키텍처
 
 설정 객체는 생성이 끝난 뒤 바꾸지 않는 `const AppConfig`다. 작성자는 새 객체를 완성한 뒤 `release`로 `shared_ptr`를 원자 저장하고, 독자는 `acquire`로 포인터를 원자 로드한다. 독자가 얻은 `shared_ptr`는 다음 설정이 게시된 뒤에도 자신이 읽던 옛 객체의 수명을 연장한다. 따라서 긴 읽기 잠금이나 잠금 해제 뒤 무효가 되는 내부 참조를 외부로 노출하지 않는다. 이 패턴은 읽기가 압도적으로 많은 기능 플래그, 라우팅 표, 정책 설정에서 자주 쓰인다.
@@ -70,3 +91,4 @@ CTest는 두 Modern C++ 실행 파일의 정상 종료, 대입·반전·질의 �
 3. `problem.cpp`의 두 카운터 합이 항상 특정 불변식을 만족해야 한다면 현재 `snapshot()`만으로 충분하지 않은 실행 순서를 그린다.
 4. ICPC 코드에서 `compose(set_zero, invert)`와 `compose(invert, set_zero)`를 손으로 계산해 연산 합성이 교환법칙을 만족하지 않음을 보인다.
 5. `lazy_[node]`를 합성하지 않고 새 연산으로 무조건 덮어쓰도록 바꾼 뒤 이중 반전 CTest가 왜 실패하는지 추적한다.
+6. `string::append`, `vector`의 크기 생성자, `atomic::load/store/fetch_add` 각각의 반환값·복잡도·무효화 또는 메모리 순서 계약을 공용 문서 없이 설명한다.

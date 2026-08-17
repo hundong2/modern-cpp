@@ -68,11 +68,12 @@ class LazySegmentTree {
 public:
     // 생성자는 반환형이 없고 explicit은 string 하나가 트리로 뜻밖에 암시 변환되는 것을 막는다.
     explicit LazySegmentTree(const std::string& bits)
-        // size_는 int 인덱스 계산에 사용할 배열 길이를 값으로 복사한다.
+        // string::size는 O(1)에 부호 없는 size_type을 반환하고, 문제 상한을 확인한 뒤 int로 명시 변환한다.
         : size_{static_cast<int>(bits.size())},
-          // 노드 배열 4N은 재귀 세그먼트 트리가 필요한 공간의 안전한 상한이다.
+          // vector(count,value) 괄호 생성자는 4N개의 int 원소를 만들고 각각 0을 복사해 O(N)에 초기화한다.
+          // vector{count,value} 중괄호를 쓰면 두 원소 initializer_list로 해석될 수 있어 여기서는 괄호가 중요하다.
           ones_(bits.size() * 4U, 0),
-          // 모든 노드는 처음에 미전파 연산이 없다는 none 상태다.
+          // 두 번째 vector도 4N개의 LazyOp 원소를 none으로 초기화하며 두 vector가 저장 메모리를 소유한다.
           lazy_(bits.size() * 4U, LazyOp::none) {
         // 문제 제약은 N>=1이지만 방어적으로 빈 입력에서는 재귀 빌드를 시작하지 않는다.
         if (size_ > 0) {
@@ -250,9 +251,10 @@ private:
 
 // main은 입력 조립, 명령 분기, 세그먼트 트리 호출, 출력 형식을 담당한다.
 int main() {
-    // C와 C++ 스트림 동기화를 끄면 많은 문자 입력을 더 빠르게 처리할 수 있다.
+    // sync_with_stdio(false)는 이전 동기화 상태 bool을 반환하지만 여기서는 필요 없어 버린다.
+    // C와 C++ 스트림 동기화를 끄면 많은 문자 입력을 더 빠르게 처리할 수 있고 이후 stdio와 임의로 섞지 않는다.
     std::ios::sync_with_stdio(false);
-    // nullptr는 아무 객체도 가리키지 않는 포인터 값이며 자동 출력 flush 연결을 끊는다.
+    // cin.tie(nullptr)는 이전 연결 ostream*를 반환하지만 버린다. nullptr로 입력 전 cout 자동 flush 연결을 끊는다.
     std::cin.tie(nullptr);
 
     // 기본 정수 변수는 {}로 0 값 초기화한다.
@@ -281,6 +283,8 @@ int main() {
             std::cin >> repeat_count >> pattern;
             // 같은 패턴을 repeat_count번 append해 문제의 압축 입력을 실제 배열로 푼다.
             for (int repeat{}; repeat < repeat_count; ++repeat) {
+                // string::append는 pattern 문자를 끝에 복사해 크기를 늘린다. 작업은 pattern 길이에 선형이고
+                // 용량 부족 재할당 시 기존 문자 포인터·참조·반복자가 무효화되지만 여기서는 보관하지 않는다.
                 pirates.append(pattern);
             }
         }
