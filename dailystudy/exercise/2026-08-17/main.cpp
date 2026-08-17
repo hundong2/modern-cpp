@@ -34,28 +34,33 @@ class AtomicConfigStore final : public IConfigSnapshotSource {
 public:
     // 생성자는 반환형이 없고 explicit은 shared_ptr 하나가 저장소로 암시 변환되는 것을 막는다.
     explicit AtomicConfigStore(std::shared_ptr<const AppConfig> initial)
-        // 멤버 초기화 목록은 생성자 본문 전에 shared_ptr 소유권을 current_로 이동한다.
+        // atomic<shared_ptr<...>> 생성자의 입력은 std::move(initial)이 넘긴 포인터 값이고 생성자는 반환값이 없다.
+        // 멤버 초기화 뒤 current_가 공유 소유권 한 몫을 보관하며 값 매개변수 initial은 빈 유효 상태가 된다.
         : current_{std::move(initial)} {}
 
     // 값 매개변수는 호출자가 복사 또는 이동 중 원하는 소유권 전달 방식을 고르게 한다.
     void publish(std::shared_ptr<const AppConfig> next) {
-        // release 저장은 새 AppConfig 생성 중 일어난 쓰기가 acquire 독자에게 보이게 한다.
-        // std::move(next)는 lvalue인 매개변수를 xvalue로 바꿔 shared_ptr 소유권 한 몫을 옮긴다.
-        // atomic::store는 반환값이 없는 멤버 함수이며 포인터 교체와 이전 소유권 감소를 한 원자 변경으로 보이게 한다.
+        // 호출 계약: current_는 atomic<shared_ptr<const AppConfig>> 수신 객체이고 store(desired, order)를 호출한다.
+        // 첫 인자 std::move(next)는 lvalue next를 xvalue로 바꿔 값 매개변수 desired에 공유 소유권 한 몫을 이동한다.
+        // 둘째 인자 memory_order_release는 저장할 데이터가 아니라 이 store보다 앞선 AppConfig 쓰기의 게시 순서다.
+        // 반환형은 void라 옛 shared_ptr를 돌려주지 않는다. current_는 next가 가리키던 새 값을 보관하고 next는 빈 유효 상태가 된다.
+        // 이전 shared_ptr의 참조 횟수 감소·pointee 소멸은 값 교체 뒤 일어날 수 있으며 포인터가 가리키는 멤버를 원자화하지는 않는다.
         current_.store(std::move(next), std::memory_order_release);
     }
 
     // override는 기반 클래스의 가상 함수 서명과 정확히 일치하는지 컴파일러가 검사하게 한다.
     [[nodiscard]] std::shared_ptr<const AppConfig> snapshot() const override {
-        // acquire 로드는 대응하는 release 게시 이후 완성된 불변 객체를 안전하게 관찰한다.
-        // 반환 shared_ptr은 객체 수명을 연장하므로 다음 publish 뒤에도 기존 스냅샷이 유효하다.
-        // atomic::load는 shared_ptr 값을 반환해 공유 참조 횟수 한 몫을 얻으며 논리적으로 상수 시간에 호출한다.
+        // 호출 계약: load(order)의 수신 객체 current_는 읽히지만 저장값은 바뀌지 않으며 데이터 값 인자는 없다.
+        // 유일한 인자 memory_order_acquire는 읽을 값이 아니라 메모리 순서이고, release 저장값을 읽을 때 앞선 쓰기와 동기화한다.
+        // 반환형은 shared_ptr<const AppConfig>이며 호출 순간 관찰한 포인터 값의 소유권 한 몫을 복사해 prvalue로 반환한다.
+        // 반환 스냅샷은 다음 publish 뒤에도 옛 AppConfig 수명을 연장한다. load는 예외를 던지지 않지만 lock-free는 보장되지 않는다.
         return current_.load(std::memory_order_acquire);
     }
 
 // private 접근 지정자 아래 구현 상태는 클래스 밖에서 직접 읽거나 바꿀 수 없다.
 private:
-    // class 멤버는 기본 private이며 atomic 특수화가 shared_ptr 자체의 동시 load/store를 보호한다.
+    // 템플릿 인자 shared_ptr<const AppConfig>가 원자적으로 교체되는 값 타입이며 atomic 객체는 복사할 수 없다.
+    // 이 특수화는 shared_ptr 값의 동시 load/store를 보호할 뿐, pointee 멤버의 동시 변경까지 보호하지 않는다.
     std::atomic<std::shared_ptr<const AppConfig>> current_{};
 };
 

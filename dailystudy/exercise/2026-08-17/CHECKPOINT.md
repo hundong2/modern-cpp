@@ -24,9 +24,10 @@
 ## 표준 라이브러리 호출 계약
 
 - 공용 문서: [표준 라이브러리 학습 지도](../standard-library/README.md)
-- [ ] `atomic::store`는 무엇을 반환하며 `release`가 현재 설정 게시에서 어떤 쓰기를 공개하는지 설명한다.
-- [ ] `atomic::load`가 반환한 `shared_ptr`가 다음 게시 뒤에도 옛 설정 수명을 유지하는 이유를 설명한다.
-- [ ] `fetch_add(1)`의 반환값이 증가 전 값이라는 점과 새 값을 얻는 식을 쓴다.
+- [ ] `current_.store(std::move(next), std::memory_order_release)`에서 수신 객체, 첫째·둘째 인자의 타입과 역할, 반환형, 호출 후 `current_`·`next` 상태를 각각 설명한다.
+- [ ] `current_.load(std::memory_order_acquire)`에는 데이터 값 인자가 없다는 점, `acquire`의 역할, 반환형과 소유권, 수신 객체가 바뀌지 않는다는 점을 설명한다.
+- [ ] `load`에 `release`를, `store`에 `acquire`를 전달하지 않는 이유와 각 함수에서 사용할 수 있는 메모리 순서를 말한다.
+- [ ] `fetch_add(1, relaxed)`의 두 인자 역할, 증가 전 반환값, 증가 후 값을 얻는 식, `uint64_t` 최대값 다음 상태를 설명한다.
 - [ ] `make_shared<const AppConfig>`의 템플릿 인자, 생성자 인자, 반환형, 할당·수명 역할을 구분한다.
 - [ ] `vector(count, value)`와 `vector{count, value}`가 다른 원소 구성을 만들 수 있는 이유를 생성자 오버로드로 설명한다.
 - [ ] `string::append`가 문자 소유권·크기·용량을 어떻게 바꾸며 어떤 관찰자를 무효화할 수 있는지 설명한다.

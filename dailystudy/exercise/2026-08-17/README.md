@@ -39,6 +39,10 @@
 
 세부 설명: [동시성](../standard-library/concurrency-time-filesystem.md), [컨테이너](../standard-library/containers-and-views.md), [소유권](../standard-library/ownership-and-vocabulary-types.md), [입출력·유틸리티](../standard-library/io-parsing-and-utilities.md).
 
+### `atomic` 호출을 읽는 순서
+
+`current_.load(std::memory_order_acquire)`는 “acquire 값을 atomic에 넣는다”는 뜻이 아니다. `current_`가 읽을 수신 객체이고, `acquire`는 유일한 입력 매개변수인 메모리 순서, 출력은 호출 순간 관찰한 `shared_ptr<const AppConfig>` 값이다. `load`는 `current_`를 바꾸지 않는다. 반대로 `store(std::move(next), release)`의 첫 인자는 새 값, 둘째 인자는 쓰기 순서이며 반환값은 없다. [`std::atomic<T>` 호출 계약표](../standard-library/concurrency-time-filesystem.md#호출-계약표)에서 `exchange`, `compare_exchange`, `wait/notify`까지 같은 방식으로 확인한다.
+
 ## Modern C++와 실무 아키텍처
 
 설정 객체는 생성이 끝난 뒤 바꾸지 않는 `const AppConfig`다. 작성자는 새 객체를 완성한 뒤 `release`로 `shared_ptr`를 원자 저장하고, 독자는 `acquire`로 포인터를 원자 로드한다. 독자가 얻은 `shared_ptr`는 다음 설정이 게시된 뒤에도 자신이 읽던 옛 객체의 수명을 연장한다. 따라서 긴 읽기 잠금이나 잠금 해제 뒤 무효가 되는 내부 참조를 외부로 노출하지 않는다. 이 패턴은 읽기가 압도적으로 많은 기능 플래그, 라우팅 표, 정책 설정에서 자주 쓰인다.

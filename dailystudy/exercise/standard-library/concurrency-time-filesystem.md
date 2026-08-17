@@ -2,17 +2,52 @@
 
 ## `std::atomic<T>` — `<atomic>`
 
+- `T`는 원자 객체가 직접 보관하는 값 타입이다. `std::atomic<std::uint64_t>`는 정수를, `std::atomic<std::shared_ptr<const Config>>`는 공유 포인터 값을 원자적으로 다루며, 포인터가 가리키는 `Config`의 모든 멤버를 자동으로 원자화하지는 않는다.
+- 원자 객체는 복사 생성·복사 대입할 수 없다. 값을 전달하려면 `load`, `store`, `exchange` 같은 명시적 원자 연산으로 어떤 메모리 순서를 쓸지 정한다.
 - `load`, `store`, `exchange`, `fetch_add` 같은 연산을 다른 스레드가 중간 상태로 관찰하지 못하게 한다.
 - 원자 타입이라고 모든 복합 식이 하나의 원자 연산은 아니다. `counter = counter + 1`보다 `fetch_add(1)`이 읽기-수정-쓰기를 한 연산으로 표현한다.
 - `is_lock_free()` 결과는 타입과 플랫폼에 따라 달라진다. 원자 API가 반드시 단일 CPU 명령이나 lock-free 구현임을 뜻하지 않는다.
 - 원자성은 가리키는 객체나 주변 비원자 메모리의 안전까지 자동 제공하지 않는다.
 
-### `load`와 `store`
+### 호출 계약표
 
-- `load(order)`는 현재 값을 원자적으로 값으로 반환한다.
-- `store(value,order)`는 값을 원자적으로 게시하고 반환값은 없다.
-- `std::atomic<std::shared_ptr<T>>`의 load는 `shared_ptr` 소유권 한 몫을 얻어 객체 수명을 연장한다.
-- store에 `std::move(ptr)`를 넘기면 호출자가 가진 소유권 한 몫을 원자 객체로 이동할 수 있다.
+아래 대표 형태에서 `order`는 읽거나 쓸 **데이터 값**이 아니라, 컴파일러와 CPU에 요구하는 원자 연산의 **메모리 순서 규칙**이다. 생략하면 기본값은 `std::memory_order_seq_cst`다.
+
+| 대표 멤버 형태 | 입력 매개변수 | 반환값 | 원자 객체에 미치는 영향 |
+|---|---|---|---|
+| `T load(memory_order order = seq_cst) const` | 읽기 순서. `relaxed`, `consume`, `acquire`, `seq_cst`를 사용한다. `release`, `acq_rel`은 읽기 연산에 맞지 않아 전달하지 않는다. | 호출 시 관찰한 `T` 값의 스냅샷 | 저장된 값을 바꾸지 않는다. `const`는 이 성질을 나타낸다. |
+| `void store(T desired, memory_order order = seq_cst)` | `desired`는 새로 저장할 값, `order`는 쓰기 순서. `relaxed`, `release`, `seq_cst`를 사용한다. `consume`, `acquire`, `acq_rel`은 단순 쓰기에 전달하지 않는다. | 없음(`void`) | 기존 값을 `desired`로 교체한다. |
+| `T exchange(T desired, memory_order order = seq_cst)` | 새 값과 읽기-수정-쓰기 순서 | 교체되기 전 `T` 값 | 한 원자 연산에서 옛 값을 읽고 새 값으로 교체한다. |
+| `T fetch_add(T difference, memory_order order = seq_cst)` | 더할 차이와 읽기-수정-쓰기 순서 | 덧셈 전의 옛 값 | 한 원자 연산에서 현재 값에 차이를 더한다. 정수·포인터 등 지원되는 특수화에서만 제공된다. |
+| `bool compare_exchange_weak(T& expected, T desired, ...)` | `expected`는 예상값이면서 실패 출력 자리, `desired`는 성공 시 새 값 | 교환 성공 여부 | 같으면 `desired`를 저장하고 `true`; 다르거나 약한 비교가 허위 실패하면 현재 값을 `expected`에 써 주고 `false`다. 보통 반복문에서 쓴다. |
+| `bool compare_exchange_strong(T& expected, T desired, ...)` | weak와 같지만 허위 실패를 허용하지 않는 강한 비교 | 교환 성공 여부 | 한 번만 시도하는 분기에 적합하다. 경쟁에 의한 실제 실패는 가능하다. |
+| `bool is_lock_free() const` | 없음 | 이 객체의 원자 연산이 잠금 없이 구현되는지 | 저장값을 바꾸지 않는다. `true`여도 wait-free 시간 상한을 뜻하지 않는다. |
+| `void wait(T old, memory_order order = seq_cst) const` | 값이 `old`와 달라질 때까지 기다릴 비교값과 읽기 순서 | 없음 | 값을 바꾸지 않는다. 깨어난 뒤에도 조건을 다시 확인하는 구조가 안전하다. |
+| `void notify_one()` / `notify_all()` | 없음 | 없음 | 대기 중인 스레드 일부/전부에 재확인 기회를 주며 원자 값 자체는 바꾸지 않는다. |
+
+선택된 오버로드와 `T`에 따라 실제 매개변수 타입은 달라진다. 따라서 코드 주석에는 함수 이름만 번역하지 말고, 수신 객체의 정확한 `atomic<T>` 타입, 현재 전달한 각 인자, 반환값을 사용하는지, 호출 뒤 저장값이 바뀌는지를 함께 적는다.
+
+### `load(order)` 상세
+
+- 수신 객체는 읽을 `std::atomic<T>`이고 명시 인자는 `order` 하나다. 예를 들어 `counter.load(std::memory_order_relaxed)`에서 `relaxed`는 카운터 값이 아니라 읽기 순서다.
+- 반환형은 `T`이며 호출 시 그 원자 객체에서 관찰한 값의 복사본이다. 반환값이 “항상 가장 최근 벽시계 시각의 값”이라는 뜻은 아니고, C++ 메모리 모델이 허용하는 수정 순서의 값이다.
+- `load`는 원자 객체의 저장값을 바꾸지 않는다. 정수 `T`는 값이 복사되고, `std::atomic<std::shared_ptr<U>>`의 반환값은 `shared_ptr<U>` 소유권 한 몫을 얻어 pointee 수명을 연장한다.
+- `memory_order_acquire`는 같은 원자 객체의 release 계열 쓰기가 게시한 값을 실제로 읽을 때 그 이전 쓰기와 동기화한다. 단순히 acquire를 적었다는 사실만으로 관련 없는 저장과 동기화되지는 않는다.
+- API의 작업량은 컨테이너 크기에 비례하지 않지만, lock-free·wait-free 여부와 실제 지연은 타입, 표준 라이브러리, 하드웨어, 경쟁 정도에 따라 달라진다.
+
+### `store(desired, order)` 상세
+
+- 첫 매개변수 `desired`는 새 원자 값이다. 두 번째 `order`는 쓰기 순서이며 반환형은 `void`라 옛 값을 돌려주지 않는다. 옛 값이 필요하면 `exchange`를 검토한다.
+- `std::atomic<std::shared_ptr<U>>::store(std::move(ptr), order)`에서는 값 매개변수 `desired`가 `ptr`의 공유 소유권 한 몫을 이동받고, 성공 뒤 원자 객체가 새 `shared_ptr` 값을 보관한다. 이동된 원본 `ptr`는 유효하지만 보통 빈 상태다.
+- 기존 원자 값은 교체된다. `shared_ptr` 특수화에서는 이전 pointee의 참조 횟수 감소와 소멸이 원자 값 교체 뒤 일어날 수 있으므로, 사용자 소멸자가 원자 갱신 내부에서 반드시 끝난다고 가정하지 않는다.
+- `memory_order_release`는 이 호출보다 앞선 쓰기를, 이 저장값을 읽는 acquire 계열 독자에게 게시한다. store 자체는 읽기 결과를 반환하지 않는다.
+
+### `fetch_add(difference, order)` 상세
+
+- 첫 매개변수 `difference`는 현재 원자 값에 더할 차이다. 두 번째 매개변수 `order`는 읽기와 쓰기가 결합된 연산의 메모리 순서다.
+- 반환형은 원자 값 타입이며 **증가 전 값**을 반환한다. 증가 후 값이 필요하면 반환값에 같은 차이를 지역 계산으로 더한다.
+- `std::atomic<std::uint64_t>`의 부호 없는 덧셈은 최대값 다음에 0으로 순환한다. 원자성은 오버플로를 포화 처리로 바꾸지 않는다.
+- `memory_order_relaxed`를 쓰면 해당 원자 값의 원자성과 수정 순서는 유지하지만 주변 데이터 게시를 위한 동기화 관계는 만들지 않는다.
 
 ### 메모리 순서
 

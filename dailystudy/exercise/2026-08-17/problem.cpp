@@ -18,36 +18,41 @@ class RequestMetrics {
 public:
     // 반환형 없는 생성자는 두 카운터의 시작값을 받고, explicit은 정수 하나의 암시 변환을 막는다.
     explicit RequestMetrics(std::uint64_t initial = 0U)
-        // 멤버 초기화 목록이 생성자 본문 전에 두 atomic 객체를 같은 값으로 만든다.
+        // 각 atomic<uint64_t> 생성자는 initial 값을 입력받아 저장값을 만들고, 생성자이므로 별도 반환값은 없다.
+        // initial은 값 매개변수라 두 번 읽어도 호출자의 원본은 바뀌지 않으며 두 원자 객체는 서로 독립적이다.
         : accepted_{initial}, rejected_{initial} {}
 
     // noexcept는 이 단순 원자 갱신 함수가 예외를 던지지 않는다는 계약이다.
     void record_accepted() noexcept {
-        // fetch_add는 기존 값 읽기와 +1 저장을 쪼갤 수 없는 하나의 원자 연산으로 수행한다.
-        // 통계 카운터끼리 다른 데이터의 순서를 전달하지 않으므로 가장 약한 relaxed 순서면 충분하다.
-        // 반환값은 증가 전 uint64_t지만 여기서는 새 값이 필요 없어 의도적으로 버린다.
+        // 호출 계약: accepted_가 수신 atomic<uint64_t>이고 fetch_add(difference, order)를 원자적으로 수행한다.
+        // 첫 인자 1U는 difference이며 uint64_t로 변환되어 현재 값에 더해진다. 최대값 다음에는 0으로 순환한다.
+        // 둘째 인자 memory_order_relaxed는 데이터가 아니라 순서 규칙이며 주변 비원자 데이터를 게시하지 않는다.
+        // 반환형은 uint64_t이고 증가 전 값을 돌려주지만 여기서는 사용하지 않는다. 저장값은 정확히 한 번 +1 된다.
         accepted_.fetch_add(1U, std::memory_order_relaxed);
     }
 
     // 거절 요청 한 건을 독립 원자 카운터에 기록하고 반환값은 없다.
     void record_rejected() noexcept {
-        // 1U는 부호 없는 int 리터럴이고 atomic<uint64_t>의 값 타입으로 안전하게 변환된다.
-        // 이 fetch_add도 증가 전 값을 반환하며 relaxed라 다른 객체의 쓰기 순서는 게시하지 않는다.
+        // 같은 fetch_add 계약에서 첫 인자 1U는 더할 값, 둘째 relaxed는 메모리 순서이며 둘은 역할이 다르다.
+        // 반환되는 증가 전 uint64_t는 버리고, rejected_의 저장값만 원자적으로 1 증가시킨다.
         rejected_.fetch_add(1U, std::memory_order_relaxed);
     }
 
     // const 함수는 카운터를 바꾸지 않고 현재 두 값을 새 값 객체로 복사해 반환한다.
     [[nodiscard]] RequestSnapshot snapshot() const noexcept {
-        // 각 atomic::load는 uint64_t 값을 반환해 데이터 경쟁 없이 읽지만 두 값을 한 시점에 묶는 트랜잭션은 아니다.
+        // load(order)의 유일한 인자 relaxed는 읽을 숫자가 아니라 메모리 순서이고, load는 수신 atomic 값을 바꾸지 않는다.
+        // 각 반환형은 uint64_t이며 호출 순간 관찰한 값을 복사한다. 두 독립 load는 하나의 트랜잭션 스냅샷이 아니다.
         const std::uint64_t accepted{accepted_.load(std::memory_order_relaxed)};
-        const std::uint64_t rejected{rejected_.load(std::memory_order_relaxed)}; // 두 번째 원자 로드다.
+        // 두 번째 load도 입력은 relaxed 하나, 출력은 rejected 값 하나이며 accepted와의 동시 시점 일치는 보장하지 않는다.
+        const std::uint64_t rejected{rejected_.load(std::memory_order_relaxed)};
         // RequestSnapshot{...} prvalue가 반환 객체를 직접 초기화해 C++17 이후 복사 생략 대상이 된다.
         return RequestSnapshot{accepted, rejected};
     }
 
 // private 접근 지정자는 외부의 비원자적 직접 접근을 금지한다.
 private:
-    // atomic<uint64_t>의 템플릿 인자는 원자적으로 읽고 쓸 값의 타입이다.
+    // atomic<uint64_t>의 템플릿 인자는 원자적으로 읽고 쓸 값 타입이며 {}는 정수 저장값을 0으로 초기화한다.
+    // atomic 객체 자체는 복사할 수 없고 값을 꺼내려면 load 같은 원자 멤버 함수를 사용한다.
     std::atomic<std::uint64_t> accepted_{};
     std::atomic<std::uint64_t> rejected_{}; // 별도 cache/순서 의미를 가진 독립 원자 객체다.
 };
