@@ -37,7 +37,8 @@ public:
         for (const Record& record : records_) {
             // == 비교가 참이면 조건 분기가 선택된다.
             if (record.id == id) {
-                // Record{record}는 lvalue record를 복사한 prvalue이고 optional이 그 복사본을 소유한다.
+                // optional<Record>{value} 생성자는 Record prvalue 하나를 입력받아 성공 상태를 만들고 별도 반환값은 없다.
+                // Record{record}는 lvalue record의 복사본이므로 저장소와 결과 optional의 수명이 독립된다.
                 return std::optional<Record>{Record{record}};
             }
         }
@@ -53,9 +54,10 @@ int main() {
     // using 별칭은 긴 템플릿 타입 vector<Record>에 짧고 의미 있는 이름을 준다.
     using Records = std::vector<Record>;
     Records records{{1, "Ada"}, {2, "Bjarne"}}; // 중첩 중괄호로 vector와 각 Record를 직접 초기화한다.
-    // std::move(records)는 lvalue를 xvalue로 바꾸며, 생성자가 내부 버퍼의 소유권을 이동할 수 있게 한다.
+    // move(records)는 Records&& xvalue를 반환하고 RecordStore 생성자가 vector 버퍼 소유권을 이동한다. records는 유효한 미지정 상태다.
     const RecordStore store{std::move(records)};
     // 함수 반환 prvalue로 result를 직접 초기화하며 C++17의 복사 생략 규칙이 불필요한 임시 복사를 피한다.
+    // find(2)의 입력은 찾을 id 값이고 반환은 Record 복사본을 가진 optional 또는 빈 optional이다. store는 바뀌지 않는다.
     const std::optional<Record> result{store.find(2)};
     // optional의 bool 문맥 변환이 값 존재 여부를 검사하고 ->가 내부 Record를 가리킨다.
     if (result) {

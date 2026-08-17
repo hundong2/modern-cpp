@@ -21,9 +21,12 @@ public:
 
     // const span은 원소를 바꾸지 않는 비소유 뷰이고, 함수 뒤 const는 서비스 상태를 바꾸지 않음을 뜻한다.
     [[nodiscard]] ScoreSummary summarize(std::span<const int> scores) const {
-        // accumulate의 템플릿 인자는 반복자 타입에서 추론되며 0은 합계 타입을 int로 정한다.
+        // span::begin()/end()는 첫 반복자와 끝 센티널을 반환하고 scores는 바뀌지 않는다.
+        // accumulate(first,last,0)는 세 입력을 왼쪽부터 선형 합산하고 초기값 때문에 int를 반환한다.
+        // 합이 int 범위를 넘지 않아야 하며 반환값 raw는 새 값이라 원본 원소와 수명을 공유하지 않는다.
         const int raw{std::accumulate(scores.begin(), scores.end(), 0)};
         // 반환 식은 prvalue다. C++17 이후 결과 객체로 직접 만들어지는 복사 생략이 보장된다.
+        // size()는 인자 없이 span 원소 수 size_type을 O(1)에 반환한다. int 변환 전 범위가 충분한지 확인해야 한다.
         return ScoreSummary{raw + bonus_, static_cast<int>(scores.size())};
     }
 

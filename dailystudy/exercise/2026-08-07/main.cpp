@@ -28,15 +28,19 @@ public:
 
     void start() { state_ = Running{0}; } // prvalue Running이 variant 안의 이전 객체를 끝내고 새 객체를 만든다.
     void advance() {
-        if (auto* running{std::get_if<Running>(&state_)}) { // &는 state_의 주소, 포인터는 없을 수도 있어 조건 검사한다.
+        // get_if<Running>(&state_)는 variant 주소 하나를 입력받아 활성 타입이 맞으면 Running*, 아니면 nullptr를 반환한다.
+        // state_를 바꾸거나 예외를 던지지 않으며 반환 포인터는 state_의 대안 교체·소멸 시 무효화된다.
+        if (auto* running{std::get_if<Running>(&state_)}) {
             ++running->completed; // ->로 포인터가 가리키는 멤버를 수정한다.
             if (running->completed >= target_) { state_ = Idle{"완료"}; } // 비교 뒤 조건 분기한다.
         }
     }
 
     [[nodiscard]] std::string describe() const { // const 멤버 함수는 논리적 상태를 바꾸지 않는다.
+        // visit(visitor,state_)는 방문자와 variant를 입력받아 활성 대안용 람다를 호출하고 그 string 반환값을 돌려준다.
         return std::visit(Overload{
             [](const Idle& value) { return "idle:" + value.reason; }, // const lvalue 참조로 복사 없이 읽는다.
+            // to_string(int)는 정수 하나를 입력받아 새 소유 string을 반환하고 value는 바뀌지 않는다.
             [](const Running& value) { return "running:" + std::to_string(value.completed); },
             [](const Failed& value) { return "failed:" + std::to_string(value.error_code); }
         }, state_); // std::visit은 활성 타입에 맞는 함수 호출을 선택한다.

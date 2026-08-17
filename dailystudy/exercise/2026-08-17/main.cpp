@@ -92,12 +92,13 @@ int main() {
     // make_shared<const AppConfig>는 AppConfig 값을 생성자 인자로 받아 const 객체와 제어 블록을 만들고
     // shared_ptr<const AppConfig> prvalue를 반환한다. 보통 한 번 할당하지만 메모리 부족이면 예외가 날 수 있다.
     auto initial{std::make_shared<const AppConfig>(AppConfig{3, "api-v1"})};
-    // initial은 이름 있는 lvalue이며 std::move(initial)은 xvalue로 바뀌어 저장소에 소유권을 넘긴다.
+    // move(initial)는 shared_ptr&& xvalue를 반환하고 저장소 생성자가 공유 소유권 한 몫을 이동한다. initial은 빈 유효 상태다.
     AtomicConfigStore store{std::move(initial)};
     // store는 lvalue이고 RetryService의 const 참조 매개변수 및 멤버에 바인딩된다.
     const RetryService service{store};
 
-    // make_shared가 반환한 shared_ptr prvalue는 publish의 값 매개변수를 직접 초기화하고, publish가 원자 저장소로 이동한다.
+    // 두 번째 make_shared도 AppConfig prvalue 하나를 입력받아 const 객체와 제어 블록을 만들고 shared_ptr prvalue를 반환한다.
+    // publish의 값 매개변수가 그 반환값을 직접 받고, 내부 store가 원자 저장소로 소유권을 이동한다.
     store.publish(std::make_shared<const AppConfig>(AppConfig{5, "api-v2"}));
 
     // 함수 호출은 acquire load, shared_ptr 수명 확보, 가상 호출을 거쳐 현재 설정 값을 얻는다.

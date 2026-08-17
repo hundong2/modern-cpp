@@ -23,7 +23,11 @@ public:
 class RecordingSink final : public MessageSink {
 public:
     // final은 추가 상속을 막고 override는 기반 함수와 서명을 검사하게 한다.
-    void send(const Message& message) override { messages_.push_back(message); } // lvalue message를 vector에 복사한다.
+    void send(const Message& message) override {
+        // 표준 호출 계약: push_back(const Message&)는 복사할 원소 참조 하나를 받고 void를 반환한다.
+        // 성공하면 size가 1 늘며 두 string도 독립 복사된다. 상각 O(1), 재할당 시 기존 원소 관찰자가 무효화된다.
+        messages_.push_back(message);
+    }
     // const 참조 반환은 vector 복사를 피하지만 RecordingSink보다 오래 보관하면 안 된다.
     [[nodiscard]] const std::vector<Message>& messages() const { return messages_; }
 
@@ -60,15 +64,19 @@ private:
 
 int main() {
     // main은 프로그램 진입점이며 끝까지 도달하면 정상 종료 코드 0을 반환한다.
-    auto recorder = std::make_unique<RecordingSink>(); // 반환 unique_ptr prvalue로 recorder를 직접 초기화한다.
-    RecordingSink* observer = recorder.get(); // 비소유 포인터. recorder/service보다 오래 사용하면 댕글링된다.
-    // get은 소유권을 넘기지 않고 같은 객체 주소만 돌려준다. delete를 직접 호출하면 안 된다.
+    // make_unique<RecordingSink>()는 생성자 인자가 없고 객체를 동적 생성해 unique_ptr<RecordingSink> prvalue를 반환한다.
+    // 할당 실패 시 bad_alloc이 가능하며 반환 포인터가 유일한 소유자다.
+    auto recorder = std::make_unique<RecordingSink>();
+    // get()은 인자 없이 같은 객체의 RecordingSink*를 반환하고 소유권·참조 횟수는 바꾸지 않는다.
+    RecordingSink* observer = recorder.get(); // 비소유 포인터라 recorder/service보다 오래 사용하면 댕글링된다.
 
     WelcomeService service{std::move(recorder)}; // recorder의 소유권이 service로 이동한다.
     assert(recorder == nullptr);
 
     service.welcome("Mina", "mina@example.test");
+    // messages()는 vector const&를, size()는 원소 수 size_type을 반환한다. 두 호출 모두 저장 상태를 바꾸지 않는다.
     assert(observer->messages().size() == 1);
+    // front()는 인자 없이 첫 Message의 const 참조를 반환하며, 빈 vector에서 호출하면 전제조건을 어긴다.
     assert(observer->messages().front().body == "Hello Mina, welcome!");
 
     const Message& saved = observer->messages().front();

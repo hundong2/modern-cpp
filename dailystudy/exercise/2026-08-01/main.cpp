@@ -25,9 +25,11 @@ struct Command {
 [[nodiscard]] Command parse_command(const Text& input) {
     // string_view 생성자에 input lvalue가 바인딩됩니다. text는 input의 문자 버퍼를 빌립니다.
     const std::string_view text{input};
-    // starts_with는 C++20 표준 라이브러리 함수이며 앞부분이 같은지 비교해 bool을 반환합니다.
+    // 표준 호출 계약: starts_with(prefix)는 접두사 string_view 하나를 입력받고 일치 여부 bool을 반환하며 text를 바꾸지 않습니다.
+    // 비교 시간은 prefix 길이에 선형이고 "echo " 리터럴은 호출 동안 string_view로 변환됩니다.
     if (text.starts_with("echo ")) { // if는 비교 결과가 참일 때 이 조건 분기로 들어옵니다.
-        // substr(5)는 뷰를 만들고, std::string 생성자는 그 범위의 문자를 복사하여 소유합니다.
+        // substr(5)는 시작 위치 하나를 입력받아 5번 문자부터 끝까지의 비소유 string_view를 반환합니다.
+        // 위치가 size보다 크면 out_of_range가 가능하고, Text 생성자가 반환 뷰의 문자를 복사해 독립 소유합니다.
         return Command{Kind::echo, Text{text.substr(5)}}; // prvalue는 반환 목적지에 직접 생성될 수 있습니다.
     }
     // == 연산자는 두 문자열 뷰의 길이와 문자를 비교합니다.
@@ -85,8 +87,10 @@ private:
 
 int main() { // int 반환값은 운영체제에 전달되는 프로그램 종료 상태입니다.
     Text input{"echo hello"}; // 기본 문자열 타입 변수이며 중괄호로 문자 데이터를 직접 초기화합니다.
-    auto output{std::make_unique<ConsoleOutput>()}; // auto가 unique_ptr<ConsoleOutput> 타입을 추론합니다.
-    CommandService service{std::move(output)}; // output lvalue를 xvalue로 바꾸어 소유권을 이동합니다.
+    // make_unique<ConsoleOutput>()은 인자 없이 객체를 생성하고 unique_ptr<ConsoleOutput> prvalue를 반환합니다.
+    auto output{std::make_unique<ConsoleOutput>()};
+    // move(output)는 unique_ptr&&를 반환하고 service 생성자가 소유권을 이동합니다. output은 이후 빈 유효 상태입니다.
+    CommandService service{std::move(output)};
 
     const Command command{parse_command(input)}; // 함수 호출 결과 prvalue로 const 객체를 초기화합니다.
     const bool keep_running{service.execute(command)}; // 이름 있는 command lvalue가 const 참조에 바인딩됩니다.

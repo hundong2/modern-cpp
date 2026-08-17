@@ -30,7 +30,8 @@ public:
 
     // override는 기반 가상 함수의 시그니처가 정확히 일치하는지 컴파일러가 확인하게 한다.
     void write(const std::string& message, std::source_location where) const override {
-        // << 연산자와 표준 라이브러리 함수 file_name/line/function_name이 진단을 조합한다.
+        // source_location의 file_name()/function_name()은 인자 없이 구현 보유 C 문자열 포인터를, line()은 줄 번호 정수를 반환한다.
+        // where는 바뀌지 않고 반환 문자 포인터는 source_location 계약 수명에 의존하므로 직접 delete하지 않는다.
         std::cout << '[' << channel_ << "] " << message << " @ "
                   << where.file_name() << ':' << where.line() << " (" << where.function_name() << ")\n";
     }
@@ -48,6 +49,7 @@ public:
     explicit OrderService(DiagnosticPtr sink) : sink_{std::move(sink)} {}
 
     // 기본 인자의 current()는 이 함수를 호출한 위치에서 source_location prvalue를 만든다.
+    // current()는 명시 인자 없이 호출 지점 정보를 담은 source_location 값을 반환한다. 기본 인자는 place 호출 위치에서 평가된다.
     [[nodiscard]] PlaceResult place(int quantity, std::source_location where = std::source_location::current()) const {
         // if는 비교 결과에 따라 분기한다. 일반적으로 비교·조건 분기·호출은 구현되지만 정확한 명령은 환경마다 다르다.
         if (quantity <= 0) {
@@ -64,6 +66,7 @@ private:
 
 int main() { // main의 반환형 int는 운영체제에 상태 코드를 돌려준다.
     // make_unique의 결과 prvalue로 단독 소유 포인터를 만들고, 중괄호로 직접 초기화한다.
+    // make_unique는 "order"를 생성자 인자로 넘겨 객체를 만들고 unique_ptr<ConsoleDiagnosticSink> prvalue를 반환한다.
     DiagnosticPtr sink{std::make_unique<ConsoleDiagnosticSink>("order")};
     // std::move는 sink lvalue를 xvalue로 바꿔 소유권 이동을 요청한다; 이동 뒤 sink는 비어 있을 수 있다.
     const OrderService service{std::move(sink)};

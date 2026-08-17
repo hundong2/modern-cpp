@@ -40,14 +40,19 @@ public:
         : output_{std::move(output)} {} // 멤버 초기화 목록이 xvalue에서 단독 소유권을 이동한다.
 
     void add(std::string name, Command command) {
-        names_.push_back(std::move(name)); // 값 매개변수의 문자열 소유 저장소를 벡터로 이동한다.
-        commands_.push_back(std::move(command)); // std::function이 감싼 호출 객체도 목적지로 이동한다.
+        // push_back(string&&)은 name xvalue 하나를 받고 void를 반환한다. 성공하면 size가 1 늘고 name은 이동 후 유효 상태다.
+        names_.push_back(std::move(name));
+        // push_back(Command&&)도 function의 타입 소거 호출 객체를 이동한다. 각 vector 재할당은 기존 관찰자를 무효화할 수 있다.
+        commands_.push_back(std::move(command));
     }
 
     [[nodiscard]] int run(int initial) const {
         ExecutionResult result{initial, "start"}; // 집계체를 값과 문자열로 직접 초기화한다.
-        for (std::size_t index{}; index < commands_.size(); ++index) { // 크기 형식 인덱스로 모든 명령을 순회한다.
-            result.value = commands_[index](result.value); // []로 명령을 찾고 ()로 간접 호출한 prvalue를 저장한다.
+        // size()는 인자 없이 명령 수 size_type을 O(1)에 반환하고 vector를 바꾸지 않는다.
+        for (std::size_t index{}; index < commands_.size(); ++index) {
+            // function::operator()(int)는 현재 value 하나를 입력받아 저장된 호출 대상을 간접 호출하고 int를 반환한다.
+            // 비어 있는 function이면 bad_function_call을 던지지만 add로 유효한 람다만 저장했다.
+            result.value = commands_[index](result.value);
             result.trace += " -> " + names_[index]; // +=와 +가 단계 이름을 추적 문자열에 이어 붙인다.
         }
         output_->publish(result); // ->는 소유 포인터가 가리키는 포트를 호출하며 실제 어댑터로 가상 간접 호출될 수 있다.
@@ -61,7 +66,8 @@ private:
 };
 
 int main() { // 프로그램 진입 함수는 성공 여부를 int 종료 코드로 반환한다.
-    CommandPipeline pipeline{std::make_unique<ConsoleResultAdapter>()}; // 파생 객체 prvalue의 소유권이 기반 포인터로 이동한다.
+    // make_unique<ConsoleResultAdapter>()는 인자 없이 객체를 만들고 unique_ptr prvalue를 반환해 기반 포인터로 이동 변환된다.
+    CommandPipeline pipeline{std::make_unique<ConsoleResultAdapter>()};
     const int offset{3}; // const 지역 변수는 초기화 뒤 값을 바꿀 수 없다.
     pipeline.add("double", [](int value) { return value * 2; }); // 상태 없는 람다가 곱셈 명령으로 복사되어 저장된다.
     pipeline.add("add-three", [offset](int value) { return value + offset; }); // 캡처가 offset을 값으로 복사해 람다 수명과 분리한다.

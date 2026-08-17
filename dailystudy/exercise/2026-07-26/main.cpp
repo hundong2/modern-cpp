@@ -69,7 +69,9 @@ class CheckoutService {
 public:
     // Policy를 값으로 받아 소유하고, IReceiptSink*는 소유하지 않고 관찰한다.
     CheckoutService(Policy policy, const IReceiptSink* sink)
-        : policy_{std::move(policy)}, sink_{sink} {}  // std::move(policy)는 이름 있는 lvalue를 xvalue로 바꾼다.
+        // move(policy)는 인자 하나를 받아 Policy&&로 캐스팅한 xvalue를 반환한다. 직접 이동하지 않고 policy_ 생성자가 이동을 수행한다.
+        // policy 값은 이동 후 유효하지만 내용은 타입 계약에 따른 미지정 상태이고 sink 포인터는 그대로 복사된다.
+        : policy_{std::move(policy)}, sink_{sink} {}
 
     // const ItemList&는 목록을 복사하지 않고 읽으며, 함수 뒤 const는 서비스 상태를 바꾸지 않는다는 뜻이다.
     [[nodiscard]] int checkout(const ItemList& items) const {
@@ -111,6 +113,7 @@ int main() {
     RatePolicy policy{10};         // explicit 생성자의 올바른 직접 초기화 예다.
 
     // <RatePolicy>는 템플릿 인자이며 컴파일러가 DiscountPolicy 만족 여부를 검사한다.
+    // 같은 move 호출은 RatePolicy&&를 반환하며 service 생성자의 값 매개변수를 이동 초기화한다. 반환 xvalue는 별도 객체가 아니다.
     CheckoutService<RatePolicy> service{std::move(policy), &sink};
     const int paid{service.checkout(items)};  // &는 sink의 주소를 얻고, 함수 호출 결과를 paid에 저장한다.
 

@@ -24,6 +24,8 @@ using OrderState = std::variant<Pending, Paid, Shipped>; // 태그와 가장 큰
 std::string describe(const OrderState& state) {
     // 반환형 string은 호출자가 소유할 새 설명 문자열을 값으로 돌려준다는 뜻이다.
     // state는 const lvalue 참조라 variant와 내부 string을 복사하지 않고 읽는다.
+    // visit(visitor,state)는 방문자와 variant 두 입력을 받고 활성 대안을 const 참조로 전달한다.
+    // 람다가 만든 소유 string을 반환하며 state를 바꾸지 않는다. 모든 대안에서 반환형이 호환되어야 한다.
     return std::visit(
         // 제네릭 람다의 auto 매개변수 타입은 현재 활성 상태에 맞춰 컴파일된다.
         [](const auto& current) -> std::string {
@@ -33,6 +35,7 @@ std::string describe(const OrderState& state) {
             if constexpr (std::is_same_v<T, Pending>) {
                 // if constexpr는 거짓인 타입 분기의 코드를 컴파일 결과에서 제외한다.
                 // + 연결 결과 string은 prvalue. 반환 객체를 직접 구성하거나 이동할 수 있다.
+                // to_string(int)는 정수 값 하나를 입력받아 새 소유 string을 반환하고 변환 과정에서 할당할 수 있다.
                 return "결제 대기: 상품 " + std::to_string(current.item_count) + "개";
             } else if constexpr (std::is_same_v<T, Paid>) {
                 return "결제 완료: " + std::to_string(current.paid_won) + "원";
@@ -44,19 +47,20 @@ std::string describe(const OrderState& state) {
 }
 
 bool is_shipped(const OrderState& state) {
-    // holds_alternative는 활성 타입이 Shipped인지 bool로 알려주며 값을 꺼내지 않는다.
+    // holds_alternative<Shipped>(state)는 템플릿 타입과 variant 한 개를 입력으로 보고 bool을 반환하며 state를 바꾸지 않는다.
     return std::holds_alternative<Shipped>(state);
 }
 
 int main() {
     // main은 프로그램 진입점이며 끝까지 실행되면 정상 종료 코드 0을 반환한다.
     OrderState state{Pending{2}}; // Pending{2}는 prvalue, state는 이후 이름으로 접근하므로 lvalue다.
+    // get<Pending>(state)는 Pending이 활성이라는 전제에서 Pending&를 반환하며, 타입이 다르면 bad_variant_access를 던진다.
     assert(std::get<Pending>(state).item_count == 2);
     assert(describe(state) == "결제 대기: 상품 2개");
 
     state = Paid{2, 25'000}; // 오른쪽 prvalue로 활성 후보를 Pending에서 Paid로 바꾸고 이전 객체 수명을 끝낸다.
+    // get_if<Paid>(&state)는 variant 주소 하나를 입력받아 타입이 맞으면 Paid*, 아니면 nullptr를 반환하고 예외를 던지지 않는다.
     assert(std::get_if<Paid>(&state) != nullptr);
-    // get_if는 상태 주소를 받아 타입이 맞으면 내부 객체 포인터, 아니면 nullptr를 돌려준다.
     assert(describe(state) == "결제 완료: 25000원");
 
     state = Shipped{"SEOUL-2026-0720"};

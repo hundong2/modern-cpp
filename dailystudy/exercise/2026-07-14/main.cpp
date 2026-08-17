@@ -57,6 +57,9 @@ class MemoryAlertPublisher {
 public:
     // Alert를 값으로 받아 독립 객체를 만든 뒤 vector로 소유권을 이동한다.
     void publish(Alert alert) {
+        // 표준 호출 계약: alerts_는 vector<Alert> 수신 객체이고 push_back(Alert&&) 오버로드를 선택한다.
+        // 입력은 std::move(alert)가 만든 xvalue 한 개, 반환형은 void다. 성공하면 size가 1 늘고 alert는 유효하지만 내용은 미지정이다.
+        // 상각 O(1)이며 용량 부족 재할당 시 alerts_를 가리키던 기존 포인터·참조·반복자는 모두 무효가 될 수 있다.
         alerts_.push_back(std::move(alert));
     }
 
@@ -78,6 +81,7 @@ struct BatchReport {
 std::expected<int, std::string> parse_int(std::string_view text, std::string_view field_name) {
     // expected의 첫 타입 int는 성공값, 둘째 string은 오류값이다.
     // text는 원본 문자를 소유하지 않는 작은 뷰를 값으로 복사해 받는다(보통 포인터+길이 두 단어).
+    // 표준 호출 계약: empty()는 인자가 없고 text를 바꾸지 않으며 길이가 0인지 bool로 O(1)에 반환한다.
     if (text.empty()) {
         // unexpected 임시 객체는 prvalue이며 expected의 오류 저장소를 직접 초기화할 수 있다.
         return std::unexpected(std::string(field_name) + " is empty");
@@ -85,9 +89,13 @@ std::expected<int, std::string> parse_int(std::string_view text, std::string_vie
 
     int value{};
     // const char*는 문자를 바꾸지 않는 주소다. 포인터 자체는 지역 변수에 복사된다.
+    // data()는 인자 없이 첫 문자 const char*를, size()는 인자 없이 문자 수 size_t를 반환하며 text는 그대로다.
+    // 반환 포인터는 text가 빌린 원본 문자 수명에 의존하고, last는 one-past-end 주소라 역참조하지 않는다.
     const char* first = text.data();
     const char* last = text.data() + text.size();
     // 구조적 바인딩은 from_chars가 반환한 결과 객체의 두 멤버에 읽기 좋은 이름을 붙인다.
+    // from_chars(first,last,value)는 [first,last) 문자를 읽고 세 번째 int& 출력 인자 value에 성공한 숫자를 쓴다.
+    // 반환값은 파싱 종료 포인터 ptr과 오류 코드 ec다. 입력 문자를 바꾸거나 메모리를 할당하지 않고 예외도 던지지 않는다.
     const auto [parsed_until, error] = std::from_chars(first, last, value);
 
     if (error != std::errc{} || parsed_until != last) {
@@ -99,19 +107,21 @@ std::expected<int, std::string> parse_int(std::string_view text, std::string_vie
 }
 
 std::expected<TemperatureReading, std::string> parse_reading(std::string_view line) {
-    // find는 ':' 위치를 반환하며 없으면 특별한 npos 값을 반환한다.
+    // find(':')의 입력은 찾을 문자 하나다. line은 바뀌지 않고 첫 위치 size_t를 반환하며 없으면 npos를 반환한다.
     const std::size_t separator = line.find(':');
     if (separator == std::string_view::npos) {
         return std::unexpected("expected format is sensor_id:celsius");
     }
 
-    // 두 string_view는 원본 line의 일부를 빌릴 뿐 문자를 복사하거나 소유하지 않는다.
+    // substr(pos,count)는 시작 위치와 선택적 길이를 입력받아 새 string_view를 값으로 반환한다. 원본 문자를 복사하지 않는다.
+    // 첫 호출은 [0,separator), 둘째는 separator+1부터 끝까지이며 반환 뷰는 line의 원본 수명에 의존한다.
     const std::string_view sensor_text = line.substr(0, separator);
     const std::string_view celsius_text = line.substr(separator + 1);
 
     const auto sensor_id = parse_int(sensor_text, "sensor_id");
     if (!sensor_id) {
-        // !는 expected의 성공 여부를 뒤집어 오류 상태인지 검사한다.
+        // error()는 인자가 없고 실패 상태의 string&/const string&를 반환한다. 성공 상태에서 호출하면 안 된다.
+        // unexpected 생성자는 그 오류 문자열을 입력받아 실패 expected를 만들며 반환 식이 독립 오류 값을 복사한다.
         return std::unexpected(sensor_id.error());
     }
 
@@ -142,6 +152,8 @@ public:
             // CPU 관점에서는 대략 인덱스 비교→조건 분기→증가로 반복되지만 실제 명령은 최적화에 따라 달라진다.
             const auto parsed = parse_reading(lines[index]);
             if (!parsed) {
+                // to_string(index+1)은 정수 값 하나를 입력받아 새 소유 string을 반환하며 변환 중 메모리를 할당할 수 있다.
+                // parsed.error()는 실패 expected 내부 문자열 참조를 반환하고 + 연산들이 최종 오류 문자열을 소유하게 한다.
                 return std::unexpected(
                     "line " + std::to_string(index + 1) + ": " + parsed.error());
             }
@@ -171,6 +183,7 @@ void run_tests() {
     // 중괄호 블록마다 지역 객체 수명을 짧게 제한해 각 검증 사례를 독립시킨다.
     {
         const auto parsed = parse_reading("101:84");
+        // has_value()는 인자가 없고 expected를 바꾸지 않으며 성공값 존재 여부를 bool로 반환한다.
         assert(parsed.has_value());
         assert(parsed->sensor_id == 101);
         assert(parsed->celsius == 84);

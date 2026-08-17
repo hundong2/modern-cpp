@@ -25,12 +25,14 @@ public:
         }
 
         // suspend_always를 반환하면 호출 직후 본문에 들어가지 않고 처음부터 일시 중단한다.
+        // suspend_always{}는 생성자 인자 없이 만드는 값이며 await_ready()가 false라 항상 중단시키는 awaiter다.
         [[nodiscard]] std::suspend_always initial_suspend() const noexcept { return {}; }
 
         // 마지막에도 멈춰야 소유자인 Sequence가 안전하게 프레임을 destroy할 수 있다.
         [[nodiscard]] std::suspend_always final_suspend() const noexcept { return {}; }
 
-        // 예외가 코루틴 경계를 넘으면 이 초보 예제는 프로그램을 종료한다.
+        // terminate()는 입력 인자와 정상 반환값이 없고([[noreturn]]) 등록된 종료 처리기를 거쳐 프로세스를 끝낸다.
+        // 예외가 코루틴 경계를 넘으면 복구하지 않는다는 교육용 정책이며 자동 지역 소멸을 기대하면 안 된다.
         [[noreturn]] void unhandled_exception() const { std::terminate(); }
 
         // co_yield value는 이 함수를 호출하고, 매개변수 value를 멤버에 복사한 뒤 중단한다.
@@ -54,7 +56,8 @@ public:
 
     // 이동 생성자는 반환형이 없고, 매개변수 other는 이동 가능한 객체에 바인딩한 rvalue 참조다.
     Sequence(Sequence&& other) noexcept
-        : handle_{std::move(other.handle_)} { // std::move가 멤버 식을 xvalue로 바꾸어 새 핸들을 초기화한다.
+        // std::move는 handle_ 식을 xvalue로 바꿀 뿐 coroutine_handle 자체는 포인터처럼 복사된다. 그래서 아래에서 원본을 명시적으로 비운다.
+        : handle_{std::move(other.handle_)} {
         other.handle_ = {}; // 이동 후 원본을 빈 핸들로 저장해 소유권이 하나뿐이게 한다.
     }
 
@@ -62,6 +65,8 @@ public:
     Sequence& operator=(Sequence&& other) noexcept {
         if (this != &other) { // 포인터 비교 !=로 자기 대입이 아닌지 검사해 조건 분기한다.
             if (handle_) { // 핸들을 bool처럼 검사하여 유효한 프레임만 파괴한다.
+                // destroy()는 인자·반환값이 없고 가리키는 중단 코루틴 프레임과 그 안 객체를 파괴한다.
+                // 호출 뒤 이 핸들을 다시 사용하면 안 되며 완료 전 실행 중 프레임에 호출하는 것은 전제조건 위반이다.
                 handle_.destroy();
             }
             handle_ = std::move(other.handle_); // std::move 자체는 이동이 아니라 xvalue 변환이며 대입이 값을 넘긴다.
@@ -79,10 +84,12 @@ public:
 
     // bool 반환형 함수 next는 다음 값이 생기면 true, 끝났으면 false를 반환한다.
     [[nodiscard]] bool next() {
-        if (!handle_ || handle_.done()) { // 논리 NOT !와 OR ||가 빈 핸들 또는 완료 상태를 검사한다.
+        // done()은 인자 없이 마지막 중단점 도달 여부 bool을 반환하며 프레임 상태를 바꾸지 않는다. 유효한 중단 핸들이어야 한다.
+        if (!handle_ || handle_.done()) {
             return false;
         }
-        handle_.resume(); // 저장된 실행 상태에서 코루틴 본문을 다시 호출/재개한다.
+        // resume()은 인자·반환값 없이 다음 중단점까지 프레임 실행을 재개한다. 완료되었거나 실행 중인 핸들에는 호출하지 않는다.
+        handle_.resume();
         return !handle_.done();
     }
 

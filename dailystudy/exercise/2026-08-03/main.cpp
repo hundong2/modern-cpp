@@ -25,14 +25,17 @@ public:
 
     // const 참조는 Command를 복사하지 않고 읽으며, 뒤의 const는 객체 상태를 바꾸지 않는다는 계약이다.
     [[nodiscard]] std::string handle(const Command& command) const {
-        // std::visit은 현재 활성 대안을 확인한 뒤 람다의 알맞은 호출 연산자를 선택한다.
+        // 표준 호출 계약: visit(visitor,command)는 방문자와 variant 두 입력을 받고 활성 대안을 const 참조로 전달한다.
+        // 선택된 람다의 소유 string 반환값을 그대로 반환하며 command는 바뀌지 않는다. 모든 대안의 반환형이 호환되어야 한다.
         return std::visit([this](const auto& value) -> std::string {
             // decltype과 remove_cvref_t는 const 참조를 벗겨 실제 대안 타입을 얻는다.
+            // remove_cvref_t는 함수가 아니라 컴파일 시간 타입 별칭이고, is_same_v도 두 타입의 동일 여부를 나타내는 bool 상수다.
             using T = std::remove_cvref_t<decltype(value)>;
             if constexpr (std::is_same_v<T, Start>) { // 컴파일 시간 조건이라 Stop용 분기에서는 job을 보지 않는다.
                 return enabled_ ? "start:" + value.job : "disabled"; // ?:는 조건에 따라 두 prvalue 중 하나를 만든다.
             } else {
-                return "stop:" + std::to_string(value.code); // 표준 함수 호출로 정수를 소유 문자열로 바꾼다.
+                // to_string(value.code)는 int 값 하나를 입력받아 새 소유 string을 반환하며 원본 code는 바뀌지 않는다.
+                return "stop:" + std::to_string(value.code);
             }
         }, command); // 구현은 태그 로드·비교·조건 분기와 함수 호출이 될 수 있으나 CPU·ABI·컴파일러·최적화에 따라 달라진다.
     }

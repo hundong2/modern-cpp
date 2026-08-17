@@ -54,21 +54,27 @@ public:
         JobResult result{};  // 이름 있는 지역 객체 result는 lvalue이며 두 멤버가 0/false가 된다.
 
         // &result와 this 캡처는 기존 객체를 비소유로 참조한다. worker가 합류하기 전까지 살아 있어야 한다.
+        // jthread 생성자는 호출할 람다를 입력받고 새 실행 스레드를 소유한다. 람다가 stop_token을 첫 인자로 받을 수 있어 자동 전달된다.
+        // 생성자는 반환값이 없고 스레드 생성 실패 시 system_error가 가능하다. worker 소멸자는 중지 요청 후 join한다.
         std::jthread worker{[this, &result](std::stop_token token) {
             // *job_은 IJob lvalue를 만든다. const 참조는 그 기존 객체에 바인딩되며 소유하지 않는다.
             const IJob& job{*job_};
 
             // &&는 왼쪽부터 평가하고 거짓이면 오른쪽 비교를 생략한다.
+            // stop_requested()는 인자가 없고 요청 여부 bool을 반환하며 token이나 작업을 중단시키지는 않는다.
             while (!token.stop_requested() && result.completed_steps < 5) {
                 // 가상 함수 호출은 실제 CountingJob::step을 선택하는 간접 호출이 될 수 있다.
                 result.completed_steps = job.step(result.completed_steps);
+                // sleep_for(duration)는 1ms 시간값 하나를 입력받고 void를 반환한다. 최소 그 기간 현재 스레드를 쉬게 하지만 더 늦게 깰 수 있다.
                 std::this_thread::sleep_for(std::chrono::milliseconds{1});
             }
             result.stopped = token.stop_requested();  // 함수 호출 결과를 bool 멤버에 저장한다.
         }};
 
-        worker.request_stop();  // 중지를 요청하는 함수 호출이며 스레드를 강제로 죽이지 않는다.
-        worker.join();          // 작업 완료까지 기다려 result에 대한 참조 수명을 안전하게 유지한다.
+        // request_stop()은 인자 없이 중지 상태를 처음 요청했는지 bool을 반환한다. 여기서는 반환값을 버리며 강제 종료하지 않는다.
+        worker.request_stop();
+        // join()은 인자·반환값이 없고 작업 스레드 종료까지 기다린다. 자기 자신 join 등 오류에서는 system_error가 가능하다.
+        worker.join();
         return result;          // 반환 prvalue 초기화에는 복사 생략 또는 작은 결과 복사가 적용된다.
     }
 
@@ -78,6 +84,7 @@ private:
 
 JobRunner make_runner() {
     // <CountingJob>은 make_unique의 템플릿 인자다. explicit 생성자는 직접 초기화로 올바르게 호출된다.
+    // make_unique<CountingJob>(5)는 정수 5를 생성자 인자로 전달해 객체를 만들고 unique_ptr<CountingJob> prvalue를 반환한다.
     return JobRunner{std::make_unique<CountingJob>(5)};
 }
 

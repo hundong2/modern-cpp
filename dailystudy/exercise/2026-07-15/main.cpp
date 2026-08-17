@@ -61,6 +61,8 @@ class MemoryLogger {
 public:
     // string_view는 빌린 문자이고 emplace_back은 vector 안에 소유 string을 직접 만든다.
     void write(std::string_view message) {
+        // 표준 호출 계약: messages_가 수신 vector<string>이고 emplace_back(message)은 string_view를 string 생성자에 전달한다.
+        // 반환값은 새 원소 string&지만 여기서는 버린다. 성공하면 size가 1 늘며 필요 시 재할당되어 기존 관찰자가 무효화된다.
         messages_.emplace_back(message);
     }
 
@@ -85,18 +87,20 @@ std::expected<CommandKind, std::string> parse_kind(std::string_view word) {
         return CommandKind::status;
     }
 
-    // 문자열 연결 결과는 임시 std::string(prvalue)이며 오류 expected를 이동/직접 초기화한다.
+    // unexpected(error)는 소유 string 오류값 하나를 입력받아 unexpected<string> prvalue를 반환한다.
+    // 그 반환값이 expected의 실패 상태를 직접 초기화하며 성공 CommandKind는 생성하지 않는다.
     return std::unexpected("unknown command kind: " + std::string(word));
 }
 
 std::expected<Command, std::string> parse_command(std::string_view line) {
-    // size_t는 길이와 위치를 나타내는 부호 없는 정수 타입이다.
+    // find(' ')는 찾을 문자 하나를 입력받고 line을 바꾸지 않으며 첫 위치 size_t 또는 실패 npos를 반환한다.
     const std::size_t space = line.find(' ');
     if (space == std::string_view::npos) {
         return std::unexpected("expected format: <start|stop|status> <target>");
     }
 
-    // substr 결과 view는 line의 문자를 빌리므로 원본보다 오래 사용하면 안 된다.
+    // substr(pos,count)는 위치와 선택 길이를 입력받아 비소유 string_view를 반환한다. count 생략 시 끝까지 선택한다.
+    // empty()는 인자 없이 길이가 0인지 bool을 반환하며 target_text를 수정하지 않는다.
     const std::string_view kind_text = line.substr(0, space);
     const std::string_view target_text = line.substr(space + 1);
     if (target_text.empty()) {
@@ -105,6 +109,7 @@ std::expected<Command, std::string> parse_command(std::string_view line) {
 
     const auto kind = parse_kind(kind_text); // 반환 prvalue로 const 지역 객체를 초기화한다.
     if (!kind) {
+        // error()는 실패 expected 안의 string 참조를 반환한다. 성공 상태에서 호출하면 전제조건을 어기므로 먼저 !kind를 검사한다.
         return std::unexpected(kind.error());
     }
 
@@ -129,6 +134,8 @@ std::string_view to_text(CommandKind kind) {
 bool is_allowed_target(std::string_view target) {
     // constexpr 배열은 컴파일 시간에도 사용할 수 있는 고정 허용 목록이다.
     constexpr std::string_view allowed_targets[] = {"api", "database", "cache"};
+    // ranges::find(range,value)는 허용 목록과 찾을 target을 입력받아 첫 일치 반복자 또는 끝 반복자를 반환하고 배열은 바꾸지 않는다.
+    // ranges::end(range)는 같은 배열의 끝 센티널을 반환한다. 두 결과 비교가 bool 허용 여부가 되며 시간은 원소 수에 선형이다.
     return std::ranges::find(allowed_targets, target) != std::ranges::end(allowed_targets);
 }
 
@@ -148,6 +155,7 @@ public:
             const auto parsed = parse_command(lines[index]);
             if (!parsed) {
                 ++report.failure_count;
+                // to_string은 1부터 시작할 정수 하나를 입력받아 새 string을 반환하고, error()는 실패 문자열 참조를 반환한다.
                 return std::unexpected(
                     "line " + std::to_string(index + 1) + ": " + parsed.error());
             }
@@ -179,6 +187,7 @@ void run_tests() {
     // 중괄호 블록은 테스트마다 지역 객체 수명을 분리한다.
     {
         const auto parsed = parse_command("start api");
+        // has_value()는 인자 없이 성공값 존재 여부를 bool로 반환하고 expected 상태는 바꾸지 않는다.
         assert(parsed.has_value());
         assert(parsed->kind == CommandKind::start);
         assert(parsed->target == "api");

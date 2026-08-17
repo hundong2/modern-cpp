@@ -16,7 +16,8 @@ public:
     // 생성자에는 반환형이 없고, explicit은 string_view 하나가 타이머로 암시 변환되는 일을 막는다.
     // name은 비소유 뷰이므로 가리킨 문자열이 타이머보다 오래 살아야 한다.
     explicit ScopeTimer(std::string_view name)
-        : name_{name}, start_{Clock::now()} {} // 멤버 초기화 목록이 두 멤버를 직접 초기화한다.
+        // steady_clock::now()는 인자가 없고 현재 단조 시계 time_point 값을 반환한다. 전역 상태를 직접 수정하지 않는다.
+        : name_{name}, start_{Clock::now()} {}
 
     // 복사를 막아 하나의 측정 구간이 두 객체에 중복 소유되는 의미를 피한다.
     ScopeTimer(const ScopeTimer&) = delete;
@@ -25,10 +26,13 @@ public:
     // 소멸자는 스코프 종료 시 자동 호출되어 RAII 방식으로 경과 시간을 보고한다.
     ~ScopeTimer() {
         // now()의 prvalue와 start_ lvalue의 차이는 duration prvalue가 되며 결과 객체로 직접 초기화된다.
+        // 두 번째 now() 반환값에서 start_를 빼 경과 duration을 만들며 start_ 자체는 바뀌지 않는다.
         const auto elapsed{Clock::now() - start_};
         // duration_cast 함수 템플릿의 명시적 인자는 원하는 단위가 microseconds임을 정한다.
+        // duration_cast<microseconds>(elapsed)는 목표 단위를 템플릿 인자로, 시간값을 함수 인자로 받아 변환 duration을 반환한다.
         const auto micros{std::chrono::duration_cast<std::chrono::microseconds>(elapsed)};
-        std::cout << name_ << ": " << micros.count() << " us\n"; // <<는 값을 출력 스트림에 순서대로 삽입한다.
+        // count()는 인자 없이 microseconds 안의 정수 표현값 rep를 반환하며 micros는 바뀌지 않는다.
+        std::cout << name_ << ": " << micros.count() << " us\n";
     }
 
 private:

@@ -54,9 +54,11 @@ private:
 };
 
 int main() { // 운영체제에 성공 여부를 int로 돌려주는 진입 함수다.
-    // make_unique의 템플릿 인자 FixedRatePolicy 객체를 힙에 만들고 소유 포인터를 반환한다.
+    // make_unique<FixedRatePolicy>(20)는 정수 20을 생성자에 전달해 객체를 만들고 unique_ptr<FixedRatePolicy>를 반환한다.
+    // 반환 포인터가 유일한 소유자이며 할당 실패 시 bad_alloc이 가능하다.
     auto policy = std::make_unique<FixedRatePolicy>(20);
-    // policy는 이름 있는 lvalue이고 복사할 수 없으므로 xvalue로 바꿔 소유권을 서비스로 이전한다.
+    // move(policy)는 unique_ptr&& xvalue를 반환하고 CheckoutService의 값 매개변수와 멤버로 소유권이 연쇄 이동된다.
+    // 함수 자체가 객체를 옮기는 것은 아니며 이동 뒤 policy는 빈 유효 상태다.
     CheckoutService service{std::move(policy)};
     const Money result{service.checkout(Money{10000})}; // 임시 Money는 const 참조에 호출 동안 바인딩된다.
     std::cout << result.won << '\n'; // 멤버 접근 .과 출력 호출로 8000을 표시한다.

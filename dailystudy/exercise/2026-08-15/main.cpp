@@ -45,20 +45,24 @@ public:
 
     // override는 기반 가상 함수와 서명이 맞는지 컴파일러가 검사하게 한다.
     std::uint64_t put(std::string key, std::string value) override {
-        // unique_lock 생성자가 뮤텍스를 단독 잠그고, 범위를 벗어날 때 소멸자가 자동 해제한다.
+        // unique_lock lock{mutex_} 생성자는 shared_mutex& 하나를 입력받아 독점 잠금을 소유하며 생성자는 반환값이 없다.
+        // 잠금 획득은 대기할 수 있고, lock 소멸자가 예외·정상 반환 모두에서 자동 unlock한다.
         std::unique_lock lock{mutex_};
         ++version_; // 전위 ++ 연산자로 잠금 안에서 버전을 1 증가시킨다.
-        // insert_or_assign은 키가 없으면 삽입하고 있으면 대입한다. 문자열은 xvalue로 소유권을 넘긴다.
+        // insert_or_assign(key,value)는 이동할 키와 ConfigEntry 두 입력을 받고 pair<iterator,bool>을 반환한다(여기서는 버림).
+        // bool은 새 삽입 여부이고, 성공하면 해당 키 값이 version_으로 갱신된다. 평균 O(1), 재해시 시 반복자가 무효화된다.
         entries_.insert_or_assign(std::move(key), ConfigEntry{std::move(value), version_});
         return version_; // 기본 정수 값을 호출자에게 복사해 반환한다.
     }
 
     // optional 값 반환형과 const 참조 매개변수로 조회 결과의 존재 여부와 비소유 입력을 표현한다.
     [[nodiscard]] std::optional<ConfigEntry> find(const std::string& key) const override {
-        // shared_lock은 다른 읽기 잠금과 공존하지만 쓰기 잠금과는 동시에 획득되지 않는다.
+        // shared_lock 생성자는 shared_mutex&를 입력받아 공유 잠금을 소유하고 반환값은 없다. 소멸 시 자동 해제한다.
         std::shared_lock lock{mutex_};
-        const auto iterator{entries_.find(key)}; // auto가 반복자 타입을 추론하고 find는 평균 O(1)이다.
-        if (iterator == entries_.end()) { // == 연산자로 끝 반복자와 비교해 키 부재를 분기한다.
+        // unordered_map::find(key)는 키 const& 하나를 입력받아 원소 반복자 또는 end()를 반환하고 map은 바뀌지 않는다.
+        const auto iterator{entries_.find(key)};
+        // end()는 인자 없이 one-past-end 반복자를 반환한다. 두 반복자 비교로 부재를 판정하며 평균 조회는 O(1)이다.
+        if (iterator == entries_.end()) {
             return std::nullopt; // 값 없음 상태인 prvalue를 반환한다.
         }
         // 내부 참조를 노출하지 않고 ConfigEntry를 복사한 스냅샷으로 반환해 잠금 밖 수명을 분리한다.
@@ -88,6 +92,7 @@ public:
     [[nodiscard]] bool enabled(const std::string& feature) const {
         const auto entry{repository_.find(feature)}; // optional 반환값으로 지역 결과를 직접 초기화한다.
         // &&는 왼쪽이 거짓이면 오른쪽을 호출하지 않는 단락 평가 조건 연산자다.
+        // has_value()는 인자 없이 값 존재 여부 bool을 반환하며 entry를 바꾸지 않는다.
         return entry.has_value() && entry->value == "on";
     }
 

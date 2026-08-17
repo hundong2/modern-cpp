@@ -54,7 +54,8 @@ public:
     // 반환형 std::strong_ordering은 모든 두 객체가 작음·같음·큼 중 하나임을 뜻한다.
     [[nodiscard]] std::strong_ordering operator<=>(const OrderPriority& other) const {
         // std::tuple의 클래스 템플릿 인자 추론이 두 표현식의 타입을 알아내 값 튜플을 만든다.
-        // 높은 grade를 먼저 두려고 단항 - 연산자를 쓰고, arrival는 작을수록 먼저 둔다.
+        // tuple{a,b} 생성자는 두 값을 입력받아 소유 튜플 prvalue를 만든다. <=>는 첫 원소부터 비교해 strong_ordering을 반환한다.
+        // 높은 grade를 먼저 두려고 단항 - 연산자를 쓰고, arrival는 작을수록 먼저 둔다. 원본 멤버는 바뀌지 않는다.
         return std::tuple{-grade_, arrival_} <=> std::tuple{-other.grade_, other.arrival_};
     }
 
@@ -134,11 +135,14 @@ int main() {
     const IOrderSink* sink_pointer{&sink};
     // nullptr과 비교해 주소 유효 조건을 확인한 뒤 -> 연산자로 가상 함수를 호출한다.
     if (sink_pointer != nullptr) {
+        // vector::front()는 인자 없이 첫 RawOrder&를 반환한다. orders가 비어 있지 않아야 하며 vector 상태는 바꾸지 않는다.
         sink_pointer->publish(orders.front(), Money{900});
     }
 
     // std::move는 orders를 xvalue로 만들 뿐이다. vector 이동 생성자가 저장소 소유권을 moved로 넘긴다.
+    // move(orders)는 vector&& xvalue를 반환하고 moved의 이동 생성자가 버퍼 소유권을 넘겨받는다. orders는 유효한 미지정 상태다.
     std::vector<RawOrder> moved{std::move(orders)};
+    // size()는 인자 없이 현재 원소 수 size_type을 O(1)에 반환하고 moved를 바꾸지 않는다.
     std::cout << "이동된 주문 수: " << moved.size() << '\n';
     return 0;
 }

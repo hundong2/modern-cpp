@@ -46,7 +46,8 @@ class EventBus {
 public:
     // ListenerPtr은 값 매개변수이므로 shared_ptr을 복사해 호출 중 강한 소유권을 확보한다.
     void subscribe(ListenerPtr listener) {
-        // push_back은 weak_ptr로 변환해 저장한다. 버스는 객체를 소유하지 않아 순환 소유를 피한다.
+        // push_back의 입력은 shared_ptr listener이며 weak_ptr 임시값으로 변환해 vector 끝에 복사한다. 반환형은 void다.
+        // 성공하면 원소 수가 1 늘지만 강한 참조 횟수는 최종적으로 늘지 않는다. 재할당 시 vector 관찰자는 무효화될 수 있다.
         listeners_.push_back(listener);
     }
 
@@ -56,7 +57,8 @@ public:
 
         // 반복문은 각 weak_ptr 원소를 비-const 참조로 바인딩해 복사하지 않는다.
         for (std::weak_ptr<IEventListener>& weak : listeners_) {
-            // lock()은 살아 있으면 shared_ptr prvalue를 반환하며 지역 strong이 호출 동안 수명을 지킨다.
+            // weak_ptr::lock()은 인자 없이 살아 있는 객체의 shared_ptr prvalue 또는 빈 shared_ptr를 반환하고 예외를 던지지 않는다.
+            // 성공한 반환값은 강한 참조 횟수를 하나 늘려 strong이 사는 동안 listener 수명을 보장한다.
             if (ListenerPtr strong{weak.lock()}; strong != nullptr) {
                 // ->는 포인터가 가리키는 가상 함수를 호출한다. 실제 구현은 ConsoleListener에서 선택된다.
                 strong->on_event(message);
@@ -64,7 +66,8 @@ public:
             }
         }
 
-        // erase_if는 조건이 참인 만료 weak_ptr를 컨테이너에서 제거하는 표준 라이브러리 함수다.
+        // erase_if(container,predicate)는 vector와 bool 술어 두 입력을 받고 제거한 원소 수 size_type을 반환한다(여기서는 버림).
+        // expired()는 인자 없이 관찰 대상 소멸 여부 bool을 반환한다. 제거는 선형이며 뒤 원소 반복자·참조를 무효화한다.
         std::erase_if(listeners_, [](const std::weak_ptr<IEventListener>& weak) {
             return weak.expired(); // 반환형 bool 값이 제거 조건 분기를 결정한다.
         });
@@ -78,7 +81,8 @@ private:
 
 // ListenerPtr 반환형 함수이며, 매개변수는 없다.
 ListenerPtr make_listener() {
-    // make_shared 결과는 prvalue이며 반환 목적 객체를 직접 만들 수 있어 불필요한 shared_ptr 복사가 생략된다.
+    // make_shared<ConsoleListener>("ui")는 문자열 인자를 생성자에 전달하고 shared_ptr<ConsoleListener> prvalue를 반환한다.
+    // 보통 객체와 제어 블록을 한 번에 할당하며 메모리 부족 시 bad_alloc이 가능하다.
     return std::make_shared<ConsoleListener>("ui");
 }
 
@@ -89,7 +93,8 @@ int main() {
     bus.subscribe(listener); // lvalue shared_ptr를 값 매개변수로 복사했다가 함수 종료 시 임시 소유권을 놓는다.
 
     const int first{bus.publish("ready")}; // 문자열 리터럴로 string 임시값이 생기고 const 참조가 호출 동안 바인딩된다.
-    listener.reset(); // 마지막 강한 소유권을 해제해 ConsoleListener 객체 수명을 끝낸다.
+    // shared_ptr::reset()은 인자가 없고 반환형은 void다. listener를 빈 상태로 만들고 마지막 강한 소유권이면 객체를 파괴한다.
+    listener.reset();
     const int second{bus.publish("after reset")};
 
     // ==와 &&는 비교 및 논리 AND 연산자이며, 왼쪽이 거짓이면 오른쪽을 평가하지 않는다.

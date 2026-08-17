@@ -41,6 +41,7 @@ using CheckoutResult = std::expected<Cents, CheckoutError>;
 [[nodiscard]] std::expected<LineItem, CheckoutError>
 validate(LineItem item) {
     // 값 매개변수는 호출 인수로부터 복사/이동된다. 성공 시 이 지역 객체를 반환 객체로 이동할 수 있다.
+    // string::empty()는 인자가 없고 이름 문자열을 바꾸지 않으며 문자 수가 0인지 bool로 O(1)에 반환한다.
     if (item.name.empty()) {
         return std::unexpected(CheckoutError::blank_name);
     }
@@ -58,6 +59,7 @@ public:
     // public 멤버는 외부 호출 계약이며 뒤의 const는 서비스 상태를 바꾸지 않음을 뜻한다.
     [[nodiscard]] CheckoutResult total(const Cart& cart) const {
         // const Cart&는 장바구니와 string 원소를 복사하지 않고 읽기만 한다.
+        // vector::empty()도 인자가 없고 원소 수가 0인지 bool을 반환하며 cart와 원소는 바꾸지 않는다.
         if (cart.empty()) {
             return std::unexpected(CheckoutError::empty_cart);
         }
@@ -67,6 +69,8 @@ public:
             auto checked = validate(item);
             if (!checked) {
                 // expected 실패를 확인한 뒤 오류 열거값을 새 unexpected에 복사한다.
+                // expected::error()는 인자 없이 저장된 CheckoutError 참조를 반환한다. 실패를 확인한 뒤에만 호출해야 한다.
+                // unexpected(error)는 그 오류 값을 입력받아 실패 CheckoutResult를 만들며 성공값은 생성하지 않는다.
                 return std::unexpected(checked.error());
             }
             // 오른쪽 덧셈 결과는 prvalue, 왼쪽 result는 대입 가능한 lvalue다.

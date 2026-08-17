@@ -37,6 +37,8 @@ public:
     [[nodiscard]] std::optional<Book> find_by_id(std::string_view id) const override {
         // override는 기반 클래스의 가상 함수 서명과 정확히 일치하는지 검사한다.
         // [id]는 string_view를 람다 객체 안에 값 복사한다. book은 각 vector 원소의 const lvalue 참조다.
+        // begin()/end()는 인자 없이 첫 반복자와 끝 반복자를 반환한다. find_if(first,last,predicate)는 세 입력을 선형 탐색한다.
+        // 반환값은 조건이 참인 첫 Book 반복자 또는 last이며 books_는 수정하지 않는다. [id] 술어는 각 원소를 const 참조로 받는다.
         const auto found = std::find_if(books_.begin(), books_.end(), [id](const Book& book) {
             return book.id == id;
         });
@@ -49,12 +51,15 @@ public:
 
     void save(Book book) override {
         // &book 캡처는 지역 매개변수의 주소를 빌린다. 람다는 이 함수 호출 안에서만 사용된다.
+        // 같은 find_if 계약으로 저장할 id를 찾는다. &book 캡처는 함수 호출 동안만 값 매개변수를 빌린다.
         const auto found = std::find_if(books_.begin(), books_.end(), [&book](const Book& stored) {
             return stored.id == book.id;
         });
 
         if (found == books_.end()) {
-            books_.push_back(std::move(book)); // xvalue를 전달해 문자열 버퍼 이동 생성자를 선택할 수 있다.
+            // push_back(Book&&)은 book xvalue 하나를 입력받고 void를 반환한다. 성공하면 size가 1 늘고 book은 이동 후 유효 상태다.
+            // 상각 O(1)이지만 재할당되면 books_의 기존 반복자·포인터·참조가 무효화된다.
+            books_.push_back(std::move(book));
         } else {
             *found = std::move(book);
         }
@@ -89,6 +94,7 @@ public:
 
     [[nodiscard]] LoanResult borrow(std::string_view id) {
         // 반환 optional prvalue로 지역 객체를 초기화한다. 저장소와 독립된 Book 복사본을 소유한다.
+        // find_by_id의 반환 optional<Book>은 값이 있으면 저장소와 독립된 Book을 소유하고, 없으면 빈 상태다.
         auto book = repository_.find_by_id(id);
         if (!book) {
             // optional이 비었으면 조기 반환해 이후 -> 접근을 안전하게 막는다.
@@ -129,6 +135,8 @@ void require(bool condition, std::string_view explanation) {
     // bool 조건이 거짓일 때만 오류를 출력하고 프로세스를 실패 코드로 종료한다.
     if (!condition) {
         std::cerr << "[FAILED] " << explanation << '\n';
+        // exit(status)는 int 상태 코드 하나를 입력받고 정상 함수 반환 없이 프로세스를 종료한다([[noreturn]]).
+        // 자동 저장 기간 지역 객체의 소멸자는 실행하지 않으므로 일반 오류 흐름에서는 값 반환을 우선 검토한다.
         std::exit(EXIT_FAILURE);
     }
 }

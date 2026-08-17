@@ -32,8 +32,11 @@ private:
 };
 
 int main() {
-    auto policy{std::make_unique<PercentDiscount>(20)}; // 템플릿 인자 타입의 객체와 prvalue 포인터를 만든다.
-    Checkout checkout{std::move(policy)}; // policy는 lvalue, move 결과는 xvalue다.
+    // make_unique<PercentDiscount>(20)는 정수 인자를 생성자에 전달하고 unique_ptr<PercentDiscount> prvalue를 반환한다.
+    // 반환 포인터가 객체를 단독 소유하며 할당 실패 시 bad_alloc이 가능하다.
+    auto policy{std::make_unique<PercentDiscount>(20)};
+    // move(policy)는 unique_ptr&& xvalue를 반환하고 Checkout 생성자가 소유권을 이동한다. policy는 빈 유효 상태다.
+    Checkout checkout{std::move(policy)};
     const int result{checkout.total(1000)}; // const int를 직접 초기화한다.
     std::cout << result << '\n'; // << 연산자가 값을 스트림에 삽입한다.
     // 가상 호출은 간접 호출일 수 있으나 CPU·ABI·컴파일러·최적화에 따라 달라진다.

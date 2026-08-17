@@ -21,7 +21,8 @@ public:
 
     // void는 반환값이 없다는 반환형이고, int value는 값으로 받는 매개변수다.
     void add(int value) {
-        // push_back 함수 호출은 값을 저장한다. 재할당되면 기존 span과 포인터가 무효가 될 수 있다.
+        // 표준 호출 계약: scores_는 vector<int> 수신 객체이고 push_back(const int&)에 value를 입력한다.
+        // 반환형은 void이고 성공하면 원소 수가 1 늘어난다. 상각 O(1), 재할당 시 기존 span·포인터·참조가 무효가 된다.
         scores_.push_back(value);
     }
 
@@ -93,8 +94,10 @@ int main() {
     store.add(90);                   // . 연산자로 멤버 함수 add를 호출한다.
 
     const ScoreView view{store.scores()};  // 임시 span을 복사하지만 원소는 store가 계속 소유한다.
-    const int& first{view.front()};        // front가 준 lvalue 원소에 const 참조를 바인딩한다.
-    const int* pointer{view.data()};       // 포인터는 첫 원소 주소를 빌려 가리키며 소유하지 않는다.
+    // span::front()는 인자가 없고 첫 int의 const 참조를 O(1)에 반환한다. 비어 있지 않아야 하며 view는 바뀌지 않는다.
+    const int& first{view.front()};
+    // span::data()는 인자 없이 첫 원소 const int*를 반환한다. 소유권은 없고 store 재할당·소멸 시 무효가 된다.
+    const int* pointer{view.data()};
 
     ScoreService<PositiveOnly> service{PositiveOnly{}};  // <> 안의 템플릿 타입 인자를 명시한다.
     const Summary result{service.summarize(view)};       // const 결과는 초기화 뒤 바꿀 수 없다.

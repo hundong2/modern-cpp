@@ -38,7 +38,8 @@ using ParseResult = std::expected<Quantity, ParseError>;
 // text는 const 참조처럼 읽지만 소유하지 않는다. 호출 중 원본이 살아 있어야 한다.
 [[nodiscard]] ParseResult parse_quantity(std::string_view text) {
     // [[nodiscard]]는 호출자가 반환한 성공/실패 결과를 무시하면 경고하도록 돕는다.
-    if (text.empty()) {  // 크기를 읽고 비교한 뒤 조건에 따라 분기하는 코드가 될 수 있다.
+    // string_view::empty()는 인자가 없고 text를 수정하지 않으며 길이가 0인지 bool로 O(1)에 반환한다.
+    if (text.empty()) {
         // unexpected 임시 객체는 prvalue이며 반환 결과의 오류 저장소를 초기화한다.
         return std::unexpected(ParseError{"입력이 비어 있습니다."});
     }
@@ -70,12 +71,15 @@ make_order_message(std::string_view raw) {
 
     if (!parsed) {  // 내부 성공 여부를 읽고 비교한 뒤 실패 경로로 분기할 수 있다.
         // error()는 lvalue 참조를 돌려준다. 여기서는 오류를 복사해 독립 수명을 준다.
+        // error()는 인자 없이 실패 상태의 ParseError 참조를 반환한다. !parsed로 실패를 확인한 뒤 호출한다.
+        // unexpected는 오류 값을 입력받아 새 expected 실패 상태를 만들며 여기서는 ParseError를 복사한다.
         return std::unexpected(parsed.error());
     }
 
     // operator* 결과는 Quantity&인 lvalue다. const 참조는 복사 없이 그 객체에 바인딩된다.
     const Quantity& quantity{*parsed};
     // to_string은 int를 소유 string prvalue로 바꾸고 +는 새 결과 문자열을 만든다.
+    // quantity.value()는 사용자 정의 함수로 int를 반환하고, to_string(int)은 새 소유 string을 반환한다.
     return std::string{"주문 수량: "} + std::to_string(quantity.value());
 }
 
@@ -97,8 +101,9 @@ int main() {
 
     auto movable{make_order_message("3")};
     // auto는 expected<string, ParseError> 타입을 추론한다. movable은 이름 있는 lvalue다.
-    // std::move(movable).value()는 저장된 string을 가리키는 xvalue를 만든다.
-    // 새 문자열이 버퍼 소유권을 이동받는다. movable은 유효하지만 값은 미지정 상태다.
+    // expected::value()는 인자가 없고 성공 string의 && 참조를 반환한다. 오류 상태면 bad_expected_access를 던진다.
+    // std::move는 movable을 xvalue로 만들어 && 오버로드를 고르고 새 문자열이 버퍼 소유권을 이동받는다.
+    // movable expected는 여전히 성공 상태지만 내부 string 값은 이동 후 유효한 미지정 상태다.
     std::string owned_message{std::move(movable).value()};
     std::cout << "[이동] " << owned_message << '\n';
 

@@ -25,11 +25,14 @@ public:
 
     // const 참조는 Sample을 복사하지 않고 읽으며, 함수 끝까지 대상 수명이 유지되어야 한다.
     void add(const Sample& sample) {
-        values_.push_back(sample.value); // push_back은 정수를 자원이 공급한 저장소에 복사한다.
+        // pmr::vector::push_back(const int&)은 sample.value 하나를 입력받고 void를 반환한다.
+        // 성공하면 size가 1 늘고 할당은 연결된 memory_resource에서 받는다. 재할당 시 기존 관찰자가 무효화된다.
+        values_.push_back(sample.value);
     }
 
     [[nodiscard]] int total() const {
-        // begin/end 반복자 구간을 순회한다. 0은 합계의 int 초깃값이다.
+        // begin()/end()는 첫 반복자와 끝 반복자를 반환한다. accumulate(first,last,init)는 세 인자를 선형 순회한다.
+        // 반환형은 초기값 0의 int 타입이고 values_는 바뀌지 않는다. 합이 int 범위를 넘지 않아야 한다.
         return std::accumulate(values_.begin(), values_.end(), 0);
     }
 
@@ -40,7 +43,9 @@ private:
 
 int main() { // 진입 함수는 성공 여부를 int 종료 코드로 반환한다.
     std::array<std::byte, 1024> storage{}; // 스택 수명의 1 KiB 원시 저장소를 0 초기화한다.
-    // 자원은 storage를 사용하며 뒤에 선언되는 service보다 오래 산다.
+    // array::data()는 첫 byte 포인터를, size()는 1024라는 size_type을 반환하며 storage를 바꾸지 않는다.
+    // monotonic_buffer_resource(buffer,size)는 외부 버퍼 주소와 바이트 수를 입력받고 생성자는 반환값이 없다.
+    // 공간이 모자라면 기본 upstream 자원에 추가 할당하며 개별 deallocate는 자원 소멸 전까지 회수하지 않는다.
     std::pmr::monotonic_buffer_resource resource{storage.data(), storage.size()};
     SampleService service{&resource}; // &는 lvalue resource의 주소를 얻고 직접 초기화한다.
     service.add(Sample{10}); // Sample{10}은 prvalue이며 const 참조에 호출 동안 바인딩된다.

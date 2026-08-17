@@ -103,10 +103,13 @@ int main() { // main의 반환형 int는 운영체제에 전달할 종료 상태
     using namespace std::chrono_literals;
 
     // make_unique의 결과는 prvalue unique_ptr이고, 가리키는 ManualClock 객체도 동적으로 생성된다.
+    // make_unique<ManualClock>(start)는 시작 TimePoint 하나를 생성자에 전달하고 unique_ptr<ManualClock>을 반환한다.
     auto manual{std::make_unique<ManualClock>(TimePoint{Duration{0}})};
-    // get은 소유권을 옮기지 않는 관찰 포인터를 반환한다. 포인터는 null 가능 별칭이다.
+    // get()은 인자 없이 ManualClock*를 반환하고 소유권은 manual에 유지한다. 반환 포인터는 null 가능 비소유 별칭이다.
     ManualClock* const observer{manual.get()};
     // RetryPolicy{3, 2s}는 prvalue이고 2s는 seconds 타입의 prvalue이다.
+    // duration_cast<Duration>(2s)는 목표 단위를 템플릿 인자로, 2초 값을 함수 인자로 받아 밀리초 Duration 값을 반환한다.
+    // 더 거친 단위로 변환할 때 나머지는 잘릴 수 있고 원본 2s는 바뀌지 않는다.
     RetryService service{std::move(manual), RetryPolicy{3, std::chrono::duration_cast<Duration>(2s)}};
 
     // for는 초기화, 계속 조건, 증가 식으로 3번 반복한다. int는 기본 정수 타입이다.
@@ -114,7 +117,7 @@ int main() { // main의 반환형 int는 운영체제에 전달할 종료 상태
         // ->는 포인터가 가리키는 객체의 멤버 함수를 호출한다.
         observer->advance(1s);
         const Decision decision{service.decide(1)};
-        // <<는 값들을 출력 스트림에 차례로 보내는 연산자다. count()는 저장 숫자를 돌려준다.
+        // duration::count()는 인자가 없고 wait 내부 표현값 rep를 반환하며 duration은 바뀌지 않는다.
         std::cout << "step=" << step << ", retry=" << decision.retry
                   << ", wait_ms=" << decision.wait.count() << '\n';
     }

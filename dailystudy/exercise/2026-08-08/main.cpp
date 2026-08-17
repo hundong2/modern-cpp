@@ -45,9 +45,11 @@ private:
 };
 
 int main() {
-    // make_unique의 반환값은 prvalue이고 ConsoleSink를 힙에 만들며 unique_ptr가 수명을 소유한다.
-    auto sink{std::make_unique<ConsoleSink>()}; // auto는 unique_ptr<ConsoleSink>를 추론한다.
-    ReportService service{std::move(sink)}; // 직접 초기화하며 sink xvalue에서 소유권을 넘긴다.
+    // make_unique<ConsoleSink>()는 생성자 인자 없이 객체를 동적 생성하고 unique_ptr<ConsoleSink> prvalue를 반환한다.
+    // 반환 포인터가 객체 수명을 단독 소유하며 할당 실패 시 bad_alloc이 가능하다.
+    auto sink{std::make_unique<ConsoleSink>()};
+    // move(sink)는 unique_ptr&&를 반환해 서비스 생성자가 소유권을 이동하게 한다. sink는 이후 빈 유효 상태다.
+    ReportService service{std::move(sink)};
     service.publish("ownership is explicit"); // 이름 있는 service는 lvalue이고 멤버 함수를 호출한다.
     const bool moved{sink == nullptr}; // 이동 후 원본이 비었는지 == 비교 결과를 bool로 저장한다.
     // 가상 간접 호출과 로드·저장·조건 분기의 명령 형태는 CPU·ABI·컴파일러·최적화 옵션에 따라 달라진다.

@@ -47,7 +47,9 @@ class InventoryService {
 public:
     // public 아래 함수는 외부 계층이 호출할 수 있는 서비스 인터페이스다.
     [[nodiscard]] InventoryEvent execute(const InventoryCommand& command) {
-        // command는 이름 있는 const 참조이므로 lvalue다. visit는 활성 객체를 const lvalue 참조로 전달한다.
+        // 표준 호출 계약: visit(visitor,variant)는 방문자와 읽을 variant 두 인자를 받는다.
+        // 활성 대안을 방문자의 맞는 operator()에 const lvalue 참조로 전달하고 그 호출의 InventoryEvent 반환값을 그대로 돌려준다.
+        // command 상태는 바뀌지 않으며 방문자가 handle을 호출하므로 그 내부 상태 변경은 InventoryService에 적용된다.
         return std::visit(
             Overloaded{
                 [this](const AddStock& add) { return handle(add); }, // this 포인터를 값으로 캡처한다.
@@ -57,7 +59,8 @@ public:
     }
 
     [[nodiscard]] int quantity_of(std::string_view item) const {
-        // auto는 map 반복자 타입을 추론한다. find는 키가 없으면 end 반복자를 돌려준다.
+        // map::find(item)은 조회 키 string_view 하나를 입력받아 일치 원소 반복자 또는 end()를 반환하고 map은 바꾸지 않는다.
+        // 투명 비교자 less<> 덕분에 임시 string을 만들지 않는다. end()는 인자 없이 one-past-end 반복자를 반환한다.
         const auto found = quantities_.find(item);
         // 조건 연산자 ?:는 조건에 따라 0 또는 저장된 수량 중 하나를 값으로 만든다.
         return found == quantities_.end() ? 0 : found->second;
@@ -66,6 +69,7 @@ public:
 private:
     // private 아래 구현 함수와 상태는 서비스 내부에서만 접근할 수 있다.
     InventoryEvent handle(const AddStock& command) {
+        // string::empty()는 인자가 없고 item을 바꾸지 않으며 문자 수가 0인지 bool로 O(1)에 반환한다.
         if (command.item.empty() || command.amount <= 0) {
             // ||는 왼쪽이 참이면 오른쪽을 생략하는 단락 평가 논리합이다.
             return CommandRejected{"item must be non-empty and amount must be positive"};
@@ -99,6 +103,7 @@ private:
 
 void print_event(const InventoryEvent& event) {
     // 출력 책임은 서비스가 아니라 프로그램 가장자리의 콘솔 어댑터에 둔다.
+    // 이 visit도 visitor와 event 두 입력을 받고 활성 이벤트에 맞는 void 람다를 호출하므로 반환형은 void다.
     std::visit(
         Overloaded{
             [](const StockChanged& changed) {
@@ -117,10 +122,12 @@ void run_tests() {
     InventoryService inventory;
 
     const InventoryEvent added = inventory.execute(AddStock{"book", 5});
+    // holds_alternative<T>(variant)는 확인할 타입 T를 템플릿 인자로 받고 활성 타입 일치 여부 bool을 반환하며 값을 꺼내지 않는다.
     assert(std::holds_alternative<StockChanged>(added));
     assert(inventory.quantity_of("book") == 5);
 
     const InventoryEvent removed = inventory.execute(RemoveStock{"book", 2});
+    // get<T>(variant)는 활성 타입이 T라는 전제에서 내부 T&를 반환한다. 다르면 bad_variant_access 예외가 발생한다.
     assert(std::get<StockChanged>(removed).new_quantity == 3);
     assert(inventory.quantity_of("book") == 3);
 

@@ -21,16 +21,17 @@ private:
 };
 
 int main() {
-    // make_shared의 Session 생성 결과는 prvalue shared_ptr이며 session을 직접 초기화한다(복사 생략 가능).
+    // make_shared<Session>(string)는 소유 string prvalue를 Session 생성자에 전달해 객체와 제어 블록을 만들고 shared_ptr을 반환한다.
+    // 보통 한 번의 할당을 사용하며 메모리 부족 시 bad_alloc이 가능하다.
     const auto session{std::make_shared<Session>(std::string{"study"})};
-    // weak_ptr은 객체를 소유하지 않아 참조 횟수를 늘리지 않는다. 관찰자 관계의 순환 소유권을 막는다.
+    // weak_ptr 생성자는 session shared_ptr를 입력받고 반환값 없이 같은 제어 블록을 관찰한다. 강한 참조 횟수는 늘리지 않는다.
     const std::weak_ptr<Session> observer{session};
-    // lock()은 살아 있으면 shared_ptr prvalue를 반환한다. if 초기화문의 handle 수명은 분기 끝까지다.
+    // lock()은 인자 없이 살아 있으면 shared_ptr<Session>, 만료됐으면 빈 shared_ptr를 반환하고 observer는 바뀌지 않는다.
+    // 성공한 handle은 강한 소유권 한 몫을 얻어 if 분기 끝까지 Session 수명을 연장한다.
     if (const auto handle{observer.lock()}) {
-        // handle은 lvalue이고 ->는 포인터가 가리키는 객체의 함수를 호출한다.
+        // Session::name()은 표준 함수가 아니지만 내부 std::string의 const&를 반환하므로 handle보다 오래 보관하면 안 된다.
         std::cout << handle->name() << '\n';
     }
     // 실제 실행은 로드·참조 횟수 변경·비교·조건 분기·함수 호출을 포함할 수 있으나 CPU·ABI·컴파일러·최적화에 따라 달라진다.
     return 0; // int 값 0은 정상 종료를 뜻한다.
 }
-

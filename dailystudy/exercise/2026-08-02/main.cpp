@@ -37,7 +37,8 @@ public:
         // const User&는 벡터 원소 lvalue에 바인딩되어 복사하지 않으며 벡터보다 오래 쓰지 않는다.
         for (const User& user : users_) { // 범위 for가 모든 원소를 한 번씩 검사하므로 O(n)이다.
             if (user.id == id) { // == 비교 결과가 참이면 조건 분기로 들어간다.
-                return user; // user lvalue를 optional 내부 값으로 복사해 저장소 수명과 독립시킨다.
+                // optional<User> 변환 생성자는 user lvalue를 입력받아 User 복사본을 소유하는 성공 값을 반환한다.
+                return user; // 저장소 내부 참조를 노출하지 않는다.
             }
         }
         return std::nullopt; // 전용 빈 값으로 조회 실패를 명시한다.
@@ -54,9 +55,11 @@ public:
         : repository_{std::move(repository)} {} // xvalue에서 unique_ptr 소유권을 멤버로 옮긴다.
 
     [[nodiscard]] std::string greet(int id) const {
+        // 내부 포트 find(id)는 정수 id 하나를 입력받고 optional<User> 값을 반환하며 저장소를 바꾸지 않는다.
         // 함수 반환 prvalue로 optional을 초기화하며 복사 생략 또는 이동이 적용될 수 있다.
         const std::optional<User> result{repository_->find(id)};
-        if (!result.has_value()) { // !는 bool을 반전하고 has_value는 값 존재 여부를 반환한다.
+        // has_value()는 인자가 없고 result를 바꾸지 않으며 User 존재 여부를 bool로 반환한다.
+        if (!result.has_value()) {
             return "not found"; // 문자열 리터럴로 string 반환 객체를 만든다.
         }
         // *는 optional 내부 User lvalue를 얻고 const 참조가 그 객체에 바인딩된다.
@@ -70,9 +73,12 @@ private:
 
 int main() { // int 반환값은 운영체제에 전달할 종료 상태다.
     // 템플릿 인자 MemoryUserRepository를 지정하고 User prvalue 두 개로 vector를 구성한다.
+    // make_unique<MemoryUserRepository>(users)는 vector<User> prvalue 하나를 생성자에 전달하고 소유 포인터를 반환한다.
+    // 내부 vector는 저장소로 이동되며 동적 할당 실패 시 bad_alloc이 가능하다.
     auto repository{std::make_unique<MemoryUserRepository>(
         std::vector<User>{User{7, "Ada"}, User{9, "Bjarne"}})};
-    GreetingService service{std::move(repository)}; // 이름 있는 repository lvalue를 xvalue로 바꿔 소유권을 넘긴다.
+    // move(repository)는 unique_ptr&&를 반환해 서비스 생성자가 단독 소유권을 넘겨받게 한다. 원본은 빈 상태가 된다.
+    GreetingService service{std::move(repository)};
     const std::string message{service.greet(7)}; // const 지역 변수는 초기화 뒤 다른 값을 대입할 수 없다.
     std::cout << message << '\n'; // 함수 호출 결과를 출력하고 줄을 바꾼다.
     return message == "hello, Ada" ? 0 : 1; // ?: 조건 연산자로 성공 0과 실패 1을 고른다.

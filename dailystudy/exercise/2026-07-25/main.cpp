@@ -69,6 +69,8 @@ public:
     // auto 반환형은 filter_view의 긴 정확한 타입을 컴파일러가 추론하게 한다.
     [[nodiscard]] auto with_minimum(Money minimum) const {
         // [minimum]은 조건 함수 객체 안에 기준 금액을 값으로 복사해 수명을 안전하게 만든다.
+        // views::filter(range,predicate)는 repository_.orders() 범위와 bool 술어를 입력받아 지연 filter_view를 값으로 반환한다.
+        // 호출 시 원소를 복사·검사하지 않고 순회할 때 술어를 호출한다. 뷰는 저장소를 소유하지 않아 repository_보다 오래 살면 안 된다.
         return repository_.orders() | std::views::filter([minimum](const Order& order) {
             // >= 비교 연산자는 두 정수를 비교해 bool을 만들고 filter가 조건 분기한다.
             return order.price.won() >= minimum.won();

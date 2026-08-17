@@ -55,7 +55,8 @@ public:
 
         // pi_v<Scalar>의 <Scalar>는 상수의 실수 타입을 고르는 템플릿 인자다.
         const Scalar r{radius.value()}; // const 지역 변수는 초기화 뒤 다시 저장할 수 없다.
-        // * 연산은 원의 넓이 πr²를 계산한다. pi_v는 매크로보다 타입 안전하다.
+        // pi_v<Scalar>는 함수가 아니라 Scalar 타입으로 준비된 컴파일 시간 상수 값이며 입력·반환 호출이 없다.
+        // * 연산은 원의 넓이 πr²를 계산하고 radius나 상수를 바꾸지 않는다.
         return AreaResult{std::numbers::pi_v<Scalar> * r * r, true};
     }
 };
@@ -79,9 +80,10 @@ private:
 };
 
 int main() { // main의 반환형 int는 운영체제에 전달할 종료 상태 코드다.
-    // make_unique 표준 라이브러리 함수는 객체와 unique_ptr를 안전하게 함께 만든다.
-    auto policy{std::make_unique<CircleAreaPolicy>()}; // auto는 초기값에서 unique_ptr 타입을 추론한다.
-    // 이름 있는 policy는 lvalue이므로 move로 xvalue로 바꿔 단독 소유권을 서비스에 넘긴다.
+    // make_unique<CircleAreaPolicy>()는 생성자 인자 없이 객체를 만들고 unique_ptr<CircleAreaPolicy> prvalue를 반환한다.
+    // 할당 실패 시 bad_alloc이 가능하고 반환 포인터가 객체 수명을 단독 소유한다.
+    auto policy{std::make_unique<CircleAreaPolicy>()};
+    // move(policy)는 policy를 unique_ptr&& xvalue로 캐스팅해 service 생성자가 소유권을 이동하게 한다. 함수 자체는 이동하지 않는다.
     AreaService service{std::move(policy)};
 
     // Radius{2.0}은 prvalue이며 run의 const 참조에 바인딩되어 호출이 끝날 때까지 살아 있다.
