@@ -96,6 +96,7 @@
 | 심볼 | 짧은 역할 | 상세 문서 |
 |---|---|---|
 | `std::cin`, `std::cout`, `std::cerr` | 표준 입력·출력·오류 스트림 객체 | [입출력](io-parsing-and-utilities.md) |
+| `std::istream` | 추출 연산이 같은 입력 스트림 참조를 이어 반환하는 기반 타입 | [입출력](io-parsing-and-utilities.md) |
 | `std::ostream` | 출력 연산이 같은 스트림 참조를 이어 반환하는 기반 타입 | [입출력](io-parsing-and-utilities.md) |
 | `std::ios::sync_with_stdio` | C/C++ 표준 스트림 동기화 설정 | [입출력](io-parsing-and-utilities.md) |
 | `std::fixed`, `std::setprecision` | 부동소수점 출력 형식 조작 | [입출력](io-parsing-and-utilities.md) |
