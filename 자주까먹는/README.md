@@ -11,6 +11,8 @@
 - [const, constexpr, inline](./basic/constexpr_inline_const.cpp). 
 - [explicit의 존재 유무에 대한 차이](./basic/wrong_explicit.cpp)  
   - [correct version](./basic/correct_explicit.cpp)  
+- [이동 생성을 통한 메모리 효율성]
+  - [pimpl(Pointer to implementation)](../dailystudy/exercise/2026-08-18/main.cpp)  
 
 ### 처음부터 따라가는 추천 커리큘럼
 
