@@ -41,6 +41,16 @@
 | `std::pmr::monotonic_buffer_resource` | 일괄 해제형 증가 할당 자원 | [컨테이너](containers-and-views.md) |
 | `std::pmr::vector` | 다형적 할당자를 쓰는 vector 별칭 | [컨테이너](containers-and-views.md) |
 
+## 비트와 바이트 표현
+
+| 심볼 | 짧은 역할 | 상세 문서 |
+|---|---|---|
+| `std::bit_cast` | 같은 크기 객체 표현을 새 값으로 복사 | [비트·바이트](bit-and-byte-utilities.md) |
+| `std::byteswap` | 정수의 바이트 순서를 반대로 변환 | [비트·바이트](bit-and-byte-utilities.md) |
+| `std::endian::native` | 구현의 스칼라 바이트 순서 | [비트·바이트](bit-and-byte-utilities.md) |
+| `std::endian::little`, `std::endian::big` | 알려진 작은/큰 바이트 순서 값 | [비트·바이트](bit-and-byte-utilities.md) |
+| `std::uint32_t`, `std::byte`, `std::size_t` | 고정 폭 정수, 원시 바이트, 크기 타입 | [비트·바이트](bit-and-byte-utilities.md) |
+
 ## 소유권과 어휘 타입
 
 | 심볼 | 짧은 역할 | 상세 문서 |
@@ -101,6 +111,7 @@
 | `std::ios::sync_with_stdio` | C/C++ 표준 스트림 동기화 설정 | [입출력](io-parsing-and-utilities.md) |
 | `std::fixed`, `std::setprecision` | 부동소수점 출력 형식 조작 | [입출력](io-parsing-and-utilities.md) |
 | `std::from_chars`, `std::errc` | 비예외 문자 범위 숫자 파싱 | [입출력](io-parsing-and-utilities.md) |
+| `std::getline` | 구분자 전까지 한 줄을 소유 문자열에 입력 | [입출력](io-parsing-and-utilities.md) |
 | `std::to_string` | 숫자를 소유 문자열로 변환 | [입출력](io-parsing-and-utilities.md) |
 | `std::move`, `std::forward`, `std::exchange` | 값 범주 변환·전달·값 교체 | [입출력](io-parsing-and-utilities.md) |
 | `std::numeric_limits` | 기본 타입 수치 한계 | [입출력](io-parsing-and-utilities.md) |

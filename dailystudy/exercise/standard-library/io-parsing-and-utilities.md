@@ -17,6 +17,15 @@
 - `cin.tie(nullptr)`는 입력 전 `cout` 자동 flush 연결을 해제하고 이전 연결 스트림 포인터를 반환한다.
 - 대화형 문제에서는 프롬프트가 보이도록 수동 flush가 필요할 수 있다.
 
+### `std::getline(stream, string, delimiter)` — `<string>`, `<istream>`
+
+- 대표 형태는 `template<class CharT, class Traits, class Allocator> basic_istream<CharT, Traits>& getline(basic_istream<CharT, Traits>& input, basic_string<CharT, Traits, Allocator>& output, CharT delimiter);`이며 구분자를 생략하면 개행을 쓴다.
+- 첫 인자는 읽을 스트림 lvalue 참조, 둘째는 내용을 교체할 소유 문자열 lvalue 참조, 셋째는 값으로 받는 종료 문자다. 스트림이나 문자열의 소유권을 가져가지 않는다.
+- 호출은 기존 output 내용을 지우고 구분자 전 문자를 저장한 뒤 구분자는 소비하지만 저장하지 않는다. 같은 입력 스트림 참조를 반환하므로 성공 여부를 bool 문맥에서 검사하거나 연쇄할 수 있다.
+- 출력 문자열이 커지며 재할당되면 그 문자열의 기존 포인터·참조·반복자가 무효화된다. 다른 문자열은 바뀌지 않는다.
+- 시간은 추출한 문자 수에 선형이고 문자열 저장 공간도 선형이다. 할당 실패는 예외, 입력 종료·실패는 스트림 상태로 표현된다.
+- 앞서 `operator>>`를 사용했다면 남아 있는 개행을 첫 빈 줄로 읽을 수 있다. 입력 계약에 맞게 개행을 소비할지 결정한다.
+
 ## 형식 조작자 `std::fixed`, `std::setprecision`
 
 - `fixed`는 부동소수점 출력을 고정 소수점 표기로 바꾸는 조작자다.
