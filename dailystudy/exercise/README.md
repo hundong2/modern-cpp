@@ -41,11 +41,12 @@
 | [2026-08-17](./2026-08-17/README.md) | atomic 불변 스냅샷과 지연 세그먼트 트리 | C++20 |
 | [2026-08-18](./2026-08-18/README.md) | Pimpl·Rule of Five와 이진 리프팅 LCA | C++20 |
 | [2026-08-19](./2026-08-19/README.md) | `bit_cast`·엔디언 와이어 경계와 KMP 문자열 검색 | C++23 |
+| [2026-08-20](./2026-08-20/README.md) | 지정 초기화 DTO·도메인 불변식 경계와 Edmonds–Karp 최대 유량 | C++23 |
 
 ## 표준 라이브러리 설명 찾기
 
 - [표준 라이브러리 학습 지도](./standard-library/README.md): 설명 품질 기준과 분야별 대표 문서
-- [날짜별 사용 색인](./standard-library/by-date.md): 현재 37개 날짜, 92개 C++ 파일의 헤더와 `std::` 심볼
+- [날짜별 사용 색인](./standard-library/by-date.md): 현재 38개 날짜, 95개 C++ 파일의 헤더와 `std::` 심볼
 - [심볼 색인](./standard-library/symbol-index.md): 113개 현재 심볼의 역할과 상세 문서 링크
 - [공통 용어](./standard-library/terms.md): 반복자, 뷰, 술어, 소유권, 무효화, 예외 보장, 원자성
 - [표준 헤더](./standard-library/headers.md): 현재 사용하는 42개 헤더와 대표 선언
