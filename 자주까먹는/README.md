@@ -6,6 +6,29 @@
 **주제별 메뉴**로 나누어 볼 수 있습니다. 처음이라면 아래 추천 순서를 따르고, 이미
 아는 내용이 있다면 주제별 메뉴에서 필요한 문서로 바로 이동합니다.
 
+### 파일 메뉴
+
+- [LTO, Link time optimization](./LTO.md). 
+- [inline and constexpr](./basic/inline_constexpr.md). - inline 및 constexpr에서의 최적화.  
+- [공통 용어와 축약어 사전](./GLOSSARY.md) — 기본 용어와 약어를 먼저 정리합니다.
+- [Endian 쉽게 이해하기](./endian.md) — 메모리, 네트워크, 패킷 수신 시 엔디언을 설명합니다.
+- [SIMD(Single Instruction, Multiple Data)](./simd.md) — 벡터 연산과 병렬 데이터 처리를 소개합니다.
+- [std::span과 비소유 메모리 뷰](./std::span.md) — 소유하지 않는 메모리 참조를 설명합니다.
+- [CTAD(Class Template Argument Deduction)](./CTAD.md) — 템플릿 인수 추론을 정리합니다.
+- [디버깅·역어셈블 도구 설치](./Environment.md) — 실행 결과와 레지스터를 확인하는 도구를 다룹니다.
+- [ABI(Application Binary Interface)](./ABI_Architecture.md) — 바이너리 호환성과 호출 규약을 설명합니다.
+- [오브젝트 파일·정적/동적 라이브러리 구조](./ExecuteLibraryArchitecture.md) — 빌드 산출물의 관계를 보여 줍니다.
+- [RAII 상세 교재](./raii-resource-lifetime/README.md) — 객체 수명과 자원 관리를 다룹니다.
+- [Modern C++23 실무 프로젝트 템플릿](./template/README.md) — 계층형 프로젝트 구조와 CMake를 연결합니다.
+- [모던 C++ 런타임 기반 6가지](./modern-cpp-runtime-foundations/README.md) — 이동, 원자 연산, 다형성, 코루틴을 설명합니다.
+- [C++ 역사와 타입 변화 예제](./history/README.md) — 문법과 타입 변화의 흐름을 정리합니다.
+- [실무 서버 프로그래밍 23일 과정](./실무/README.md) — TCP, 동시성, 성능, 게임 서버를 실습합니다.
+
+### 오늘 추가된 문서
+
+- [Endian 쉽게 이해하기](./endian.md) — 메모리 바이트 순서, 네트워크 전송, 수신 파싱을 그림으로 설명합니다.
+- [SIMD(Single Instruction, Multiple Data)](./simd.md) — 한 명령으로 여러 데이터를 처리하는 벡터 연산 개념을 소개합니다.
+
 ### basic
 
 - [const, constexpr, inline](./basic/constexpr_inline_const.cpp). 
@@ -13,6 +36,7 @@
   - [correct version](./basic/correct_explicit.cpp)  
 - [이동 생성을 통한 메모리 효율성]
   - [pimpl(Pointer to implementation)](../dailystudy/exercise/2026-08-18/main.cpp)  
+- [Endian Example](./endian.md). 
 
 ### 처음부터 따라가는 추천 커리큘럼
 
