@@ -4,6 +4,7 @@
 
 - [std::forward](#stdforward).  
 - [std::optional](#optional). 
+- [자원관리 C++ vs C#](./RAII.md). 
 
 ### std::forward
 
