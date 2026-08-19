@@ -8,6 +8,7 @@
 
 ### 파일 메뉴
 
+- [inline and constexpr](./basic/inline_constexpr.md). - inline 및 constexpr에서의 최적화.  
 - [공통 용어와 축약어 사전](./GLOSSARY.md) — 기본 용어와 약어를 먼저 정리합니다.
 - [Endian 쉽게 이해하기](./endian.md) — 메모리, 네트워크, 패킷 수신 시 엔디언을 설명합니다.
 - [SIMD(Single Instruction, Multiple Data)](./simd.md) — 벡터 연산과 병렬 데이터 처리를 소개합니다.
