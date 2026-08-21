@@ -51,10 +51,10 @@ $observedMembers = [Collections.Generic.HashSet[string]]::new()
 # std::가 이름에 드러나지 않는 표준 멤버 중 현재 학습 코드에서 자주 쓰는 항목만 검사한다.
 $knownStandardMembers = [Collections.Generic.HashSet[string]]::new(
     [string[]]@(
-        'append', 'at', 'back', 'begin', 'c_str', 'clear', 'data', 'empty', 'end',
-        'error', 'expired', 'fetch_add', 'file_size', 'find', 'front', 'get',
+        'append', 'at', 'back', 'begin', 'c_str', 'clear', 'contains', 'data', 'empty', 'emplace', 'end',
+        'error', 'expired', 'extract', 'fetch_add', 'file_size', 'find', 'front', 'get',
         'has_value', 'is_absolute', 'is_regular_file', 'lexically_normal', 'load',
-        'lock', 'message', 'pop', 'pop_back', 'push', 'push_back', 'release',
+        'insert', 'key', 'lock', 'mapped', 'message', 'pop', 'pop_back', 'push', 'push_back', 'release',
         'reserve', 'reset', 'resize', 'size', 'store', 'substr', 'top', 'value',
         'value_or'
     )

@@ -43,11 +43,12 @@
 | [2026-08-19](./2026-08-19/README.md) | `bit_cast`·엔디언 와이어 경계와 KMP 문자열 검색 | C++23 |
 | [2026-08-20](./2026-08-20/README.md) | 지정 초기화 DTO·도메인 불변식 경계와 Edmonds–Karp 최대 유량 | C++23 |
 | [2026-08-21](./2026-08-21/README.md) | 참조 한정 fluent builder와 접두사 트라이 | C++20 |
+| [2026-08-22](./2026-08-22/README.md) | unordered_map 노드 핸들 키 재지정과 플로이드–워셜 | C++20 |
 
 ## 표준 라이브러리 설명 찾기
 
 - [표준 라이브러리 학습 지도](./standard-library/README.md): 설명 품질 기준과 분야별 대표 문서
-- [날짜별 사용 색인](./standard-library/by-date.md): 현재 39개 날짜, 98개 C++ 파일의 헤더와 `std::` 심볼
+- [날짜별 사용 색인](./standard-library/by-date.md): 현재 40개 날짜, 101개 C++ 파일의 헤더와 `std::` 심볼
 - [심볼 색인](./standard-library/symbol-index.md): 113개 현재 심볼의 역할과 상세 문서 링크
 - [공통 용어](./standard-library/terms.md): 반복자, 뷰, 술어, 소유권, 무효화, 예외 보장, 원자성
 - [표준 헤더](./standard-library/headers.md): 현재 사용하는 42개 헤더와 대표 선언
