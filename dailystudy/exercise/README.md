@@ -44,14 +44,15 @@
 | [2026-08-20](./2026-08-20/README.md) | 지정 초기화 DTO·도메인 불변식 경계와 Edmonds–Karp 최대 유량 | C++23 |
 | [2026-08-21](./2026-08-21/README.md) | 참조 한정 fluent builder와 접두사 트라이 | C++20 |
 | [2026-08-22](./2026-08-22/README.md) | unordered_map 노드 핸들 키 재지정과 플로이드–워셜 | C++20 |
+| [2026-08-23](./2026-08-23/README.md) | `std::latch` 시작 준비 게이트와 Bellman–Ford | C++20 |
 
 ## 표준 라이브러리 설명 찾기
 
 - [표준 라이브러리 학습 지도](./standard-library/README.md): 설명 품질 기준과 분야별 대표 문서
-- [날짜별 사용 색인](./standard-library/by-date.md): 현재 40개 날짜, 101개 C++ 파일의 헤더와 `std::` 심볼
-- [심볼 색인](./standard-library/symbol-index.md): 113개 현재 심볼의 역할과 상세 문서 링크
+- [날짜별 사용 색인](./standard-library/by-date.md): 현재 41개 날짜, 104개 C++ 파일의 헤더와 `std::` 심볼
+- [심볼 색인](./standard-library/symbol-index.md): 114개 현재 심볼의 역할과 상세 문서 링크
 - [공통 용어](./standard-library/terms.md): 반복자, 뷰, 술어, 소유권, 무효화, 예외 보장, 원자성
-- [표준 헤더](./standard-library/headers.md): 현재 사용하는 42개 헤더와 대표 선언
+- [표준 헤더](./standard-library/headers.md): 현재 사용하는 43개 헤더와 대표 선언
 
 코드의 인접 주석은 현재 호출의 인자·반환값·상태 변화를 설명한다. 공용 문서는 전제조건, 복잡도, 객체 수명, 참조·반복자 무효화, 오류·예외 계약을 설명한다. 새 심볼은 다음 감사로 누락 여부를 검사한다.
 

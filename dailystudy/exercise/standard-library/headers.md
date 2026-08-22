@@ -22,6 +22,7 @@
 | `<functional>` | `function`, 비교 함수 객체, 참조 래퍼 |
 | `<iomanip>` | `setprecision` 등 스트림 형식 조작자 |
 | `<iostream>` | `cin`, `cout`, `cerr` 표준 스트림 |
+| `<latch>` | C++20 일회성 카운트다운 동기화 객체 `std::latch` |
 | `<limits>` | `numeric_limits` 타입별 수치 한계 |
 | `<map>` | 정렬 연관 컨테이너 `map` |
 | `<memory>` | 스마트 포인터와 `make_unique`/`make_shared` |
