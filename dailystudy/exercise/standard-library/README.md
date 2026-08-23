@@ -13,7 +13,7 @@
 ## 문서 구성
 
 - [`terms.md`](terms.md): 반복자, 범위, 뷰, 술어, 비교자, 할당자, 소유권, 어휘 타입, 예외 보장, 미정의 동작 등 공통 용어
-- [`headers.md`](headers.md): 현재 코드가 포함하는 42개 표준 헤더와 실제 사용 선언
+- [`headers.md`](headers.md): 현재 코드가 포함하는 44개 표준 헤더와 실제 사용 선언
 - [`bit-and-byte-utilities.md`](bit-and-byte-utilities.md): `bit_cast`, `byteswap`, 엔디언, 고정 폭 정수와 바이트 표현
 - [`containers-and-views.md`](containers-and-views.md): `vector`, `array`, `map`, `unordered_map`, `queue`, `priority_queue`, `span`, `string`, `string_view`와 주요 멤버 함수
 - [`algorithms-and-ranges.md`](algorithms-and-ranges.md): 정렬, 탐색, 누적, 채우기, 수열 생성, ranges/views 파이프라인

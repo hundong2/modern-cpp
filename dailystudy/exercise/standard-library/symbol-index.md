@@ -28,6 +28,7 @@
 | 심볼 | 짧은 역할 | 상세 문서 |
 |---|---|---|
 | `std::array` | 컴파일 시간 고정 크기 연속 배열 | [컨테이너](containers-and-views.md) |
+| `std::deque` | 양끝 상수 시간 삽입·삭제 시퀀스 | [컨테이너](containers-and-views.md) |
 | `std::map` | 정렬 키 연관 컨테이너 | [컨테이너](containers-and-views.md) |
 | `std::unordered_map` | 해시 기반 연관 컨테이너 | [컨테이너](containers-and-views.md) |
 | `std::queue` | FIFO 컨테이너 어댑터 | [컨테이너](containers-and-views.md) |
@@ -68,6 +69,7 @@
 | `std::pair`, `std::tuple` | 위치 기반 이종 값 묶음 | [소유권](ownership-and-vocabulary-types.md) |
 | `std::reference_wrapper`, `std::cref` | 복사 가능한 비소유 참조 래퍼 | [소유권](ownership-and-vocabulary-types.md) |
 | `std::function` | 호출 가능 객체 타입 소거 래퍼 | [소유권](ownership-and-vocabulary-types.md) |
+| `std::move_only_function` | 이동 전용 호출 가능 객체 타입 소거 래퍼 | [소유권](ownership-and-vocabulary-types.md) |
 | `std::source_location`, `std::source_location::current` | 호출 소스 위치 캡처 | [소유권](ownership-and-vocabulary-types.md) |
 | `std::strong_ordering` | 강한 삼방향 비교 결과 | [소유권](ownership-and-vocabulary-types.md) |
 

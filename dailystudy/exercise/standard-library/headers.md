@@ -17,9 +17,10 @@
 | `<cstddef>` | `size_t`, `ptrdiff_t`, `byte` |
 | `<cstdint>` | `uint64_t` 등 고정 폭 정수 별칭 |
 | `<cstdlib>` | 정수 `abs`, `exit` 등 C 호환 유틸리티 |
+| `<deque>` | 양끝 큐 `std::deque`와 앞·뒤 삽입/삭제 API |
 | `<expected>` | C++23 `expected`, `unexpected` |
 | `<filesystem>` | `path`, 디렉터리 반복자와 파일 상태 API |
-| `<functional>` | `function`, 비교 함수 객체, 참조 래퍼 |
+| `<functional>` | `function`, C++23 `move_only_function`, 비교 함수 객체, 참조 래퍼 |
 | `<iomanip>` | `setprecision` 등 스트림 형식 조작자 |
 | `<iostream>` | `cin`, `cout`, `cerr` 표준 스트림 |
 | `<latch>` | C++20 일회성 카운트다운 동기화 객체 `std::latch` |
