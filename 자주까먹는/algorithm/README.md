@@ -4,6 +4,8 @@
 - [02.IsDigit(C#)](#isdigit-1). 
     - [02-1. isdigit(C++)](#isdigit). 
 - [03. Stack & Queue](./StackAndQueue.md). 
+- [04. Priority Queue](./priority_queue.md). 
+    - [Problem with leetcode](./23.Merge%20k%20Sorted%20Lists.md). 
 
 
 ## C++
