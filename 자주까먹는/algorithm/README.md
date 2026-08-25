@@ -6,6 +6,7 @@
 - [03. Stack & Queue](./StackAndQueue.md). 
 - [04. Priority Queue](./priority_queue.md). 
     - [Problem with leetcode](./23.Merge%20k%20Sorted%20Lists.md). 
+- [25. Sorting with 3 points](./25.Reverse%20Nodes%20in%20k-Group.md). 
 
 
 ## C++
