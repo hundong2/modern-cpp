@@ -7,18 +7,18 @@
 1. 날짜별 README의 `오늘 사용한 표준 라이브러리` 표에서 심볼과 헤더를 확인한다.
 2. 코드 바로 위 주석에서 현재 인자와 반환값이 프로그램 상태를 어떻게 바꾸는지 읽는다.
 3. 이 폴더의 대표 문서에서 복잡도, 수명, 무효화, 오류 조건까지 확인한다.
-4. [`by-date.md`](by-date.md)에서 기존 101개 C++ 파일이 사용하는 심볼을 날짜별로 다시 찾는다.
+4. [`by-date.md`](by-date.md)에서 기존 113개 C++ 파일이 사용하는 심볼을 날짜별로 다시 찾는다.
 5. [`../tools/audit-standard-library-docs.ps1`](../tools/audit-standard-library-docs.ps1)로 문서에 등록되지 않은 심볼이 있는지 검사한다.
 
 ## 문서 구성
 
 - [`terms.md`](terms.md): 반복자, 범위, 뷰, 술어, 비교자, 할당자, 소유권, 어휘 타입, 예외 보장, 미정의 동작 등 공통 용어
-- [`headers.md`](headers.md): 현재 코드가 포함하는 44개 표준 헤더와 실제 사용 선언
+- [`headers.md`](headers.md): 현재 코드가 포함하는 46개 표준 헤더와 실제 사용 선언
 - [`bit-and-byte-utilities.md`](bit-and-byte-utilities.md): `bit_cast`, `byteswap`, 엔디언, 고정 폭 정수와 바이트 표현
 - [`containers-and-views.md`](containers-and-views.md): `vector`, `array`, `map`, `unordered_map`, `queue`, `priority_queue`, `span`, `string`, `string_view`와 주요 멤버 함수
 - [`algorithms-and-ranges.md`](algorithms-and-ranges.md): 정렬, 탐색, 누적, 채우기, 수열 생성, ranges/views 파이프라인
 - [`ownership-and-vocabulary-types.md`](ownership-and-vocabulary-types.md): 스마트 포인터, `optional`, `expected`, `variant`, `pair`, `tuple`, 참조 래퍼와 타입 특성
-- [`concurrency-time-filesystem.md`](concurrency-time-filesystem.md): 원자 연산, 메모리 순서, 잠금, 스레드 취소, 시간, 파일 시스템, 오류 코드, 코루틴
+- [`concurrency-time-filesystem.md`](concurrency-time-filesystem.md): 원자 연산, 메모리 순서, 잠금, latch/barrier 단계 동기화, 스레드 취소, 시간, 파일 시스템, 오류 코드, 코루틴
 - [`io-parsing-and-utilities.md`](io-parsing-and-utilities.md): 스트림, 파싱, 이동/전달, 교환, 수치 유틸리티, 종료 함수와 표준 상수
 - [`symbol-index.md`](symbol-index.md): 현재 코드에서 찾은 표준 라이브러리 심볼의 가나다/알파벳 탐색표
 - [`by-date.md`](by-date.md): 날짜별 헤더·심볼 목록과 해당 코드 링크

@@ -7,6 +7,7 @@
 | `<algorithm>` | `sort`, `find_if`, `fill`, `max_element`, ranges 알고리즘 |
 | `<array>` | 고정 크기 `std::array` |
 | `<atomic>` | `std::atomic`, 메모리 순서 상수 |
+| `<barrier>` | C++20 반복 단계 동기화 객체 `std::barrier`와 도착 token |
 | `<bit>` | `bit_cast`, `byteswap`, `endian` 객체 표현·바이트 순서 도구 |
 | `<cassert>` | 디버그 검증 매크로 `assert` (`NDEBUG`에서 제거 가능) |
 | `<charconv>` | 비예외 숫자 파싱 `from_chars` |

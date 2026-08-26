@@ -97,6 +97,7 @@
 | `std::shared_mutex`, `std::shared_lock` | 읽기 공유·쓰기 독점 잠금 | [동시성](concurrency-time-filesystem.md) |
 | `std::jthread`, `std::stop_token` | RAII 스레드와 협력적 취소 | [동시성](concurrency-time-filesystem.md) |
 | `std::latch` | 일회성 카운트다운 대기·동기화 | [동시성](concurrency-time-filesystem.md) |
+| `std::barrier` | 완료 함수를 포함한 반복 단계 동기화 | [동시성](concurrency-time-filesystem.md) |
 | `std::this_thread::sleep_for` | 현재 스레드 상대 시간 대기 | [동시성](concurrency-time-filesystem.md) |
 | `std::chrono::milliseconds`, `std::chrono::microseconds` | 밀리·마이크로초 duration 별칭 | [동시성](concurrency-time-filesystem.md) |
 | `std::chrono::steady_clock`, `std::chrono::time_point` | 단조 시계와 시점 | [동시성](concurrency-time-filesystem.md) |
