@@ -38,6 +38,7 @@
 | `std::string_view` | 비소유 문자 범위 | [컨테이너](containers-and-views.md) |
 | `std::string_view::npos` | 검색 실패 위치 상수 | [컨테이너](containers-and-views.md) |
 | `std::span` | 비소유 연속 원소 범위 | [컨테이너](containers-and-views.md) |
+| `std::mdspan`, `std::dextents`, `std::layout_right` | 다차원 비소유 뷰, 동적 차원, 기본 행 우선 매핑 | [컨테이너](containers-and-views.md) |
 | `std::pmr::memory_resource` | 실행 시간 할당 자원 인터페이스 | [컨테이너](containers-and-views.md) |
 | `std::pmr::monotonic_buffer_resource` | 일괄 해제형 증가 할당 자원 | [컨테이너](containers-and-views.md) |
 | `std::pmr::vector` | 다형적 할당자를 쓰는 vector 별칭 | [컨테이너](containers-and-views.md) |

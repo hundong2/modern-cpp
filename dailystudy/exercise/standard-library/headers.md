@@ -28,6 +28,7 @@
 | `<map>` | 정렬 연관 컨테이너 `map` |
 | `<memory>` | 스마트 포인터와 `make_unique`/`make_shared` |
 | `<memory_resource>` | `std::pmr` 메모리 자원과 컨테이너 별칭 |
+| `<mdspan>` | C++23 다차원 비소유 뷰 `mdspan`, 동적 차원 `dextents`, 레이아웃 정책 |
 | `<mutex>` | `mutex`, `scoped_lock`, `unique_lock` |
 | `<numbers>` | `pi_v` 등 수학 상수 템플릿 |
 | `<numeric>` | `accumulate`, `iota` 수치 알고리즘 |

@@ -139,6 +139,20 @@ int main() {
 - `size`, `empty`, `front`, `back`, `operator[]`, `subspan`을 제공한다. `operator[]` 범위는 호출자가 보장해야 한다.
 - `std::span<int>{temporary_vector}`처럼 임시 소유 컨테이너의 수명보다 뷰를 오래 보관하지 않는다.
 
+## `std::mdspan<ElementType, Extents, LayoutPolicy, AccessorPolicy>` — `<mdspan>`의 다차원 비소유 뷰
+
+`std::mdspan`은 C++23에서 연속 또는 사용자가 정의한 매핑의 메모리를 여러 인덱스로 접근하게 하는 **비소유** 뷰다. 원소를 복사·할당·해제하지 않고 데이터 핸들, 차원 크기(extents), 레이아웃 매핑, 접근자만 값으로 보관한다.
+
+- `std::dextents<IndexType, Rank>`는 Rank개 축 크기를 모두 실행 시간에 받는 `extents` 별칭이다. `dextents<std::size_t,2>`는 행과 열 두 값을 저장한다.
+- 대표 생성 `mdspan(pointer, extent0, extent1, ...)`은 데이터 포인터와 각 동적 extent 값을 복사해 매핑을 구성한다. 생성자는 반환값이 없고 보통 동적 할당하지 않는다. 포인터 뒤에 매핑이 접근할 만큼 실제 원소가 존재해야 한다.
+- 기본 `LayoutPolicy`는 `std::layout_right`다. 마지막 인덱스가 메모리에서 연속인 행 우선 형태다. `layout_left`는 첫 인덱스가 연속이며, `layout_stride`는 사용자 stride를 표현한다.
+- `extent(axis)`는 축 번호를 받고 해당 크기를 `index_type` 값으로 반환한다. axis는 `rank()`보다 작아야 하며 뷰나 원소 상태를 바꾸지 않고 O(1)이다.
+- 다차원 `operator[](i,j,...)`는 각 인덱스를 매핑에 적용해 접근자 `reference`를 반환한다. 기본 접근자는 `ElementType&` 또는 `const ElementType&`를 반환한다. O(1), 할당 없음이며 표준 `mdspan`은 자동 범위 검사를 제공하지 않는다.
+- `mdspan<const T,...>`는 그 뷰를 통한 수정을 막지만 다른 별칭의 동시 수정이나 데이터 경쟁까지 막지 않는다.
+- mdspan 복사·이동은 뷰 상태만 복사·이동하며 원소 소유권과 수명을 연장하지 않는다. 원본 vector의 파괴·재할당, 배열 수명 종료 뒤에는 뷰와 얻어 둔 참조가 댕글링한다.
+- `rows*columns`와 실제 저장 원소 수의 일치, 인덱스 범위, 곱셈 오버플로, 원본 수명은 소유자·호출자가 보장해야 한다.
+- 오프셋 계산은 load와 산술로 인라인될 수 있지만 특정 어셈블리 명령이나 무비용을 보장한다고 단정하지 않는다. CPU, ABI, 레이아웃·접근자, 컴파일러와 최적화 옵션에 따라 달라진다.
+
 ## `std::pmr` 다형적 메모리 자원 — `<memory_resource>`
 
 - `std::pmr::memory_resource`는 바이트 할당·해제 정책의 추상 기반 클래스다. 포인터로 주입하며 자원 객체가 그 자원을 쓰는 컨테이너보다 오래 살아야 한다.
@@ -169,3 +183,5 @@ int main() {
 2. `map[key]`와 `map.find(key)`가 키가 없을 때 상태를 어떻게 다르게 바꾸는지 설명한다.
 3. `priority_queue<int, vector<int>, greater<int>>`에서 `top()`이 최솟값인 이유를 비교자 의미로 설명한다.
 4. 함수가 `span<const int>`를 반환할 때 원본이 지역 `vector`라면 왜 잘못인지 객체 수명 순서로 적는다.
+5. `mdspan<int,dextents<size_t,2>>{data,2,3}`의 두 extent, 기본 layout_right 오프셋, 필요한 실제 원소 수를 설명한다.
+6. mdspan 생성 뒤 원본 vector가 재할당되면 뷰와 `operator[]` 반환 참조가 왜 무효인지 설명한다.
