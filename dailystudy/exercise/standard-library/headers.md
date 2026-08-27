@@ -39,9 +39,11 @@
 | `<shared_mutex>` | 읽기-쓰기 잠금과 `shared_lock` |
 | `<source_location>` | 호출 위치 값 `source_location` |
 | `<span>` | 비소유 연속 범위 `span` |
+| `<sstream>` | 문자열 버퍼를 소유하는 입력·출력 스트림과 `ostringstream` |
 | `<stop_token>` | 협력적 취소 상태 `stop_token` |
 | `<string>` | 소유 문자열 `string`, 변환 보조 함수 |
 | `<string_view>` | 비소유 문자 뷰 `string_view` |
+| `<syncstream>` | 레코드 단위 동시 출력 `osyncstream`과 동기 버퍼 |
 | `<system_error>` | `error_code`, `errc` 오류 값 |
 | `<thread>` | `jthread`, `this_thread` 함수 |
 | `<tuple>` | 이종 값 묶음 `tuple`과 `get` |

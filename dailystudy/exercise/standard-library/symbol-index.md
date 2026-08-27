@@ -113,6 +113,8 @@
 | `std::cin`, `std::cout`, `std::cerr` | 표준 입력·출력·오류 스트림 객체 | [입출력](io-parsing-and-utilities.md) |
 | `std::istream` | 추출 연산이 같은 입력 스트림 참조를 이어 반환하는 기반 타입 | [입출력](io-parsing-and-utilities.md) |
 | `std::ostream` | 출력 연산이 같은 스트림 참조를 이어 반환하는 기반 타입 | [입출력](io-parsing-and-utilities.md) |
+| `std::osyncstream` | 스레드별 출력 조각을 한 덩어리로 emit하는 동기 스트림 | [입출력](io-parsing-and-utilities.md) |
+| `std::ostringstream` | 내부 문자열 버퍼를 소유하는 메모리 출력 스트림 | [입출력](io-parsing-and-utilities.md) |
 | `std::ios::sync_with_stdio` | C/C++ 표준 스트림 동기화 설정 | [입출력](io-parsing-and-utilities.md) |
 | `std::fixed`, `std::setprecision` | 부동소수점 출력 형식 조작 | [입출력](io-parsing-and-utilities.md) |
 | `std::from_chars`, `std::errc` | 비예외 문자 범위 숫자 파싱 | [입출력](io-parsing-and-utilities.md) |

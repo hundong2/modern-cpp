@@ -10,6 +10,29 @@
 - `operator<<`는 값을 형식화해 쓰고 스트림 참조를 반환한다. `endl`은 개행과 flush를 함께 하고 `\n`은 보통 개행만 해 더 저렴하다.
 - `cerr`는 진단용이며 표준 출력 정답과 섞지 않는다. 버퍼링 정책만 믿기보다 필요한 시점에 명시적으로 flush한다.
 
+### 동시 레코드 출력 `std::osyncstream` — `<syncstream>`
+
+`std::osyncstream`은 `std::basic_osyncstream<char>`의 별칭이다. 여러 스레드가 같은 최종 `streambuf`에 여러 조각을 쓰더라도 각 `osyncstream`이 모은 문자 덩어리가 다른 동기 스트림의 문자와 섞이지 않게 전달하는 C++20 출력 스트림이다. 레코드의 **내용 원자성**을 만들지만 스레드 사이 레코드 **순서**까지 고정하지는 않는다.
+
+- 대표 생성 형태는 `explicit basic_osyncstream(ostream_type& wrapped)`다. 인자는 `std::ostream` lvalue 참조이며 스트림 객체나 그 버퍼를 소유권 이전하지 않는다. 생성된 `osyncstream`과 그 출력 작업이 끝날 때까지 wrapped와 wrapped의 stream buffer가 살아 있어야 한다.
+- 생성자는 wrapped의 현재 stream buffer를 감싼 `basic_syncbuf`를 소유한다. 메모리 버퍼 할당이 실패하면 예외가 날 수 있고, 생성 성공 뒤 wrapped의 문자 시퀀스가 즉시 바뀐다고 가정하면 안 된다.
+- `operator<<(value)`는 일반 `ostream`처럼 값을 형식화해 동기 버퍼에 추가하고 스트림 참조를 반환한다. 시간과 임시 공간은 기록 문자 수에 선형이며 버퍼 확장에서 할당이 일어날 수 있다.
+- `emit()`의 대표 형태는 `void emit()`이다. 데이터 값 인자는 없고 반환값도 없다. 호출 전 동기 버퍼에 쌓인 문자를 wrapped stream buffer로 전달하며, 전달 중 오류는 스트림 상태나 예외 설정에 따라 표현될 수 있다.
+- 소멸자는 남은 문자를 emit하는 RAII 경계다. 소멸자에서 예외가 전파된다고 기대해 오류 처리를 설계하지 말고, 엄격한 오류 관찰이 필요하면 명시적 `emit()`과 스트림 상태를 검사한다.
+- 같은 최종 stream buffer에 접근하는 다른 코드도 `osyncstream`을 사용해야 레코드 비혼합 보장을 얻는다. 일반 `ostream` 직접 출력과 섞거나 wrapped 스트림을 동시에 읽고 쓰는 작업까지 자동으로 안전하게 만들지는 않는다.
+- `osyncstream` 객체 자체를 여러 스레드가 동시에 공유해 무동기 접근하는 방식이 아니라, 각 스레드가 별도 지역 객체를 만들고 같은 wrapped buffer로 emit하는 방식이 기본이다.
+- 객체는 내부 동기 버퍼를 소유하므로 복사할 수 없고 이동은 가능하다. 이동 뒤 원본은 유효하지만 자원 상태를 가정하지 않는다.
+
+오늘 자료 [`../2026-08-28/main.cpp`](../2026-08-28/main.cpp)는 지역 `record` 수명을 로그 한 줄의 commit 경계로 쓴다. `jthread::join()` 뒤에만 wrapped `ostringstream`를 읽어 emit 완료와 단일 스레드 접근을 보장한다.
+
+### 메모리 출력 `std::ostringstream`와 `str()` — `<sstream>`
+
+- `std::ostringstream`는 `std::basic_ostringstream<char>`의 별칭이며, 문자 시퀀스를 내부 `std::string` 기반 버퍼에 소유하는 출력 스트림이다. 테스트 더블, 문자열 조립, 포맷 결과 캡처에 쓰지만 반복 연결이 매우 많은 성능 경로에서는 할당 비용을 측정한다.
+- 기본 생성 `ostringstream()`는 빈 버퍼와 정상 스트림 상태를 만든다. 생성자는 반환값이 없고 버퍼 준비 중 할당 실패가 예외가 될 수 있다.
+- `str() const &`는 현재 문자 시퀀스를 새 `std::string` 값으로 복사 반환한다. 데이터 값 인자는 없고 반환 문자열이 자기 버퍼를 소유하므로 원본 stream보다 오래 살 수 있다. 호출 뒤 stream 내용·위치·상태는 유지되며 문자 수에 선형 시간·공간이 들고 할당 실패 가능성이 있다.
+- `str(string)` 계열 setter는 내부 시퀀스를 교체하므로 기존에 얻은 포인터·참조·뷰를 그대로 사용할 수 없다. 사용 중인 정확한 오버로드가 getter인지 setter인지 인자 수와 cv/ref 한정으로 구분한다.
+- `ostringstream`에 여러 스레드가 직접 동시에 쓰는 것은 일반적으로 안전한 공유 접근 계약이 아니다. 오늘처럼 각 스레드가 별도 `osyncstream`으로 같은 wrapped buffer에 emit하고, 모든 join 뒤 한 스레드가 `str()`을 호출한다.
+
 ### `std::ios::sync_with_stdio(false)`와 `cin.tie(nullptr)`
 
 - `sync_with_stdio(false)`는 C stdio와 C++ iostream의 동기화를 끌 수 있고 이전 설정을 `bool`로 반환한다.

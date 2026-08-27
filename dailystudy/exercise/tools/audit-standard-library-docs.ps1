@@ -55,7 +55,7 @@ $knownStandardMembers = [Collections.Generic.HashSet[string]]::new(
         'error', 'expired', 'extent', 'extract', 'fetch_add', 'file_size', 'find', 'front', 'get',
         'has_value', 'is_absolute', 'is_regular_file', 'join', 'joinable', 'lexically_normal', 'load',
         'insert', 'key', 'lock', 'mapped', 'message', 'pop', 'pop_back', 'pop_front', 'push', 'push_back', 'push_front', 'release',
-        'reserve', 'reset', 'resize', 'size', 'store', 'substr', 'top', 'value', 'wait',
+        'reserve', 'reset', 'resize', 'size', 'store', 'str', 'substr', 'top', 'value', 'wait',
         'value_or'
     )
 )
