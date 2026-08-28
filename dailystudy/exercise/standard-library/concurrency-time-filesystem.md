@@ -127,6 +127,26 @@
 - API 호출 수 자체는 원소 수와 무관한 상수 규모지만 실제 지연은 가장 느린 참가자, 경쟁, OS 스케줄링에 좌우되어 시간 상한을 보장하지 않는다. lock-free 구현이나 특정 CPU 명령도 보장하지 않는다.
 - 오늘 자료 [`../2026-08-27/main.cpp`](../2026-08-27/main.cpp)는 expected에 `weights.size()`를 `ptrdiff_t`로 변환해 넣고, 완료 lambda를 xvalue로 이동 소유시킨다. 두 번의 `arrive_and_wait()`는 준비와 게시 단계를 분리하고 완료 함수는 총 두 번 실행된다.
 
+## `std::counting_semaphore<LeastMaxValue>`, `std::binary_semaphore` — `<semaphore>`
+
+세마포어는 음수가 아닌 내부 counter를 가진 C++20 동기화 객체다. `acquire`는 permit 하나를 얻을 때까지 기다리고 counter를 줄이며, `release`는 permit을 반환해 counter를 늘린다. `std::binary_semaphore`는 `std::counting_semaphore<1>`의 별칭이라 닫힘/열림 신호나 단일 handoff에 적합하다. payload를 소유하는 큐는 아니며, 여러 값을 보관하려면 별도 저장소와 동시성 계약이 필요하다.
+
+| 대표 형태 | 수신 객체·각 입력 | 반환값 | 호출 뒤 상태·계약 |
+|---|---|---|---|
+| `explicit counting_semaphore(ptrdiff_t desired)` | 새 `counting_semaphore<LeastMaxValue>`와 값 복사되는 초기 counter `desired`. `0 <= desired <= max()`가 전제조건이다. | 초기화된 비복사·비이동 semaphore 객체 | counter가 desired가 된다. 전제조건 위반은 미정의 동작이다. 동적 할당·특정 OS 객체·lock-free 여부는 보장하지 않는다. |
+| `void acquire()` | 수신 semaphore만 사용하고 데이터 인자는 없다. | 없음(`void`) | counter가 양수가 될 때까지 막힐 수 있고 성공 시 1 줄인다. 대응 `release` 이전 평가는 성공한 `acquire` 이후 평가와 동기화한다. 대기 시간 상한·공정성·깨우기 순서는 보장하지 않는다. |
+| `bool try_acquire()` | 수신 semaphore만 사용하고 데이터 인자는 없다. | 즉시 permit을 얻었는지 나타내는 bool | true면 counter를 1 줄인다. false면 상태를 바꾸지 않지만 counter가 양수여도 허위 실패할 수 있으므로 정확한 현재 크기 조회로 쓰지 않는다. |
+| `template<class Rep, class Period> bool try_acquire_for(const chrono::duration<Rep,Period>& rel_time)` | 수신 semaphore와 const 참조로 빌린 상대 duration. duration은 호출 동안만 읽힌다. | 제한 시간 안에 permit을 얻었는지 bool | true면 counter를 1 줄이고 false면 permit을 얻지 않는다. 허위 실패·스케줄러 지연이 가능해 정확한 실시간 마감 보장은 아니다. |
+| `void release(ptrdiff_t update = 1)` | 수신 semaphore와 값 복사되는 증가량 update. 생략하면 1이고 `0 <= update <= max()-현재 counter`가 전제조건이다. | 없음(`void`) | counter를 update만큼 늘리고 대기자가 진행할 수 있게 한다. 최대값을 넘기거나 얻지 않은 permit을 중복 반환하면 전제조건을 깨뜨릴 수 있다. |
+
+- `LeastMaxValue`는 최소한 필요한 최대 counter를 컴파일 시간에 표현한다. 실제 `max()`는 이 값 이상일 수 있지만 코드가 그 여유를 몰래 사용해서는 안 된다.
+- `release`는 그 호출 이전 평가와, 그 release로 permit을 얻어 성공한 `acquire` 이후 평가 사이에 strongly happens-before 관계를 만든다. 오늘 mailbox는 이 관계로 비원자 `slot_` payload를 한 번 안전하게 넘긴다.
+- semaphore는 공유 payload에 대한 상호 배제를 자동으로 제공하지 않는다. permit이 여러 개면 여러 스레드가 동시에 임계 구역에 들어가므로 같은 객체를 쓴다면 별도 분할 소유·원자·잠금이 필요하다.
+- semaphore 객체를 파괴할 때 다른 스레드가 멤버 함수를 실행하거나 기다리고 있으면 안 된다. 비소유 참조/포인터로 감싼 RAII Lease는 semaphore보다 먼저 모두 파괴되어야 한다.
+- `acquire` 성공 뒤 모든 반환·예외 경로에서 정확히 한 번 `release`하도록 이동 전용 RAII guard를 쓰면 permit 누수와 이중 반환을 줄일 수 있다.
+- API 작업량은 컨테이너 원소 수와 무관한 상수 규모지만 실제 지연은 경쟁·스케줄러·구현에 좌우된다. 특정 atomic 명령, futex, 커널 대기 방식으로 단정하지 않는다.
+- 오늘 자료 [`../2026-08-29/main.cpp`](../2026-08-29/main.cpp)는 binary semaphore의 0→1 release와 1→0 acquire로 payload 게시를 증명하고, [`../2026-08-29/problem.cpp`](../2026-08-29/problem.cpp)는 counting semaphore permit 반환 책임을 이동 전용 소멸자에 둔다.
+
 ## `std::chrono`
 
 - `duration<Rep,Period>`는 숫자 표현 타입과 한 틱의 단위를 타입에 담는다.
