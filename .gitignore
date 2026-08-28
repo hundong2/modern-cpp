@@ -55,3 +55,9 @@ build/
 CMakeCache.txt
 cmake_install.cmake
 compile_commands.json
+
+# Managed-language and Python generated files
+**/bin/
+**/obj/
+**/__pycache__/
+*.py[cod]
