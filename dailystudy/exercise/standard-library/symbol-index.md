@@ -94,6 +94,7 @@
 | `std::memory_order_release` | 게시 저장 순서 | [동시성](concurrency-time-filesystem.md) |
 | `std::memory_order_acquire` | 게시 값 관찰 로드 순서 | [동시성](concurrency-time-filesystem.md) |
 | `std::mutex`, `std::scoped_lock`, `std::unique_lock` | 독점 잠금과 RAII 소유자 | [동시성](concurrency-time-filesystem.md) |
+| `std::condition_variable` | mutex와 술어를 결합한 대기·깨우기 | [동시성](concurrency-time-filesystem.md) |
 | `std::shared_mutex`, `std::shared_lock` | 읽기 공유·쓰기 독점 잠금 | [동시성](concurrency-time-filesystem.md) |
 | `std::jthread`, `std::stop_token` | RAII 스레드와 협력적 취소 | [동시성](concurrency-time-filesystem.md) |
 | `std::latch` | 일회성 카운트다운 대기·동기화 | [동시성](concurrency-time-filesystem.md) |

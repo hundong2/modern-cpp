@@ -14,6 +14,7 @@
 | `<chrono>` | duration, time_point, clock, 시간 리터럴 |
 | `<compare>` | 삼방향 비교 범주 `strong_ordering` |
 | `<concepts>` | `same_as`, `integral`, `convertible_to` |
+| `<condition_variable>` | mutex 기반 술어 대기와 `notify_one`/`notify_all` |
 | `<coroutine>` | `coroutine_handle`, `suspend_always` |
 | `<cstddef>` | `size_t`, `ptrdiff_t`, `byte` |
 | `<cstdint>` | `uint64_t` 등 고정 폭 정수 별칭 |

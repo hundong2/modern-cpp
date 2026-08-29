@@ -69,6 +69,24 @@
 - `unique_lock`은 지연 잠금, 조건 변수 대기, 수동 unlock/relock 같은 유연한 상태를 제공한다. 그만큼 상태 확인이 필요하다.
 - 잠금 객체 수명은 보호 구역의 정확한 범위와 일치시킨다. 잠금 아래에서 외부 콜백을 호출하면 교착·지연 위험이 있다.
 
+## `std::condition_variable` — `<condition_variable>`
+
+조건 변수는 공유 상태가 특정 **술어(predicate)** 를 만족할 때까지 스레드가 mutex를 양보하고 기다리게 한다. 알림 자체는 상태를 저장하지 않는다. 생산자–소비자 큐에서는 `queue가 비지 않음`, `queue에 공간이 있음`, `종료됨` 같은 상태를 mutex 아래에서 바꾸고, 대기자는 같은 mutex 아래에서 술어를 재검사해야 lost wakeup과 허위 깨움을 안전하게 처리한다.
+
+| 대표 형태 | 수신 객체·각 입력 | 반환값 | 호출 뒤 상태·계약 |
+|---|---|---|---|
+| `template<class Predicate> void wait(unique_lock<mutex>& lock, Predicate pred)` | 수신 `condition_variable`, 같은 공유 상태를 보호하며 현재 잠금을 소유한 `unique_lock<mutex>` lvalue, 인자 없이 bool 문맥 결과를 내는 predicate 값. callable은 내부에서 호출되며 캡처 대상은 대기 동안 살아야 한다. | 없음(`void`) | `pred()`가 false면 mutex unlock과 대기 등록을 원자적인 대기 단계로 수행한다. 알림·허위 깨움 뒤 mutex를 다시 lock하고 pred를 반복 검사한다. 반환 시 lock은 mutex를 소유하고 pred가 true다. |
+| `void notify_one() noexcept` | 수신 condition_variable만 사용하며 데이터 인자는 없다. | 없음(`void`) | 현재 대기자 하나를 unblock할 수 있다. 공유 상태와 mutex 소유권은 바뀌지 않고, 대기자가 즉시 실행되거나 어떤 대기자가 선택될지 보장하지 않는다. |
+| `void notify_all() noexcept` | 수신 condition_variable만 사용하며 데이터 인자는 없다. | 없음(`void`) | 현재 대기자를 모두 unblock할 수 있다. 모두가 같은 mutex를 동시에 소유하는 것은 아니며, 각 스레드는 잠금을 경쟁한 뒤 술어를 다시 검사한다. |
+
+- `wait(lock, pred)`는 개념적으로 `while (!pred()) wait(lock);`와 같다. `if` 한 번이나 술어 없는 wait만 사용하면 허위 깨움, 다른 소비자의 선점, 알림이 대기보다 먼저 발생하는 실행을 안전하게 다루기 어렵다.
+- `lock`은 `std::unique_lock<std::mutex>`여야 하고 호출 시 mutex를 소유해야 한다. `scoped_lock`/`lock_guard`는 wait가 요구하는 일시 unlock/relock API를 제공하지 않는다.
+- 공유 상태 변경과 술어 평가는 같은 mutex 아래에서 수행한다. notify는 잠금 안팎에서 호출할 수 있으나, 상태를 먼저 갱신한 뒤 호출해야 한다. 알림 자체만으로 payload를 게시하거나 데이터 경쟁을 없애지 않는다.
+- timed wait는 timeout도 정상 결과로 모델링해야 하며 정확한 벽시계 마감·공정성·깨우기 순서를 보장하지 않는다. predicate나 lock 재획득에서 예외가 날 수 있는 구조는 상태 불변식과 예외 정책을 별도로 설계한다.
+- condition_variable을 파괴할 때 대기 중이거나 곧 접근할 스레드가 남아 있으면 안 된다. 소유 계층은 종료 상태를 게시하고 필요한 대기자를 알린 뒤 모든 작업 스레드를 join해야 한다.
+- 호출 작업량은 데이터 크기와 무관한 상수 규모지만 실제 지연은 mutex 경쟁, 스케줄러, 운영체제 구현에 좌우된다. 특정 atomic/커널 명령이나 lock-free 동작은 보장하지 않는다.
+- 오늘 자료 [`../2026-08-30/main.cpp`](../2026-08-30/main.cpp)는 두 술어와 `notify_one/notify_all`로 용량 제한 queue와 close 프로토콜을 만들고, [`../2026-08-30/problem.cpp`](../2026-08-30/problem.cpp)는 one-shot 결과 게시를 연습한다.
+
 ## `std::shared_mutex`, `std::shared_lock`
 
 - 여러 독자의 공유 잠금과 한 작성자의 독점 잠금을 제공한다.
