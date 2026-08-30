@@ -36,6 +36,10 @@
     - rowBox = 3 * ( r/ 3) + i/3 : 3배수 내에 
     - colBox = 3 * ( c/ 3) + i%3 : 3배수 내에
     - board[rowBox][colBox] == value 로 체크 
+- [stringBuilder for C# and using string reserve + two pointer problem](./38.CountAndSay.md). 
+    - two pointer를 활용한 문제 해결
+    - StringBuilder, Operator+ 를 사용하지 않고 Array 고정으로 연산 속도를 올리는 방법 등
+
 
 
 
