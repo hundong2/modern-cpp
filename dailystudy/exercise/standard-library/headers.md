@@ -22,6 +22,7 @@
 | `<deque>` | 양끝 큐 `std::deque`와 앞·뒤 삽입/삭제 API |
 | `<expected>` | C++23 `expected`, `unexpected` |
 | `<filesystem>` | `path`, 디렉터리 반복자와 파일 상태 API |
+| `<format>` | 타입 안전 문자열 형식화 `std::format`, 형식 오류 `std::format_error` |
 | `<functional>` | `function`, C++23 `move_only_function`, 비교 함수 객체, 참조 래퍼 |
 | `<iomanip>` | `setprecision` 등 스트림 형식 조작자 |
 | `<iostream>` | `cin`, `cout`, `cerr` 표준 스트림 |

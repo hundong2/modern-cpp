@@ -51,14 +51,15 @@
 | [2026-08-28](./2026-08-28/README.md) | `osyncstream` 레코드 경계와 최근접 점 분할 정복 | C++20 |
 | [2026-08-29](./2026-08-29/README.md) | semaphore handoff·RAII permit과 접미 배열·Kasai LCP | C++20 |
 | [2026-08-30](./2026-08-30/README.md) | `condition_variable` blocking queue와 Aho–Corasick 다중 검색 | C++20 |
+| [2026-08-31](./2026-08-31/README.md) | `std::format` 표현 계층과 Heavy-Light Decomposition | C++20 |
 
 ## 표준 라이브러리 설명 찾기
 
 - [표준 라이브러리 학습 지도](./standard-library/README.md): 설명 품질 기준과 분야별 대표 문서
-- [날짜별 사용 색인](./standard-library/by-date.md): 현재 47개 날짜, 122개 C++ 파일의 헤더와 `std::` 심볼
-- [심볼 색인](./standard-library/symbol-index.md): 126개 현재 심볼의 역할과 상세 문서 링크
+- [날짜별 사용 색인](./standard-library/by-date.md): 현재 48개 날짜, 125개 C++ 파일의 헤더와 `std::` 심볼
+- [심볼 색인](./standard-library/symbol-index.md): 127개 현재 심볼의 역할과 상세 문서 링크
 - [공통 용어](./standard-library/terms.md): 반복자, 뷰, 술어, 소유권, 무효화, 예외 보장, 원자성
-- [표준 헤더](./standard-library/headers.md): 현재 사용하는 50개 헤더와 대표 선언
+- [표준 헤더](./standard-library/headers.md): 현재 사용하는 51개 헤더와 대표 선언
 
 코드의 인접 주석은 현재 호출의 인자·반환값·상태 변화를 설명한다. 공용 문서는 전제조건, 복잡도, 객체 수명, 참조·반복자 무효화, 오류·예외 계약을 설명한다. 새 심볼은 다음 감사로 누락 여부를 검사한다.
 

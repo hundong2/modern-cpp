@@ -113,6 +113,7 @@
 
 | 심볼 | 짧은 역할 | 상세 문서 |
 |---|---|---|
+| `std::format` | 타입 검사 형식 문자열과 인자로 새 소유 문자열 생성 | [입출력](io-parsing-and-utilities.md) |
 | `std::cin`, `std::cout`, `std::cerr` | 표준 입력·출력·오류 스트림 객체 | [입출력](io-parsing-and-utilities.md) |
 | `std::istream` | 추출 연산이 같은 입력 스트림 참조를 이어 반환하는 기반 타입 | [입출력](io-parsing-and-utilities.md) |
 | `std::ostream` | 출력 연산이 같은 스트림 참조를 이어 반환하는 기반 타입 | [입출력](io-parsing-and-utilities.md) |
