@@ -411,6 +411,32 @@ cd 자주까먹는
   - [`CMakeLists.txt`](./template/CMakeLists.txt): C++23 정적 라이브러리, 실행 파일, 선택적 Boost target
   - [`Makefile`](./template/Makefile): `make build`, `make run`, `make exercise`, `make boost-run` 단축 명령
 
+### [C++ 동시성·메모리·CPU·컴파일러 딥다이브](./딥다이브/README.md)
+
+- mutex, lock/guard, semaphore, atomic, thread가 C++ 추상 기계에서 컴파일러·운영체제·CPU 캐시까지 내려가는 과정을 기초부터 성능 전문가 단계까지 연결합니다.
+- 핵심 표준: C++11·14·17·20·23 전체 진화와 각 버전의 실무 대안
+- 단계별 가이드
+  - [0단계: 12주 학습 로드맵과 정확성·진행성·성능 진단](./딥다이브/00-roadmap.md)
+  - [1단계: 전처리·컴파일·링크에서 CPU·캐시·메모리까지](./딥다이브/01-machine-compiler-memory.md)
+  - [2단계: C++ 메모리 모델, happens-before와 atomic](./딥다이브/02-memory-model-atomics.md)
+  - [3단계: mutex, lock_guard, unique_lock, scoped_lock과 RAII](./딥다이브/03-locks-and-raii.md)
+  - [4단계: condition variable, semaphore, latch, barrier와 대기 전략](./딥다이브/04-waiting-and-semaphores.md)
+  - [5단계: thread/jthread 수명, join, 취소, 예외와 작업 큐](./딥다이브/05-threads-and-lifecycle.md)
+  - [6단계: `extern "C"`, ABI, opaque handle과 C#/Rust FFI](./딥다이브/06-extern-c-abi-ffi.md)
+  - [7단계: C++11·14·17·20·23 버전별 진화와 migration](./딥다이브/07-version-evolution.md)
+  - [8단계: 경합·거짓 공유·샤딩·NUMA 성능 실습](./딥다이브/08-performance-labs.md)
+  - [9단계: 어셈블리·Sanitizer·프로파일러 관찰법](./딥다이브/09-tooling-and-assembly.md)
+  - [10단계: 표준 API의 매개변수·반환값·상태·비용 사전](./딥다이브/10-api-reference.md)
+- 언어 비교
+  - [C#·Rust·Python 동시성 발전, 메모리 모델과 FFI 비교](./딥다이브/compare.md)
+- 라인 단위 주석 예제 및 실습 코드
+  - [`example.cpp`](./딥다이브/example.cpp): C++17 thread와 네 종류의 lock/guard 통합 예제
+  - [`cxx20_example.cpp`](./딥다이브/cxx20_example.cpp): C++20 semaphore, jthread, stop token, atomic wait/notify 예제
+  - [`ffi_api.h`](./딥다이브/ffi_api.h), [`ffi_api.cpp`](./딥다이브/ffi_api.cpp), [`c_client.c`](./딥다이브/c_client.c): 실제 C compiler로 검증하는 C ABI 예제
+  - [`exercise.cpp`](./딥다이브/exercise.cpp): guard 단순화, 다중 lock, acquire/release 증명 실습
+  - [`solution.cpp`](./딥다이브/solution.cpp): 실습 정답과 라인 단위 해설
+  - [`CMakeLists.txt`](./딥다이브/CMakeLists.txt): C++17/C++20/C ABI target과 5개 실행 test
+
 ### [공통 용어와 축약어 사전](./GLOSSARY.md)
 
 - RAII, ABI, CRTP, CAS, SSO, IOCP, GIL, FFI 등 문서에 등장하는 축약어를 풀이합니다.
