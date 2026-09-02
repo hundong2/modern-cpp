@@ -22,6 +22,23 @@
 - `make_shared<T>(args...)`는 보통 객체와 제어 블록을 한 할당으로 만들며 `shared_ptr<T>`를 반환한다.
 - 별도 자원 해제 정책이나 매우 큰 객체의 메모리 반환 시점 때문에 직접 생성이 필요한 경우도 있지만 기본 선택은 `make_shared`다.
 
+### `shared_ptr` aliasing constructor와 부분 객체 수명
+
+- 항목 종류와 헤더: `std::shared_ptr<T>`의 생성자 템플릿이며 `<memory>`에 선언된다. 대표 형태는 `template<class Y> shared_ptr(const shared_ptr<Y>& owner, element_type* stored) noexcept`다.
+- 수신 객체와 인자: 아직 만들어지지 않은 새 핸들이 결과 객체다. 첫 인자 `owner`는 기존 shared owner를 `const` lvalue reference로 빌리고, 둘째 인자 `stored`는 결과 핸들이 `get()`, `operator*`, `operator->`로 관찰할 포인터 값을 복사한다. 둘째 포인터의 객체를 별도로 소유하거나 삭제하지 않는다.
+- 반환과 사후 상태: 생성자는 반환값이 없다. 새 핸들의 **stored pointer**는 `stored`지만 **owned object/control block**은 `owner`와 같다. `owner`가 비어 있지 않다면 strong count가 하나 늘고, 새 핸들이 남아 있는 동안 outer owned object 전체의 수명이 유지된다. 두 상태는 독립적이라 empty owner와 non-null `stored`를 주면 `get()!=nullptr`인데 `use_count()==0`일 수 있고, 반대로 유효 owner와 null `stored`를 주면 `get()==nullptr`인데 strong count는 양수일 수 있다.
+- 전제조건과 수명: 생성 자체는 서로 관련 없는 포인터도 받을 수 있지만, 나중에 역참조하려면 `stored`가 유효한 객체를 가리켜야 한다. 가장 안전한 전형은 `stored`가 owned object의 멤버·배열 원소처럼 그 수명 안에 포함되는 경우다. 지역 변수 주소나 owner보다 먼저 무효가 되는 컨테이너 원소 주소를 넣으면 control block이 있어도 댕글링을 막지 못한다.
+- 복잡도·할당·예외: 제어 블록 참조 횟수와 작은 포인터 상태만 공유하므로 상수 시간이고 별도 동적 할당이 없으며 `noexcept`다. 복사된 owner와 새 alias는 서로 다른 shared pointer 객체이므로 각 핸들의 수명은 독립적이다.
+- 무효화와 오류: alias를 만들었다고 outer object 내부 컨테이너의 재할당 규칙이 바뀌지 않는다. alias가 vector 원소를 가리킨다면 outer owner가 살아 있어도 vector 재할당 뒤 stored pointer는 무효다. null stored pointer에 `operator*`를 적용하면 전제조건 위반이다. `operator->()` 자체는 null stored pointer도 그대로 반환하지만, 그 결과에 내장 `->member` 접근을 이어 가면 null을 역참조해 미정의 동작이다.
+- 스레드 보장: 같은 control block을 공유하는 **서로 다른** shared pointer 객체의 복사·파괴에 필요한 참조 횟수 조정은 안전하다. 그러나 같은 shared pointer 객체에 대한 동시 비const 조작이나 가리키는 `T`의 동시 읽기/쓰기는 별도 동기화가 필요하다. `use_count()`는 관찰 직후 다른 스레드가 바꿀 수 있으므로 동기화 판단 도구가 아니다.
+- 현재 코드에서의 역할: 2026-09-03의 `title_handle()`과 `endpoint_handle()`은 `shared_ptr<const Outer>`의 제어 블록을 공유하면서 `const string*` 부분 객체만 API에 노출한다. 별칭 핸들이 살아 있으면 outer와 string이 함께 살아 있고, `const`로 변경 경로도 좁힌다.
+
+관련 관찰자 계약은 다음과 같다.
+
+- `operator->() const noexcept`는 데이터 인자 없이 stored pointer를 반환하며 그 호출 자체에는 non-null 전제조건이 없다. 반환 포인터로 멤버를 접근하려면 non-null이어야 한다. `operator*() const noexcept`는 `element_type&`를 반환하므로 stored pointer가 유효한 객체를 가리켜야 한다. 둘 다 상수 시간·무할당이고 참조 횟수를 바꾸지 않는다.
+- `use_count() const noexcept`는 같은 control block의 현재 strong owner 수를 `long`으로 반환한다. 상수 시간이고 상태를 바꾸지 않는다. 빈 핸들은 0이며, 멀티스레드에서는 반환 직후 값이 달라질 수 있다.
+- 이동 대입 `shared_ptr& operator=(shared_ptr&& other) noexcept`는 현재 수신자가 가진 몫을 해제하고 `other`의 stored pointer와 control-block 몫을 넘겨받는다. `other`는 빈 유효 상태가 되고 `*this`를 반환한다. 상수 시간이고 별도 할당은 없지만 기존 수신자가 마지막 owner였다면 관리 객체 소멸 비용이 이어질 수 있다.
+
 ## `std::optional<T>`와 `std::nullopt` — `<optional>`
 
 - 값 `T`가 있거나 없는 두 상태를 표현하며 동적 할당은 필수가 아니다.
@@ -138,3 +155,4 @@ int main() {
 2. `shared_ptr`의 참조 횟수가 스레드 안전하다는 말과 `T`의 멤버가 데이터 경쟁에서 안전하다는 말을 구분한다.
 3. `optional::value`, `operator*`, `value_or`의 실패·복사 계약을 비교한다.
 4. `get_if`가 반환한 포인터가 variant에 새 값을 대입한 뒤 유효한지 설명한다.
+5. aliasing `shared_ptr`의 stored pointer와 owned object가 다를 수 있는 예를 그리고, outer owner 소멸 뒤에도 부분 객체가 살아 있는 조건을 설명한다.

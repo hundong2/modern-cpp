@@ -53,11 +53,12 @@
 | [2026-08-30](./2026-08-30/README.md) | `condition_variable` blocking queue와 Aho–Corasick 다중 검색 | C++20 |
 | [2026-08-31](./2026-08-31/README.md) | `std::format` 표현 계층과 Heavy-Light Decomposition | C++20 |
 | [2026-09-02](./2026-09-02/README.md) | RAII 보상 트랜잭션 가드와 단절점 DFS low-link | C++20 |
+| [2026-09-03](./2026-09-03/README.md) | `shared_ptr` 별칭 수명 projection과 2-SAT implication graph | C++20 |
 
 ## 표준 라이브러리 설명 찾기
 
 - [표준 라이브러리 학습 지도](./standard-library/README.md): 설명 품질 기준과 분야별 대표 문서
-- [날짜별 사용 색인](./standard-library/by-date.md): 현재 49개 날짜, 128개 C++ 파일의 헤더와 `std::` 심볼
+- [날짜별 사용 색인](./standard-library/by-date.md): 현재 50개 날짜, 131개 C++ 파일의 헤더와 `std::` 심볼
 - [심볼 색인](./standard-library/symbol-index.md): 127개 현재 심볼의 역할과 상세 문서 링크
 - [공통 용어](./standard-library/terms.md): 반복자, 뷰, 술어, 소유권, 무효화, 예외 보장, 원자성
 - [표준 헤더](./standard-library/headers.md): 현재 사용하는 51개 헤더와 대표 선언
