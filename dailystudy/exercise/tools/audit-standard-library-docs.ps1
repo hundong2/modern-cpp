@@ -188,6 +188,28 @@ if ($Scope -eq 'all') {
 # by-date.md의 각 선택 날짜 행이 해당 날짜 C++에서 추출한 헤더·심볼 집합과 정확히 같아야 한다.
 $byDateLines = @(Get-Content -LiteralPath (Join-Path $docsRoot 'by-date.md') -Encoding UTF8)
 $byDateIssues = @()
+if ($Scope -eq 'all') {
+    # 실제 날짜 폴더가 없는 오래된 행과 날짜 키 중복도 전체 감사에서 거부한다.
+    $actualDateNames = @($dateDirectories | ForEach-Object { $_.Name })
+    $registeredDateNames = @(
+        foreach ($line in $byDateLines) {
+            $dateMatch = [regex]::Match($line, '^\| \*\*(\d{4}-\d{2}-\d{2})\*\*<br>')
+            if ($dateMatch.Success) {
+                $dateMatch.Groups[1].Value
+            }
+        }
+    )
+    foreach ($group in $registeredDateNames | Group-Object) {
+        if ($group.Count -ne 1) {
+            $byDateIssues += "$($group.Name): duplicate by-date rows ($($group.Count))"
+        }
+    }
+    foreach ($registeredDate in $registeredDateNames | Sort-Object -Unique) {
+        if ($registeredDate -notin $actualDateNames) {
+            $byDateIssues += "${registeredDate}: stale by-date row without a dated directory"
+        }
+    }
+}
 foreach ($directory in $dateDirectories) {
     $datePattern = '^\| \*\*' + [regex]::Escape($directory.Name) + '\*\*<br>'
     $rows = @($byDateLines | Where-Object { $_ -match $datePattern })
@@ -207,23 +229,34 @@ foreach ($directory in $dateDirectories) {
             ForEach-Object { $_.Value } |
             Sort-Object -Unique
     )
-    $rowDateSymbols = @(
+    $rowDateSymbolOccurrences = @(
         [regex]::Matches(
             $rows[0],
             'std::[A-Za-z_][A-Za-z0-9_]*(?:::[A-Za-z_][A-Za-z0-9_]*)*') |
-            ForEach-Object { $_.Value } |
-            Sort-Object -Unique
+            ForEach-Object { $_.Value }
     )
+    $rowDateSymbols = @($rowDateSymbolOccurrences | Sort-Object -Unique)
     $sourceDateHeaders = @(
         [regex]::Matches($dateSource, '#include\s*<([^>]+)>') |
             ForEach-Object { $_.Groups[1].Value } |
             Sort-Object -Unique
     )
-    $rowDateHeaders = @(
+    $rowDateHeaderOccurrences = @(
         [regex]::Matches($rows[0], '``<([^>]+)>``') |
-            ForEach-Object { $_.Groups[1].Value } |
-            Sort-Object -Unique
+            ForEach-Object { $_.Groups[1].Value }
     )
+    $rowDateHeaders = @($rowDateHeaderOccurrences | Sort-Object -Unique)
+
+    foreach ($group in $rowDateSymbolOccurrences | Group-Object) {
+        if ($group.Count -ne 1) {
+            $byDateIssues += "$($directory.Name): duplicate symbol $($group.Name) ($($group.Count))"
+        }
+    }
+    foreach ($group in $rowDateHeaderOccurrences | Group-Object) {
+        if ($group.Count -ne 1) {
+            $byDateIssues += "$($directory.Name): duplicate header <$($group.Name)> ($($group.Count))"
+        }
+    }
 
     foreach ($difference in Compare-Object $sourceDateSymbols $rowDateSymbols) {
         $side = if ($difference.SideIndicator -eq '<=') { 'missing' } else { 'extra' }
@@ -256,6 +289,7 @@ $contractPatterns = @(
     [pscustomobject]@{ Name = 'tie'; Pattern = '(?m)^(?!\s*//)\s*[^\r\n]*std::cin\.tie\s*\('; Readme = 'std::cin.tie(' },
     [pscustomobject]@{ Name = 'operator>>'; Pattern = '(?m)^(?!\s*//)\s*[^\r\n]*std::cin\s*>>'; Readme = 'std::cin >>' },
     [pscustomobject]@{ Name = 'operator<<'; Pattern = '(?m)^(?!\s*//)\s*[^\r\n]*std::cout\s*<<'; Readme = 'std::cout <<' },
+    [pscustomobject]@{ Name = 'operator<<(ostream&, char)'; Pattern = "(?m)^(?!\s*//)\s*[^\r\n]*std::cout[^\r\n]*<<\s*'(?:\\.|[^'])'"; Readme = 'operator<<(std::ostream&, char)' },
     [pscustomobject]@{ Name = 'std::min'; Pattern = '(?m)^(?!\s*//)\s*[^\r\n]*std::min\s*\('; Readme = 'std::min(' },
     [pscustomobject]@{ Name = 'vector default constructor'; Pattern = '(?m)^\s*std::vector<.*>\s+\w+\s*;'; Readme = '기본 생성자' },
     [pscustomobject]@{ Name = 'vector count constructor'; Pattern = '(?m)^\s*std::vector<.*>\s+\w+\s*\([^,;\r\n]+\);'; Readme = 'count 생성자' },
