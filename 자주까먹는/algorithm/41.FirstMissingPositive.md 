@@ -1,0 +1,110 @@
+# 41. First Missing Positive
+
+Given an unsorted integer array nums. Return the smallest positive integer that is not present in nums.
+
+You must implement an algorithm that runs in O(n) time and uses O(1) auxiliary space.
+
+ 
+
+Example 1:
+
+Input: nums = [1,2,0]
+Output: 3
+Explanation: The numbers in the range [1,2] are all in the array.
+Example 2:
+
+Input: nums = [3,4,-1,1]
+Output: 2
+Explanation: 1 is in the array but 2 is missing.
+Example 3:
+
+Input: nums = [7,8,9,11,12]
+Output: 1
+Explanation: The smallest positive integer 1 is missing.
+ 
+
+Constraints:
+
+1 <= nums.length <= 105
+-231 <= nums[i] <= 231 - 1
+
+## My Solve
+
+### csharp
+
+```csharp
+public class Solution {
+    public int FirstMissingPositive(int[] nums) {
+        int maxValue = nums.Length;
+        int resultValue = 1;
+        for(int i = 0; i < maxValue; i++){
+            while(nums[i] > 0 && nums[i] <= maxValue && nums[nums[i] - 1] != nums[i]) {
+                int val = nums[i] - 1;
+                (nums[val], nums[i]) = (nums[i], nums[val]);
+            }
+        }
+        for(int i = 0; i < nums.Count(); i++){
+            if (nums[i] != i + 1) {
+                return i + 1;
+            }
+        }
+        return maxValue + 1;
+
+    }
+}
+```
+
+### cpp
+
+```cpp
+class Solution {
+public:
+    int firstMissingPositive(vector<int>& nums) {
+        int n = nums.size();
+        for(int i = 0; i < n; i++){
+            while(nums[i] > 0 && nums[i] < n && nums[nums[i] - 1] != nums[i]){
+                auto idx = nums[i] - 1;
+                std::swap(nums[idx], nums[i]);
+                std::cout << "i : "<< i << " idx: " << idx << std::endl;
+                std::cout << "swap: " << nums[idx] << " and " << nums[i] << std::endl;
+                std::cout << std::endl;
+            }
+        }
+        for(int i = 0; i < n; i++) std::cout << nums[i] << std::endl;
+        for(int i = 0; i < n; i++){
+            if( nums[i] != i + 1){
+                return i + 1;
+            }
+        }
+        return n + 1;
+    }
+};
+```
+
+#### Result 
+
+```
+i : 1 idx: 0
+swap: 1 and 1000
+
+i : 2 idx: 4
+swap: 5 and 3
+
+i : 3 idx: 1
+swap: 2 and 1000
+
+i : 6 idx: 3
+swap: 4 and 1000
+
+1
+2
+3
+4
+5
+100
+1000
+
+6
+```
+
+- Expected 6, Result Value : 6

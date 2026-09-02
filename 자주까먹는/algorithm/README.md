@@ -43,6 +43,12 @@
     - dotnet Add, RemoveAt (C#). 
     - 중복 허용 `BFS` 알고리즘
 - [중복을 허용하지 않는 BFS 알고리즘 문제 ](./40.CombinationSum2.md). 
+    - `if (i > idx && candidates[i] == candidates[i - 1]) continue;`. 이 핵심. 시작 부분에서 중복 된 값이 DFS 로 빠지지 않도록 막는 역할을 함. 
+    - 예를 들어, `1, 1, 2, ... `일때 1 이 들어가고 다음 1이 들어가는 것을 막아줌 즉, 1, 2 또는 1, 2 가 두번 Depth가 빠지는 것을 막아줌. 
+- [Cycle sort algorithm - O(n) 시간, 공간 복잡도 O(1)사용 예](./41.FirstMissingPositive.md%20). 
+    - 1, 2, 3, 4, 5, ..., n 이상 적인 값일 경우 0번 에는 1, 1번에는 2 값이 들어가야함. 따라서 i 를 이동하면서 해당 포인트의 값을 배열의 array위치로 써서 swap해준다. i 포인트에서 swap이 모두 끝날때 까지 while loop를 돌리면서 진행. 
+    - sorting을 마친 뒤 이상적인 값 위치에 값이 있는지 확인 만약 i 위치에서 i+1이 아니라면 i+1이 결핍이라는 뜻. 
+    - 만약 전체 수행 했지만 결핍이 없다면 n + 1이 결핍값 
 
 
 
