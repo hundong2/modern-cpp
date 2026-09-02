@@ -39,6 +39,8 @@
 - [stringBuilder for C# and using string reserve + two pointer problem](./38.CountAndSay.md). 
     - two pointer를 활용한 문제 해결
     - StringBuilder, Operator+ 를 사용하지 않고 Array 고정으로 연산 속도를 올리는 방법 등
+- [Vector push_back, pop_back](./39.CombinationSum.md). 
+    - dotnet Add, RemoveAt (C#). 
 
 
 
