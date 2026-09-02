@@ -41,6 +41,9 @@
     - StringBuilder, Operator+ 를 사용하지 않고 Array 고정으로 연산 속도를 올리는 방법 등
 - [Vector push_back, pop_back](./39.CombinationSum.md). 
     - dotnet Add, RemoveAt (C#). 
+    - 중복 허용 `BFS` 알고리즘
+- [중복을 허용하지 않는 BFS 알고리즘 문제 ](./40.CombinationSum2.md). 
+
 
 
 
