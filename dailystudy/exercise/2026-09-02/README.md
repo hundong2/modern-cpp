@@ -5,7 +5,7 @@
 ## 오늘의 목표
 
 - 소멸자를 정상·조기 반환·예외가 공유하는 정리 경계로 사용하고, 보상 콜백의 `noexcept` 계약을 설명한다.
-- `struct` 기본 `public`, `class` 기본 `private`, 생성자의 무반환형, `explicit`, 멤버 초기화 목록, 삭제된 복사 연산을 실제 코드에서 구분한다.
+- `struct` 기본 `public`, `class` 기본 `private`, 생성자의 무반환형, `explicit`, 멤버 초기화 목록, 삭제된 복사·이동 연산을 실제 코드에서 구분한다.
 - lvalue·prvalue·xvalue, 참조 바인딩, `std::move`, 람다 캡처 소유권, 객체 수명, 복사 생략을 오늘 식과 연결한다.
 - 단절점의 `discovered`/`low` 불변식, 루트와 비루트 판정 차이, 반복 DFS 종료 시점을 증명한다.
 - CSES 한계에서도 호출 스택이 넘치지 않는 `O(N+M)` 반복 구현과 `O(N+M)` 공간을 검증한다.
@@ -20,13 +20,47 @@
 - [`run_icpc_test.cmake`](run_icpc_test.cmake): ICPC 표준 입력과 정확한 출력을 비교하는 도우미
 - [`../algorithm/articulation-points-low-link.md`](../algorithm/articulation-points-low-link.md): 단절점 low-link 대표 공용 문서
 
+## `main.cpp` 코드 구조도
+
+[`main.cpp`](main.cpp)는 상태를 소유하는 객체, 그 상태를 빌리는 서비스, 실패 시 복구 책임을 소유하는 guard를 분리한다. 실선 화살표는 호출·상태 변경, 점선 화살표는 비소유 참조, 굵은 성공/실패 갈래는 guard 소멸 시 행동을 나타낸다.
+
+```mermaid
+flowchart TD
+    M["main()<br/>객체 수명과 실행 시나리오를 소유"]
+    S["StockRecord stock{10, 0}<br/>available·reserved 값을 소유"]
+    R["ReservationService service{stock}<br/>예약 유스케이스 조정"]
+    V{"reserve(units, persistence_succeeds)<br/>수량이 유효한가?"}
+    U["재고 상태 변경<br/>available -= units<br/>reserved += units"]
+    G["ScopeRollback guard<br/>보상 람다를 값으로 소유"]
+    P{"외부 저장 성공?"}
+    C["commit()<br/>복구 비활성화"]
+    K["guard 소멸<br/>callback을 실행하지 않음"]
+    B["조기 return 전에 guard 소멸<br/>callback으로 원래 재고 복원"]
+    O["operator&lt;&lt;로 결과 관찰<br/>성공: 7 3 1 / 실패 뒤: 7 3 0"]
+
+    M --> S
+    M --> R
+    R -. "StockRecord& stock_로 빌림<br/>소유권 이동 없음" .-> S
+    R --> V
+    V -- "아니오" --> O
+    V -- "예" --> U
+    U --> G
+    G --> P
+    P ==>|예| C
+    C --> K --> O
+    P ==>|아니오| B
+    B ==> O
+```
+
+실행 순서의 핵심은 상태 변경 직후 guard를 만드는 것이다. 따라서 `reserve()`가 이후 어느 지점에서 끝나도 이미 적용한 변경에는 대응하는 보상 책임이 존재한다. `main()`에서는 `stock`이 `service`보다 먼저 만들어지고 나중에 파괴되므로, `ReservationService::stock_`와 guard 람다의 `this`가 사용되는 동안 참조 대상이 살아 있다는 수명 조건도 만족한다.
+
 ## Modern C++와 실무 아키텍처
 
-`ScopeRollback<Rollback>`은 보상 작업을 값으로 소유하는 이동 전용 책임 객체다. 예약 서비스는 먼저 메모리 상태를 바꾸고 즉시 guard를 만든다. DB·메시지 발행 같은 후속 단계가 실패해 `return`하거나 예외가 전파되면 자동 객체가 역순으로 소멸하며 원상 복구한다. 모두 성공했을 때만 `commit()`으로 보상을 비활성화한다. 이 패턴은 파일 임시 교체, DB unit of work, mutex가 아닌 논리적 자원 해제, 여러 시스템 사이의 보상 트랜잭션에 자주 쓰인다. 단, 분산 시스템에서 원격 부작용을 완벽히 원복할 수 있다는 뜻은 아니므로 보상 작업의 멱등성·실패 기록·재시도 정책이 별도로 필요하다.
+`ScopeRollback<Rollback>`은 보상 작업을 값으로 소유하되 복사와 이동을 모두 금지한 **스코프 고정 책임 객체**다. 예약 서비스는 먼저 메모리 상태를 바꾸고 즉시 guard를 만든다. DB·메시지 발행 같은 후속 단계가 실패해 `return`하거나 예외가 전파되면 자동 객체가 역순으로 소멸하며 원상 복구한다. 모두 성공했을 때만 `commit()`으로 보상을 비활성화한다. 이 패턴은 파일 임시 교체, DB unit of work, mutex가 아닌 논리적 자원 해제, 여러 시스템 사이의 보상 트랜잭션에 자주 쓰인다. 단, 분산 시스템에서 원격 부작용을 완벽히 원복할 수 있다는 뜻은 아니므로 보상 작업의 멱등성·실패 기록·재시도 정책이 별도로 필요하다.
 
 `ScopeRollback rollback{lambda}`에서 람다 식은 고유 closure 타입의 prvalue다. 추론 가이드가 템플릿 인자를 정하고 값 매개변수를 직접 초기화할 수 있다. 생성자 안에서 이름이 붙은 `rollback`은 lvalue이며 `std::move(rollback)`은 xvalue 식일 뿐이다. 실제 상태 이동은 `Rollback` 이동 생성자가 수행한다. guard가 callback을 값으로 소유하므로 지역 `units`는 값 캡처하지만, `this`와 `Account&` 캡처는 비소유라 guard가 실행될 때 대상 객체가 살아 있어야 한다. 오늘은 guard가 함수의 대상 참조보다 먼저 파괴되어 이 수명 계약을 만족한다.
 
-`explicit` 생성자는 `ReservationService service = stock;` 같은 암시 변환을 막고 `ReservationService service{stock};` 직접 초기화를 허용한다. 생성자는 반환형이 없고 멤버 초기화 목록이 참조 멤버를 최초 바인딩한다. `struct StockRecord`의 필드는 기본 public, `class ReservationService`와 guard의 필드는 기본 private다. 복사 생성/대입을 삭제한 이유는 같은 보상 책임이 두 객체에 복제되어 두 번 실행되는 것을 막기 위해서다.
+`explicit` 생성자는 `ReservationService service = stock;` 같은 암시 변환을 막고 `ReservationService service{stock};` 직접 초기화를 허용한다. 생성자는 반환형이 없고 멤버 초기화 목록이 참조 멤버를 최초 바인딩한다. `struct StockRecord`의 필드는 기본 public, `class ReservationService`와 guard의 필드는 기본 private다. 복사 생성/대입은 보상 책임의 복제를 막고, 이동 생성/대입은 활성 책임이 원래 스코프 밖으로 빠져나가거나 두 객체 사이에서 모호해지는 일을 막도록 삭제했다. 사용자 선언 소멸자는 암시적 이동 생성을 억제하지만, 코드에서는 이동 삭제를 명시해 이 규칙과 설계 의도를 동시에 드러낸다.
 
 기계 실행 관점에서 상태 변경은 멤버 load·산술·store, 조건은 비교와 분기, guard 소멸은 callback 호출로 나타날 수 있다. 템플릿과 람다는 인라인되어 호출 자체가 사라질 수도 있다. 구체 명령은 CPU·ABI·컴파일러·표준 라이브러리·최적화에 따라 달라지므로 특정 어셈블리 명령으로 단정하지 않는다.
 
@@ -44,16 +78,24 @@
 
 | 실제 타입·호출 | 선언 헤더 | 항목 종류 | 현재 코드에서의 역할·호출 계약 요약 | 대표 문서 |
 |---|---|---|---|---|
-| `std::move(rollback)` | `<utility>` | 함수 템플릿 | 이름 있는 callback 매개변수 lvalue를 xvalue로 바꾼 `Rollback&&`를 반환한다. 반환 참조는 멤버 생성에 즉시 쓰며 실제 이동·예외는 closure 타입 생성자에 달린다. | [입출력·유틸리티](../standard-library/io-parsing-and-utilities.md) |
-| `std::vector(count, value)` | `<vector>` | 클래스 템플릿·생성자 | 그래프와 DFS 배열이 원소를 소유한다. count개 초기화에 선형 시간·공간, 할당 실패 가능성이 있다. | [컨테이너·뷰](../standard-library/containers-and-views.md) |
-| `vector::reserve(count)` | `<vector>` | 멤버 함수 | stack size는 유지하고 capacity를 확보한다. 재할당 시 기존 관찰자는 무효이며 반환은 void다. | [컨테이너·뷰](../standard-library/containers-and-views.md) |
-| `vector::push_back(value)` | `<vector>` | 멤버 함수 | 인접 정점/DFS 프레임 값을 복사해 size를 1 늘린다. 분할 상환 O(1), 재할당 시 포인터·참조·반복자가 무효다. | [컨테이너·뷰](../standard-library/containers-and-views.md) |
-| `vector::size()` | `<vector>` | 멤버 함수 | 수신 vector를 유지하며 부호 없는 원소 수를 O(1)에 반환해 인덱스 범위를 증명한다. | [컨테이너·뷰](../standard-library/containers-and-views.md) |
-| `vector::empty/back/pop_back` | `<vector>` | 멤버 함수 | 빈 상태 검사 후 마지막 프레임 값을 복사하고 제거한다. `back/pop_back`은 빈 수신 객체에서 UB이며 모두 O(1)이다. | [컨테이너·뷰](../standard-library/containers-and-views.md) |
-| `std::min(a, b)` | `<algorithm>` | 함수 템플릿 | 두 int lvalue를 const 참조로 읽고 작은 값의 참조를 반환한다. 즉시 복사 저장하며 입력은 유지되고 O(1)이다. | [알고리즘·ranges](../standard-library/algorithms-and-ranges.md) |
-| `std::ios::sync_with_stdio(false)` | `<iostream>` | 정적 멤버 함수 | C stdio 동기화를 끄고 이전 bool 설정을 반환하지만 무시한다. 이후 C/C++ 입출력을 섞지 않는다. | [입출력·유틸리티](../standard-library/io-parsing-and-utilities.md) |
-| `std::cin.tie(nullptr)` | `<iostream>` | 멤버 함수 | 입력 전 자동 flush 연결을 해제하고 이전 `ostream*`를 반환하지만 무시한다. 스트림 소유권은 유지된다. | [입출력·유틸리티](../standard-library/io-parsing-and-utilities.md) |
-| 스트림 `operator>>`, `operator<<` | `<iostream>` | 연산자 함수 | 대상 lvalue를 갱신하거나 값을 출력하고 같은 스트림 참조를 반환한다. 위치·상태가 바뀌며 실패는 기본적으로 상태 비트에 남는다. | [입출력·유틸리티](../standard-library/io-parsing-and-utilities.md) |
+| `std::move(rollback)` | `<utility>` | 함수 템플릿 | 수신 객체는 없고 lvalue 때문에 `T=Rollback&`로 추론된다. 같은 객체를 가리키는 `Rollback&&`를 O(1)·무할당·`noexcept`로 반환하며 실제 이동은 뒤의 멤버 생성자가 한다. | [입출력·유틸리티](../standard-library/io-parsing-and-utilities.md) |
+| `std::size_t` | `<cstddef>` | 부호 없는 타입 별칭 | 도시 수를 vector의 `size_type`·인덱스로 명시 변환한다. 음수 변환을 피하고 항상 `[0, size())` 범위를 별도로 증명한다. | [비트·바이트](../standard-library/bit-and-byte-utilities.md) |
+| `std::vector<int>()` | `<vector>` | 클래스 템플릿·기본 생성자 | 인자·반환값 없이 size 0인 `stack`을 O(1)에 만든다. 원소 수명은 아직 시작하지 않으며 물리적 capacity·할당 여부는 단정하지 않는다. | [컨테이너·뷰](../standard-library/containers-and-views.md) |
+| `std::vector<std::vector<int>>(count)` | `<vector>` | 클래스 템플릿·count 생성자 | `size_t` prvalue count 하나로 빈 인접 목록 count개를 값 초기화한다. 성공 후 graph가 모두 소유하며 선형 초기화·할당과 `length_error`/`bad_alloc` 가능성이 있다. | [컨테이너·뷰](../standard-library/containers-and-views.md) |
+| `std::vector<int>(count, value)` | `<vector>` | 클래스 템플릿·fill 생성자 | count와 `const int&`에 바인딩되는 0/-1 두 인자로 상태 배열을 만든다. 반환값 없이 count개 복사본을 소유하며 시간·공간은 O(count)다. | [컨테이너·뷰](../standard-library/containers-and-views.md) |
+| `vector::operator[](index)` | `<vector>` | 멤버 연산자 | 비const vector lvalue와 `size_t` prvalue index로 `T&`를 O(1)에 반환한다. 상태는 유지되며 범위 검사가 없어 `index>=size()`는 UB이고 재할당·파괴 시 참조가 무효다. | [컨테이너·뷰](../standard-library/containers-and-views.md) |
+| `vector::reserve(count)` | `<vector>` | 멤버 함수 | size 0인 stack과 `size_t` count를 받아 capacity만 확보하고 void를 반환한다. 현재 size에 선형이며 실패 시 이 int vector는 유지된다. | [컨테이너·뷰](../standard-library/containers-and-views.md) |
+| `vector::push_back(value)` | `<vector>` | 멤버 함수 | int lvalue를 `const int&`로 복사해 size를 1 늘리고 void를 반환한다. 분할 상환 O(1), 재할당 시 그 vector의 포인터·참조·반복자가 무효다. | [컨테이너·뷰](../standard-library/containers-and-views.md) |
+| `vector::size()` | `<vector>` | const 멤버 함수 | 인자 없이 수신 vector를 유지하며 `size_type`을 O(1)에 반환하고, 반환값을 바로 다음 `operator[]`의 범위 증명에 쓴다. | [컨테이너·뷰](../standard-library/containers-and-views.md) |
+| `vector::empty()` | `<vector>` | const 멤버 함수 | 인자 없이 stack을 유지하며 size가 0인지 bool로 O(1)에 반환해 `back/pop_back` 전제조건을 지킨다. | [컨테이너·뷰](../standard-library/containers-and-views.md) |
+| `vector::back()` | `<vector>` | 멤버 함수 | 비어 있지 않은 stack의 마지막 `int&`를 O(1)에 반환한다. 값을 즉시 복사하며 빈 수신 객체 호출은 UB다. | [컨테이너·뷰](../standard-library/containers-and-views.md) |
+| `vector::pop_back()` | `<vector>` | 멤버 함수 | 인자·반환값 없이 마지막 int를 파괴해 size를 1 줄이고 capacity는 유지한다. 제거 원소 관찰자와 이전 past-the-end 반복자가 무효이며 빈 호출은 UB다. | [컨테이너·뷰](../standard-library/containers-and-views.md) |
+| `std::min(a, b)` | `<algorithm>` | 함수 템플릿 | 수신 객체 없이 두 int lvalue를 const 참조로 읽고 작은 값의 `const int&`를 반환한다. 즉시 복사 저장하며 입력은 유지되고 O(1)이다. | [알고리즘·ranges](../standard-library/algorithms-and-ranges.md) |
+| `std::ios::sync_with_stdio(false)` | `<ios>` | 정적 멤버 함수 | 인스턴스 수신자 없이 bool false로 C stdio 동기화를 끄고 이전 bool 설정을 반환하지만 무시한다. 이후 C/C++ 입출력을 섞지 않으며 표준의 별도 복잡도 상한은 없다. | [입출력·유틸리티](../standard-library/io-parsing-and-utilities.md) |
+| `std::cin.tie(nullptr)` | `<iostream>` (`cin` 객체), `<ios>` (`tie` 멤버) | 멤버 함수 | `std::istream` 수신자와 null `std::ostream*` 인자로 자동 flush 연결을 해제하고 이전 포인터를 반환하지만 무시한다. 스트림 소유권은 유지되며 별도 복잡도 상한은 없다. | [입출력·유틸리티](../standard-library/io-parsing-and-utilities.md) |
+| `std::cin >> int_lvalue` | `<iostream>` (`cin` 객체), `<istream>` (멤버 연산자) | `std::istream` 객체·멤버 연산자 | int lvalue 참조 인자를 갱신하고 같은 `std::istream&`를 반환해 연쇄한다. 입력 위치·상태가 바뀌며 실패는 상태 비트로 남는다. 표준의 별도 복잡도 상한은 없고 실제 비용은 소비 문자·locale·버퍼 구현에 달린다. | [입출력·유틸리티](../standard-library/io-parsing-and-utilities.md) |
+| `std::cout << int_or_bool` | `<iostream>` (`cout` 객체), `<ostream>` (멤버 연산자) | `std::ostream` 객체·멤버 연산자 | 수신 `cout`과 값 매개변수 하나를 사용해 문자를 기록하고 같은 `std::ostream&`를 다음 호출에 넘긴다. 값·소유권은 유지되고 출력 위치·상태만 바뀌며, 표준의 별도 복잡도 상한은 없다. | [입출력·유틸리티](../standard-library/io-parsing-and-utilities.md) |
+| `operator<<(std::ostream&, char)` | `<ostream>` | 비멤버 연산자 함수 | 직접 쓴 `std::cout` lvalue 또는 앞 호출이 반환한 `std::ostream&`와 char prvalue를 받아 같은 참조를 반환한다. 마지막 반환은 버리고, 실제 비용은 locale·버퍼·장치 구현에 달리며 실패는 상태 비트에 남는다. | [입출력·유틸리티](../standard-library/io-parsing-and-utilities.md) |
 
 ## 빌드와 검증
 

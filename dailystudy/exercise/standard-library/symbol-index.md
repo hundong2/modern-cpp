@@ -35,10 +35,11 @@
 | `std::priority_queue` | 힙 기반 우선순위 어댑터 | [컨테이너](containers-and-views.md) |
 | `std::vector` | 동적 연속 배열 | [컨테이너](containers-and-views.md) |
 | `std::string` | 소유 문자 시퀀스 | [컨테이너](containers-and-views.md) |
+| `std::string::npos` | string 검색 실패 위치 상수 | [컨테이너](containers-and-views.md) |
 | `std::string_view` | 비소유 문자 범위 | [컨테이너](containers-and-views.md) |
 | `std::string_view::npos` | 검색 실패 위치 상수 | [컨테이너](containers-and-views.md) |
 | `std::span` | 비소유 연속 원소 범위 | [컨테이너](containers-and-views.md) |
-| `std::mdspan`, `std::dextents`, `std::layout_right` | 다차원 비소유 뷰, 동적 차원, 기본 행 우선 매핑 | [컨테이너](containers-and-views.md) |
+| `std::mdspan`, `std::dextents` | 다차원 비소유 뷰와 동적 차원 | [컨테이너](containers-and-views.md) |
 | `std::pmr::memory_resource` | 실행 시간 할당 자원 인터페이스 | [컨테이너](containers-and-views.md) |
 | `std::pmr::monotonic_buffer_resource` | 일괄 해제형 증가 할당 자원 | [컨테이너](containers-and-views.md) |
 | `std::pmr::vector` | 다형적 할당자를 쓰는 vector 별칭 | [컨테이너](containers-and-views.md) |
@@ -49,9 +50,10 @@
 |---|---|---|
 | `std::bit_cast` | 같은 크기 객체 표현을 새 값으로 복사 | [비트·바이트](bit-and-byte-utilities.md) |
 | `std::byteswap` | 정수의 바이트 순서를 반대로 변환 | [비트·바이트](bit-and-byte-utilities.md) |
+| `std::endian` | 구현의 바이트 순서를 표현하는 열거형 | [비트·바이트](bit-and-byte-utilities.md) |
 | `std::endian::native` | 구현의 스칼라 바이트 순서 | [비트·바이트](bit-and-byte-utilities.md) |
 | `std::endian::little`, `std::endian::big` | 알려진 작은/큰 바이트 순서 값 | [비트·바이트](bit-and-byte-utilities.md) |
-| `std::uint32_t`, `std::byte`, `std::size_t` | 고정 폭 정수, 원시 바이트, 크기 타입 | [비트·바이트](bit-and-byte-utilities.md) |
+| `std::uint32_t`, `std::uint64_t`, `std::uintmax_t`, `std::byte`, `std::size_t`, `std::ptrdiff_t` | 고정·최대 폭 정수, 원시 바이트, 크기·차이 타입 | [비트·바이트](bit-and-byte-utilities.md) |
 
 ## 소유권과 어휘 타입
 
@@ -114,6 +116,7 @@
 | 심볼 | 짧은 역할 | 상세 문서 |
 |---|---|---|
 | `std::format` | 타입 검사 형식 문자열과 인자로 새 소유 문자열 생성 | [입출력](io-parsing-and-utilities.md) |
+| `std::bad_alloc` | 동적 할당 요청 실패를 나타내는 예외 타입 | [입출력](io-parsing-and-utilities.md) |
 | `std::cin`, `std::cout`, `std::cerr` | 표준 입력·출력·오류 스트림 객체 | [입출력](io-parsing-and-utilities.md) |
 | `std::istream` | 추출 연산이 같은 입력 스트림 참조를 이어 반환하는 기반 타입 | [입출력](io-parsing-and-utilities.md) |
 | `std::ostream` | 출력 연산이 같은 스트림 참조를 이어 반환하는 기반 타입 | [입출력](io-parsing-and-utilities.md) |
@@ -128,8 +131,6 @@
 | `std::numeric_limits` | 기본 타입 수치 한계 | [입출력](io-parsing-and-utilities.md) |
 | `std::abs` | 절댓값 계산 | [입출력](io-parsing-and-utilities.md) |
 | `std::numbers::pi_v` | 타입별 원주율 상수 | [입출력](io-parsing-and-utilities.md) |
-| `std::size_t`, `std::ptrdiff_t` | 크기와 반복자 차이 타입 | [입출력](io-parsing-and-utilities.md) |
-| `std::uint64_t`, `std::uintmax_t`, `std::byte` | 고정 폭/최대 폭 정수와 바이트 | [입출력](io-parsing-and-utilities.md) |
 | `std::exit`, `std::terminate` | 스택 정상 복귀가 아닌 프로그램 종료 | [입출력](io-parsing-and-utilities.md) |
 
 ## 색인 갱신 규칙

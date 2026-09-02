@@ -7,13 +7,13 @@
 1. 날짜별 README의 `오늘 사용한 표준 라이브러리` 표에서 심볼과 헤더를 확인한다.
 2. 코드 바로 위 주석에서 현재 인자와 반환값이 프로그램 상태를 어떻게 바꾸는지 읽는다.
 3. 이 폴더의 대표 문서에서 복잡도, 수명, 무효화, 오류 조건까지 확인한다.
-4. [`by-date.md`](by-date.md)에서 기존 119개 C++ 파일이 사용하는 심볼을 날짜별로 다시 찾는다.
+4. [`by-date.md`](by-date.md)에서 기존 128개 C++ 파일이 사용하는 심볼을 날짜별로 다시 찾는다.
 5. [`../tools/audit-standard-library-docs.ps1`](../tools/audit-standard-library-docs.ps1)로 문서에 등록되지 않은 심볼이 있는지 검사한다.
 
 ## 문서 구성
 
 - [`terms.md`](terms.md): 반복자, 범위, 뷰, 술어, 비교자, 할당자, 소유권, 어휘 타입, 예외 보장, 미정의 동작 등 공통 용어
-- [`headers.md`](headers.md): 현재 코드가 포함하는 49개 표준 헤더와 실제 사용 선언
+- [`headers.md`](headers.md): 현재 코드가 포함하는 51개 표준 헤더와 실제 사용 선언
 - [`bit-and-byte-utilities.md`](bit-and-byte-utilities.md): `bit_cast`, `byteswap`, 엔디언, 고정 폭 정수와 바이트 표현
 - [`containers-and-views.md`](containers-and-views.md): `vector`, `array`, `map`, `unordered_map`, `queue`, `priority_queue`, `span`, `string`, `string_view`와 주요 멤버 함수
 - [`algorithms-and-ranges.md`](algorithms-and-ranges.md): 정렬, 탐색, 누적, 채우기, 수열 생성, ranges/views 파이프라인
@@ -93,7 +93,7 @@ values.push_back(next);
 - C++ 파일에서 추출한 모든 `std::...` 심볼은 [`symbol-index.md`](symbol-index.md) 또는 세부 문서에 정확한 표기로 존재한다.
 - `#include <...>` 주석은 헤더 이름만 되풀이하지 않고 현재 파일에서 쓰는 선언을 구체적으로 말한다.
 - `push_back`, `emplace`, `reserve`, `size`, `empty`, `front`, `begin/end`, `find`, `load/store`, `lock`, `value/error`처럼 `std::`가 없는 멤버 함수도 첫 의미 있는 호출에서 설명한다.
-- 날짜별 README는 그날의 핵심 표준 라이브러리 5~12개를 헤더·종류·역할·주의점과 함께 표로 연결한다.
+- 날짜별 README는 그날의 핵심 표준 타입뿐 아니라 실제 생성자·멤버·자유 함수·연산자를 호출별 행으로 나누고, 헤더·종류·역할·주의점·대표 문서를 연결한다.
 - CHECKPOINT에는 반환형, 실패 표현, 복잡도, 수명/무효화 중 최소 두 가지를 직접 설명하는 문제가 있다.
 - 설명을 추가한 뒤 컴파일·실행·CTest와 표준 라이브러리 문서 감사를 모두 통과해야 한다.
 

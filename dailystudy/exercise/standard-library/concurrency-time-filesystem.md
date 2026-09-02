@@ -168,11 +168,11 @@
 ## `std::chrono`
 
 - `duration<Rep,Period>`는 숫자 표현 타입과 한 틱의 단위를 타입에 담는다.
-- `milliseconds`, `microseconds`는 자주 쓰는 duration 별칭이다.
-- `time_point<Clock,Duration>`은 특정 시계의 기준점부터 지난 duration을 나타낸다.
-- `steady_clock`은 단조 증가해 경과 시간 측정에 적합하다. 달력 시각이나 로그 타임스탬프에는 `system_clock`을 검토한다.
-- `duration_cast<To>(value)`는 시간 단위를 명시 변환한다. 더 거친 단위로 바꾸면 나머지가 잘릴 수 있다.
-- `chrono_literals`를 가져오면 `1500ms`, `2s` 같은 리터럴을 쓸 수 있다. 넓은 헤더/전역 namespace 오염을 피하고 작은 범위에서 사용한다.
+- `std::chrono::milliseconds`, `std::chrono::microseconds`는 자주 쓰는 duration 별칭이다.
+- `std::chrono::time_point<Clock,Duration>`은 특정 시계의 기준점부터 지난 duration을 나타낸다.
+- `std::chrono::steady_clock`은 단조 증가해 경과 시간 측정에 적합하다. 달력 시각이나 로그 타임스탬프에는 `system_clock`을 검토한다.
+- `std::chrono::duration_cast<To>(value)`는 시간 단위를 명시 변환한다. 더 거친 단위로 바꾸면 나머지가 잘릴 수 있다.
+- `std::chrono_literals`를 가져오면 `1500ms`, `2s` 같은 리터럴을 쓸 수 있다. 넓은 헤더/전역 namespace 오염을 피하고 작은 범위에서 사용한다.
 
 ## `std::filesystem`과 `std::error_code`
 

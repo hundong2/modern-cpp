@@ -13,13 +13,18 @@ private:
 public:
     // 생성자는 반환형이 없으며 explicit이라 `TransactionGuard guard = callback;` 암시 변환을 막는다.
     explicit TransactionGuard(Action action)
-        // std::move<Action>(action)는 lvalue 매개변수 하나를 Action&& xvalue로 바꾼다. 반환 참조를 action_ 생성에
-        // 즉시 사용하고 저장하지 않는다. 선택된 이동 생성자가 콜백 상태를 멤버로 옮기며 원본은 곧 파괴된다.
+        // 자유 함수 std::move에는 수신 객체가 없다. 대표 형태 remove_reference_t<T>&& std::move(T&&) noexcept에서
+        // Action lvalue 인자 하나 때문에 T=Action&로 추론되고, 반환 Action&&는 같은 객체를 가리키는 xvalue 참조다.
+        // std::move 자체는 action을 바꾸지 않고 O(1), 무할당, 예외 없음이다. 반환을 즉시 받는 멤버 이동 생성자가
+        // callback 상태를 action_으로 옮길 수 있어 원본은 유효하지만 값이 미지정될 수 있다.
         // 대표 문서: ../standard-library/io-parsing-and-utilities.md
         : action_{std::move(action)} {}
 
     TransactionGuard(const TransactionGuard&) = delete; // 보상 책임의 복제는 금지한다.
     TransactionGuard& operator=(const TransactionGuard&) = delete;
+    // 활성 guard를 옮겨 두 객체 사이 책임을 헷갈리지 않도록 이동 생성·대입도 삭제한 스코프 고정 타입이다.
+    TransactionGuard(TransactionGuard&&) = delete;
+    TransactionGuard& operator=(TransactionGuard&&) = delete;
 
     ~TransactionGuard() noexcept { // 자동 객체 수명 끝에서 반환형 없이 실행되는 RAII 소멸자다.
         if (active_) {
@@ -81,8 +86,11 @@ int main() {
     Account target{20};
     const bool transferred{transfer(source, target, 30, false)}; // 실패 반환 prvalue를 const bool로 받는다.
 
-    // operator<< 연쇄는 cout lvalue, 두 int prvalue, 문자, bool 값을 읽고 ostream&를 반환한다.
-    // 계좌와 transferred는 유지되고 cout 버퍼/상태만 바뀐다. 시간은 출력 길이에 선형이고 예외 대신 상태 비트를 쓸 수 있다.
+    // 정확한 타입 std::ostream인 cout에서 int/bool 멤버 operator<<(값)는 값을 복사 입력으로 받고 ostream&를
+    // 반환한다. 문자 비멤버 operator<<(ostream&, char)는 앞 반환 참조와 char prvalue를 받아 같은 참조를 돌려준다.
+    // 반환은 다음 연산에 쓰고 마지막에 버리며, 계좌와 transferred는 유지되고 cout 문자 위치·상태만 바뀐다.
+    // 표준은 이 형식 출력의 별도 복잡도 상한을 두지 않으며 실제 비용은 형식화할 문자 수, locale facet,
+    // stream buffer와 장치 구현에 달린다. 출력 실패는 기본적으로 예외 대신 상태 비트로 남는다.
     std::cout << source.balance() << ' ' << target.balance() << ' ' << transferred << '\n';
 
     return (source.balance() == 100 && target.balance() == 20 && !transferred) ? 0 : 1;

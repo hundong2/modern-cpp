@@ -14,15 +14,19 @@ public:
     // 생성자는 반환형이 없고 Rollback 값 매개변수를 받는다. explicit은 ScopeRollback 변수가 콜백에서
     // 암시적으로 만들어지는 것을 막으며 ScopeRollback{callback} 같은 직접 초기화는 허용한다.
     explicit ScopeRollback(Rollback rollback)
-        // std::move<Rollback>(rollback)의 실제 인자는 이름 있는 lvalue rollback 하나다. 반환형은 Rollback&&이고
-        // 결과는 xvalue다. 함수 자체는 소유권을 옮기지 않지만 멤버의 이동 생성자가 콜백 상태를 rollback_으로
-        // 옮길 수 있다. 원본 매개변수는 유효하지만 값은 미지정이며 함수가 끝날 때 파괴된다. O(1)인 작은 람다지만
-        // 일반 Rollback의 이동 비용·예외는 그 타입에 달려 있다. 대표 문서: ../standard-library/io-parsing-and-utilities.md
+        // 자유 함수 std::move에는 수신 객체가 없다. 대표 형태 remove_reference_t<T>&& std::move(T&&) noexcept에서
+        // Rollback lvalue 인자 하나 때문에 T=Rollback&로 추론되고, 반환 Rollback&&는 같은 객체를 가리키는 xvalue다.
+        // std::move 자체는 rollback의 상태·소유권을 바꾸지 않고 O(1), 무할당, 예외 없음이다. 그 반환을 즉시 받는
+        // 멤버의 이동 생성자가 콜백 상태를 rollback_으로 옮길 수 있어 원본은 유효하지만 값이 미지정될 수 있으며,
+        // 실제 이동 비용·예외는 Rollback 타입에 달려 있다. 대표 문서: ../standard-library/io-parsing-and-utilities.md
         : rollback_{std::move(rollback)} {}
 
     // 같은 복구를 두 객체가 실행하면 상태가 두 번 되돌아가므로 복사를 명시적으로 금지한다.
     ScopeRollback(const ScopeRollback&) = delete;
     ScopeRollback& operator=(const ScopeRollback&) = delete;
+    // 사용자 선언 소멸자는 암시적 이동을 만들지 않는다. 이동도 명시적으로 삭제해 활성 보상 책임을 이 스코프에 고정한다.
+    ScopeRollback(ScopeRollback&&) = delete;
+    ScopeRollback& operator=(ScopeRollback&&) = delete;
 
     // 소멸자는 반환형이 없고 자동 객체의 스코프를 벗어날 때 호출된다.
     ~ScopeRollback() noexcept {
@@ -84,9 +88,11 @@ int main() {
     ReservationService service{stock}; // explicit 생성자를 직접 호출하고 stock lvalue를 참조로 빌린다.
 
     const bool first_result{service.reserve(3, true)}; // 반환 bool prvalue로 const 객체를 직접 초기화한다.
-    // operator<<(ostream&, value)는 std::cout lvalue와 각 값/문자를 순서대로 읽고 같은 ostream&를 반환해 연쇄한다.
-    // first_result와 stock은 유지되고 cout의 문자·상태만 바뀐다. 반환 참조는 다음 <<에 쓰고 마지막에는 버린다.
-    // 출력 문자 수에 선형이며 버퍼 작업이 있을 수 있고, 실패는 기본적으로 스트림 상태 비트에 기록된다.
+    // std::cout의 정확한 타입은 std::ostream이다. int/bool마다 선택되는 멤버 operator<<(값)는 값을 복사 입력으로
+    // 받고 std::ostream&를 반환하며, 문자마다 선택되는 비멤버 operator<<(std::ostream&, char)는 첫 반환 참조와
+    // char prvalue를 받는다. stock/first_result는 유지되고 cout의 문자 위치·상태만 바뀐다. 각 반환 참조는 다음
+    // 연산에 쓰고 마지막에는 버린다. 표준은 이 형식 출력의 별도 복잡도 상한을 두지 않으며 실제 비용은 형식화할
+    // 문자 수, locale facet, stream buffer와 장치 구현에 달린다. 실패는 기본적으로 스트림 상태 비트에 기록된다.
     std::cout << stock.available << ' ' << stock.reserved << ' ' << first_result << '\n';
 
     const bool second_result{service.reserve(4, false)}; // 저장 실패라 스코프 종료 시 자동 롤백된다.
