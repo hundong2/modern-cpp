@@ -109,6 +109,7 @@
 | `std::chrono::duration_cast`, `std::chrono_literals` | duration 단위 변환과 리터럴 | [동시성](concurrency-time-filesystem.md) |
 | `std::filesystem` | 경로와 파일 시스템 namespace | [동시성](concurrency-time-filesystem.md) |
 | `std::error_code` | 값 기반 시스템 오류 | [동시성](concurrency-time-filesystem.md) |
+| `std::promise`, `std::future` | 한 번 게시하고 한 번 소비하는 비동기 shared-state handle | [동시성](concurrency-time-filesystem.md) |
 | `std::coroutine_handle`, `std::suspend_always` | 코루틴 프레임 핸들·항상 중단 awaiter | [동시성](concurrency-time-filesystem.md) |
 
 ## 입출력, 파싱, 유틸리티

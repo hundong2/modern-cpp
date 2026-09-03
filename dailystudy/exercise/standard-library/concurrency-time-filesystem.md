@@ -98,15 +98,65 @@
 ## `std::jthread`, `std::stop_token`, `std::this_thread::sleep_for`
 
 - `jthread`는 실행 스레드를 소유하고 소멸 시 중지를 요청한 뒤 합류한다. `thread`의 join 누락 문제를 RAII로 줄인다.
-- `jthread(F&& f, Args&&... args)`는 호출 가능 객체와 인자를 decay-copy 또는 이동해 새 스레드가 소유하게 하고 실행을 시작한다. 호출 가능하면 `stop_token`을 첫 인자로 넣는 형태를 우선 사용하며, 아니면 저장한 인자만으로 호출한다. 생성 성공 시 객체가 joinable 스레드 하나를 소유하고, 운영체제 스레드를 만들지 못하면 `std::system_error`를 던진다.
+- `jthread(F&& f, Args&&... args)`는 호출 가능 객체와 인자를 decay-copy 또는 이동해 새 스레드가 소유하게 하고 실행을 시작한다. 호출 가능하면 `stop_token`을 첫 인자로 넣는 형태를 우선 사용하며, 아니면 저장한 인자만으로 호출한다. 생성 성공 시 객체가 joinable 스레드 하나를 소유하며, 생성자 호출 완료는 새 스레드가 저장한 callable을 호출하기 시작하는 시점과 동기화한다. 호출 가능 객체·인자의 materialization 중 복사/이동 생성 예외는 그대로 전달되고, 운영체제 스레드를 만들지 못하면 `std::system_error`가 발생한다.
 - `jthread`는 복사할 수 없고 이동할 수 있다. 이동은 실행 스레드 소유권을 옮기며, 이동된 원본은 joinable하지 않은 유효 상태가 된다. 참조 캡처나 `std::ref`로 전달한 객체는 자동 소유되지 않으므로 작업 종료까지 살아 있어야 한다.
-- 소멸자는 joinable이면 `request_stop()` 뒤 `join()`한다. 작업이 중지 요청을 관찰하지 않거나 끝나지 않으면 소멸도 기다릴 수 있다. 스레드가 자기 자신을 합류하려는 구조, 소유 객체보다 오래 쓰는 참조, 예외가 작업 함수 밖으로 빠지는 구조를 피한다.
+- 소멸자는 joinable이면 `request_stop()` 뒤 `join()`한다. 작업이 중지 요청을 관찰하지 않거나 끝나지 않으면 소멸도 기다릴 수 있다. 소멸자는 예외를 밖으로 전달할 수 없으므로 self-join 등으로 내부 `join()`이 실패하면 `std::terminate`로 이어질 수 있다. 스레드가 자기 자신을 합류하려는 구조, 소유 객체보다 오래 쓰는 참조, 예외가 작업 함수 밖으로 빠지는 구조를 피한다.
 - `bool joinable() const noexcept`는 데이터 인자 없이 수신 jthread가 실행 스레드 소유권을 가졌는지 반환한다. 수신 상태를 바꾸지 않고 할당·예외가 없으며, `true`가 작업 함수가 아직 실행 중이라는 뜻은 아니다. 작업이 끝났어도 아직 `join`하지 않았다면 joinable일 수 있다.
 - `void join()`은 데이터 인자와 반환값 없이 연결된 스레드가 끝날 때까지 기다린 뒤 소유 연결을 해제한다. 성공 뒤 `joinable()==false`다. joinable하지 않거나 자기 자신을 합류하려 하면 `std::system_error`가 발생한다. 합류 완료는 작업 스레드의 평가들과 join 이후 평가 사이에 동기화 관계를 만든다.
 - 생성자가 작업 함수의 첫 인자로 받을 수 있으면 `stop_token`을 전달한다.
 - `stop_token::stop_requested()`는 취소 요청 여부를 관찰한다. 취소는 강제 종료가 아니며 작업이 안전 지점에서 확인해야 한다.
 - `request_stop()`은 공유 중지 상태에 요청을 기록하고 요청을 처음 성공시켰는지 `bool`을 반환한다.
 - `sleep_for(duration)`는 최소한 지정 기간 정도 현재 스레드 실행을 양보하지만 정확한 기상 시각은 스케줄러에 따라 늦어질 수 있다.
+
+## `std::promise<T>`와 `std::future<T>` — `<future>`
+
+`promise<T>`와 `future<T>`는 하나의 **공유 상태(shared state)** 를 사이에 둔 단일 생산자·단일 소비자 handle이다. 생산자는 값 또는 예외를 한 번 게시하고, 소비자는 결과를 한 번 꺼낸다. 큐처럼 여러 값을 흘리는 타입도, 작업 스레드 자체를 소유하는 타입도 아니다. 오늘 코드는 `jthread`가 실행 수명을, promise/future가 결과 수명과 동기화를 각각 맡도록 분리한다.
+
+| 대표 형태 | 수신 객체·각 입력 | 반환값과 사용 | 호출 뒤 상태·계약 |
+|---|---|---|---|
+| `promise()` | 새 `promise<T>` 목적 객체. 데이터 인자는 없다. | 생성자는 별도 반환값이 없고 목적 객체가 생산자 끝점을 소유한다. | 아직 만족되지 않은 새 shared state를 만든다. 보통 할당이 필요하며 상태 생성 실패 예외가 가능하다. 복사 불가·이동 가능하다. |
+| `future<T> promise<T>::get_future()` | 아직 이 함수를 호출하지 않은 valid promise 수신 객체. 인자는 없다. | 같은 상태의 독점 소비자 `future<T>` prvalue를 반환한다. | promise는 생산권을 유지하고 future 하나가 생긴다. 두 번째 호출 또는 no-state 수신자는 `future_error`를 던진다. 결과를 ready로 만들지는 않는다. |
+| `void promise<T>::set_value(const T& value)` | 미충족 valid promise와 복사할 `const T&` lvalue. | 반환값 없음. | T 복사본을 상태에 저장하고 ready로 표시해 대기자를 깨운다. 이미 만족됐거나 no-state면 `future_error`, 복사가 던지면 그 예외가 호출자에게 나온다. |
+| `void promise<T>::set_value(T&& value)` | 미충족 valid promise와 이동할 T xvalue. | 반환값 없음. | T를 상태에 이동 저장하고 ready로 만든다. 인자 객체 수명은 계속되지만 이동 뒤 값의 보장은 T 계약에 따른다(표준 라이브러리 타입은 달리 명시하지 않으면 유효하지만 값 미지정). 상태 오류와 T 이동 예외가 가능하다. |
+| `bool future<T>::valid() const noexcept` | `const future<T>` 수신 객체. 데이터 인자는 없다. | shared state 연관 여부를 반환해 검사한다. | 수신 상태를 바꾸지 않는다. true는 결과가 **준비됨**을 뜻하지 않고, get 가능한 상태가 연결됐다는 뜻이다. |
+| `T future<T>::get()` | 아직 get하지 않은 valid future 수신 객체. 인자는 없다. | ready까지 기다린 뒤 T 값을 이동해 반환한다. 호출자가 반환값을 소유한다. | 성공 뒤 future는 invalid다. 두 번째 호출/no-state는 valid 전제조건 위반인 표준상 undefined behavior다. 구현이 `future_error(no_state)`로 진단할 수 있어도 의존하지 않는다. 생산자가 저장한 예외는 재던진다. 대기 시간 상한은 없다. |
+
+### 전제조건·수명·예외 보장
+
+- `get_future()`는 shared state마다 정확히 한 번만 호출한다. 여러 독자가 같은 결과를 각각 읽어야 하면 `shared_future` 같은 별도 모델을 검토한다.
+- `set_value`와 `set_exception` 중 정확히 하나로 상태를 만족시켜야 한다. promise가 값을 게시하지 않은 채 마지막 생산자 handle을 잃으면 소비자는 broken-promise 예외를 관찰한다. promise 소멸이 future 객체 자체를 댕글링으로 만들지는 않는다.
+- `future::get()`은 결과를 소비하므로 이후 `valid()==false`다. 단순 준비 확인이 필요하면 `wait`/`wait_for`를 사용하되, valid와 ready를 혼동하지 않는다.
+- promise와 future는 shared state를 내부적으로 공유하지만 각 handle 객체는 독점 소유라 복사할 수 없고 이동만 가능하다. 이동된 원본은 no-state인 유효 객체가 된다.
+- 표준이 지정한 `get_future`와 setter 계열 사이에는 data race가 없고, `set_value`·`set_exception`·at-thread-exit setter 계열끼리는 하나의 mutex를 획득한 것처럼 상호 배제된다. 다만 한 상태에는 한 setter만 논리적으로 성공하며, 같은 promise handle의 이동·소멸 같은 임의 조작이나 결과 T가 가리키는 별도 공유 데이터 접근까지 안전해지는 것은 아니다.
+- shared state를 ready로 만드는 `set_value` 계열 호출은 그 상태를 성공적으로 기다려 반환하는 호출과 동기화한다. 따라서 생산자가 게시 전 끝낸 쓰기는 소비자가 get 뒤 관찰할 수 있다.
+
+### 복잡도·무효화·기계 실행 관점
+
+- 이 API의 제어 작업량은 T의 원소 개수와 무관한 상수 규모지만 생성 시 공유 상태 할당, T 복사·이동, 스케줄러 대기와 깨우기 비용이 추가된다. `get()`의 벽시계 대기에는 상한이 없다.
+- 컨테이너 반복자를 직접 무효화하지 않는다. 다만 T를 이동하면 T 자체 계약에 따라 원본의 값·관찰자 귀속이 달라질 수 있고, get 뒤 shared state 안 결과를 다시 참조해서는 안 된다.
+- 구현은 상태 플래그 load/store, 대기자 비교와 조건 분기, 원자 연산·잠금·운영체제 대기를 조합할 수 있다. 구체 명령과 할당 구조는 CPU·ABI·표준 라이브러리·컴파일러·최적화 옵션에 따라 달라 특정 어셈블리나 lock-free 동작을 보장하지 않는다.
+- 오늘 자료 [`../2026-09-04/main.cpp`](../2026-09-04/main.cpp)는 promise를 worker closure로 이동하고 `set_value`/`get` 동기화로 `BatchReport`를 전달한다. [`../2026-09-04/problem.cpp`](../2026-09-04/problem.cpp)는 같은 thread에서도 “한 번 게시·한 번 소비” 상태 전이를 분리해 검증한다.
+
+### 최소 실행 예제
+
+```cpp
+#include <future> // promise와 future shared-state handle을 선언한다.
+
+int main() {
+    std::promise<int> producer; // 아직 값이 없는 생산자 끝점을 만든다.
+    std::future<int> consumer{producer.get_future()}; // 소비자 끝점을 정확히 한 번 얻는다.
+    producer.set_value(7); // int 값을 저장하고 상태를 ready로 만든다.
+    return consumer.get() == 7 ? 0 : 1; // 값을 한 번 소비하며 이후 consumer는 invalid다.
+}
+```
+
+### 흔한 실수
+
+1. `valid()`를 ready 검사로 사용해 기다리지 않아도 된다고 오해한다.
+2. 같은 promise에서 `get_future()`나 `set_value()`를 두 번 호출한다.
+3. future를 버린 뒤 결과 예외가 관찰될 것이라 기대한다.
+4. worker closure에 지역 객체를 참조 캡처하고 그 지역 수명보다 작업을 오래 실행한다.
+5. promise/future가 작업 thread를 자동 생성·join하거나 결과 객체 내부의 모든 접근을 동기화한다고 가정한다.
 
 ## `std::latch` — `<latch>`
 

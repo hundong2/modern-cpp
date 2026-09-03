@@ -24,6 +24,7 @@
 | `<filesystem>` | `path`, 디렉터리 반복자와 파일 상태 API |
 | `<format>` | 타입 안전 문자열 형식화 `std::format`, 형식 오류 `std::format_error` |
 | `<functional>` | `function`, C++23 `move_only_function`, 비교 함수 객체, 참조 래퍼 |
+| `<future>` | 단일 결과 shared state의 생산자 `promise`와 소비자 `future` |
 | `<iomanip>` | `setprecision` 등 스트림 형식 조작자 |
 | `<iostream>` | `cin`, `cout`, `cerr` 표준 스트림 |
 | `<latch>` | C++20 일회성 카운트다운 동기화 객체 `std::latch` |
