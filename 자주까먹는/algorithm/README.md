@@ -20,7 +20,7 @@
     - c++ std::reverse, std::swap
     - c# Array.Reverse, (A, B) = (B, A) -> swap 
 - [stack을 이용한 유효한 () 구문 찾기 문제](./32.Longest%20Valid%20Parentheses.md)  
-- [이진 탐색 트리를 이용한 문제 풀기](./34.Find%20First%20and%20Last%20Position.md)  
+- [(중요!) 이진 탐색 트리를 이용한 문제 풀기](./34.Find%20First%20and%20Last%20Position.md)  
     - [Binary Search Tree](./BinarySearchTree.md). 
     - `mid = left + (right - left)/2` 를 구한 뒤 `mid` 값을 기준으로 target값이 크면 left = mid;
     -  작으면 right = mid로 바꾼 뒤 진행하는 방법
@@ -49,8 +49,10 @@
     - 1, 2, 3, 4, 5, ..., n 이상 적인 값일 경우 0번 에는 1, 1번에는 2 값이 들어가야함. 따라서 i 를 이동하면서 해당 포인트의 값을 배열의 array위치로 써서 swap해준다. i 포인트에서 swap이 모두 끝날때 까지 while loop를 돌리면서 진행. 
     - sorting을 마친 뒤 이상적인 값 위치에 값이 있는지 확인 만약 i 위치에서 i+1이 아니라면 i+1이 결핍이라는 뜻. 
     - 만약 전체 수행 했지만 결핍이 없다면 n + 1이 결핍값 
-
-
+- [(자주 출제!) 투포인트 정석문제 (채워진 물 깊이 구하기)](./42.TrappingRainWater.md)  
+    - left, right point 를 통해 left_max, right_max 를 비교하여 현재 left, right포인트에서 물의 깊이를 구하는 알고리즘 
+    - O(N)의 시간으로 물의 깊이를 구할 수 있다. 
+- [문자열 곱셈- 세로셈 곱셈(Grade-School Multiplication)](./43.MultiplyStrings.md)  
 
 
 
