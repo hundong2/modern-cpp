@@ -77,6 +77,38 @@
 - `auto [left,right] = pair;`는 값을 복사할 수 있고 `auto& [left,right]`는 기존 원소에 참조 바인딩한다.
 - 우선순위 큐의 `(거리,정점)`처럼 작은 관계 값에 적합하지만 필드 의미가 중요하면 이름 있는 `struct`가 더 읽기 쉽다.
 
+### `std::apply` — tuple-like 호출 어댑터
+
+- 항목 종류와 헤더: C++17부터 제공되는 `<tuple>`의 함수 템플릿이다. 오늘의 C++20 표준 선언은 `template<class F, class Tuple> constexpr decltype(auto) apply(F&& f, Tuple&& tuple)`처럼 제약과 `noexcept` 명세가 없다. C++23 선언은 `Tuple`을 표준 tuple-like 요구로 제약하고 펼친 호출의 예외 명세에 대응하는 조건부 `noexcept`를 추가한다. 템플릿 인자 `F`는 호출 가능 객체 타입, `Tuple`은 원소를 펼칠 tuple-like 타입이며 보통 호출식에서 추론하므로 직접 적지 않는다.
+- 현재 코드에서의 역할: 2026-09-07의 tuple 어댑터는 `RawDeploymentRow`가 보관한 `std::string`, `int`, `bool`을 위치 순서대로 펼쳐 `DeploymentPlan`을 만드는 람다의 세 값 매개변수로 전달한다. `std::get<0>`, `std::get<1>`, `std::get<2>`를 수동 나열하지 않아 원시 행과 도메인 객체 생성 경계를 분리하며, tuple xvalue의 문자열 소유권도 결과 객체 쪽으로 이동할 수 있게 보존한다.
+- 수신 객체와 인자: 자유 함수라 수신 객체는 없다. 첫 인자 식 `f`는 추론되는 `F&&` 전달 참조이며 함수, 함수 객체, 람다, 멤버 포인터처럼 펼친 인자들로 호출 가능한 대상이어야 한다. 둘째 인자 식 `tuple`은 추론되는 `Tuple&&` 전달 참조이며, 컴파일 시간 원소 수와 각 위치의 `std::get<I>` 접근을 제공하는 지원 tuple-like 객체여야 한다. 두 인자는 참조로 전달되므로 `apply`가 소유권을 새로 취하지 않는다.
+- 선택된 호출과 값 범주: 원소 수를 `N`이라 하면 의미상 `std::invoke(std::forward<F>(f), std::get<0>(std::forward<Tuple>(tuple)), ..., std::get<N - 1>(std::forward<Tuple>(tuple)))` 한 번을 수행한다. non-const lvalue tuple의 값 원소는 lvalue로, const lvalue tuple의 값 원소는 const lvalue로, rvalue tuple의 값 원소는 보통 xvalue로 전달된다. 다만 원소 타입 자체가 참조이면 참조 축약 결과를 따른다. rvalue tuple을 넘긴 사실만으로 원소가 자동 이동되는 것은 아니며, 피호출자가 그 xvalue로 이동 생성·대입할 때 실제 자원 이전이 일어난다.
+- 반환: 반환형 `decltype(auto)`는 피호출 결과의 정확한 타입과 값 범주를 보존한다. 피호출자가 `void`를 반환하면 `apply`도 `void`, 값을 반환하면 값, `T&` 또는 `T&&`를 반환하면 같은 참조를 반환한다. 호출자가 결과를 사용하거나 버릴지는 호출식이 정한다.
+- 전제조건과 사후 상태: 펼친 모든 원소 식으로 `f`를 호출하는 식이 유효해야 하며, 원소 수·순서·cv/ref 한정이 callable의 매개변수 계약과 맞지 않으면 런타임 오류가 아니라 컴파일 실패다. 호출 전 tuple 및 그 안의 참조가 유효해야 한다. 호출 뒤 `apply` 자체는 tuple의 크기나 구조를 바꾸지 않지만, callable이 non-const 참조 원소를 변경하거나 xvalue 원소를 소비하면 해당 원소 상태가 바뀔 수 있고 callable 자체도 `operator()` 한정과 구현에 따라 변경될 수 있다.
+- 복잡도·할당·무효화: `N`개 원소 접근과 callable 호출 한 번이므로 tuple 원소 수에 대해 `O(N)`이다. `apply`는 별도 소유 저장소나 동적 할당을 요구하지 않으며 tuple의 참조·포인터·반복자를 자체적으로 무효화하지 않는다. 다만 피호출 함수가 수행하는 복사·이동·할당과 컨테이너 변경 비용 및 무효화 규칙은 그대로 적용된다.
+- 수명: `apply`는 callable, tuple, 원소 또는 원소가 가리키는 대상의 수명을 연장하지 않는다. 반환 참조는 tuple 원소나 외부 객체를 가리킬 수 있다. 임시 tuple의 원소를 참조로 반환하면 그 임시는 전체 표현식 끝에 파괴되므로 이후 참조 사용은 댕글링이 될 수 있다. 이동된 원소의 구체적 사후 값도 해당 원소 타입의 이동 계약을 따른다.
+- 예외·오류·미정의 동작: 오늘 사용하는 C++20의 이식 가능한 계약에서는 `apply` 자체가 `noexcept`로 선언되지 않아 callable이 실제로 던지지 않더라도 `noexcept(std::apply(...))`를 참이라고 기대할 수 없다. C++23 조건부 `noexcept`는 전달된 callable을 전달된 원소 식들로 `std::invoke`하는 호출이 던지지 않는지에 대응한다. 어느 버전이든 실제 callable이나 원소 전달 과정에서 난 예외는 호출자에게 전파될 수 있다. 일부 구현이 새 명세를 이전 언어 모드에 확장 제공할 수 있지만 이에 의존하지 않는다. 호출 불가능한 타입 조합은 ill-formed이며, 잘못된 인덱스를 런타임에 선택하는 API가 아니다. 댕글링 참조, 데이터 경쟁, 또는 피호출 함수의 전제조건 위반으로 생기는 미정의 동작을 `apply`가 방지하지는 않는다.
+- 스레드 보장: 자체 동기화를 제공하지 않는다. 서로 독립된 callable과 tuple을 호출하는 것은 각 객체의 계약에 따르지만, 같은 callable 또는 같은 원소를 한 스레드가 변경하는 동안 다른 스레드가 동기화 없이 접근하면 데이터 경쟁이 될 수 있다. 모든 공유 접근이 읽기뿐인지, 아니면 mutex·atomic 등 별도 동기화가 있는지 호출자가 보장한다.
+- 기계 실행 관점: 구현은 보통 컴파일 시간 인덱스 팩을 펼쳐 원소 로드와 한 번의 호출로 낮추고, 구체 callable이면 인라인될 수도 있다. 그러나 타입 소거 래퍼·함수 포인터라면 간접 호출이 남을 수 있고, 실제 로드·저장·분기 및 복사 생략 형태는 컴파일러, ABI, 최적화 옵션에 따라 달라진다.
+
+```cpp
+#include <cassert>
+#include <string>
+#include <tuple>
+#include <utility>
+
+int main() {
+    auto arguments = std::tuple{std::string{"camera"}, 7};
+
+    // rvalue tuple의 string 원소는 xvalue로 펼쳐지고, 값 매개변수가 그 자원을 소비할 수 있다.
+    const auto label = std::apply(
+        [](std::string name, int id) { return name + "-" + std::to_string(id); },
+        std::move(arguments));
+
+    assert(label == "camera-7");
+}
+```
+
 ## `std::reference_wrapper<T>`와 `std::ref`/`std::cref`
 
 - 일반 객체처럼 복사 가능하면서 내부에는 비소유 참조 의미를 보관한다.

@@ -132,7 +132,7 @@
 
 ### 고정 폭 정수와 크기 타입
 
-`std::uint32_t`, `std::uint64_t`, `std::uintmax_t`, `std::size_t`, `std::ptrdiff_t`, `std::byte`의 대표 설명은 중복하지 않고 [`bit-and-byte-utilities.md`](bit-and-byte-utilities.md)에서 관리한다.
+`std::int64_t`, `std::uint32_t`, `std::uint64_t`, `std::uintmax_t`, `std::size_t`, `std::ptrdiff_t`, `std::byte`의 대표 설명은 중복하지 않고 [`bit-and-byte-utilities.md`](bit-and-byte-utilities.md)에서 관리한다.
 
 ## 상수와 비교
 

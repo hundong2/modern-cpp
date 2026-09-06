@@ -55,12 +55,13 @@
 | [2026-09-02](./2026-09-02/README.md) | RAII 보상 트랜잭션 가드와 단절점 DFS low-link | C++20 |
 | [2026-09-03](./2026-09-03/README.md) | `shared_ptr` 별칭 수명 projection과 2-SAT implication graph | C++20 |
 | [2026-09-04](./2026-09-04/README.md) | `promise`/`future` 단일 결과 경계와 Hierholzer 오일러 회로 | C++20 |
+| [2026-09-07](./2026-09-07/README.md) | `std::apply` tuple 경계 어댑터와 Andrew 볼록 껍질 | C++20 |
 
 ## 표준 라이브러리 설명 찾기
 
 - [표준 라이브러리 학습 지도](./standard-library/README.md): 설명 품질 기준과 분야별 대표 문서
-- [날짜별 사용 색인](./standard-library/by-date.md): 현재 51개 날짜, 134개 C++ 파일의 헤더와 `std::` 심볼
-- [심볼 색인](./standard-library/symbol-index.md): 129개 현재 심볼의 역할과 상세 문서 링크
+- [날짜별 사용 색인](./standard-library/by-date.md): 현재 52개 날짜, 137개 C++ 파일의 헤더와 `std::` 심볼
+- [심볼 색인](./standard-library/symbol-index.md): 131개 현재 심볼의 역할과 상세 문서 링크
 - [공통 용어](./standard-library/terms.md): 반복자, 뷰, 술어, 소유권, 무효화, 예외 보장, 원자성
 - [표준 헤더](./standard-library/headers.md): 현재 사용하는 52개 헤더와 대표 선언
 

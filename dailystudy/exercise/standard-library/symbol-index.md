@@ -53,7 +53,7 @@
 | `std::endian` | 구현의 바이트 순서를 표현하는 열거형 | [비트·바이트](bit-and-byte-utilities.md) |
 | `std::endian::native` | 구현의 스칼라 바이트 순서 | [비트·바이트](bit-and-byte-utilities.md) |
 | `std::endian::little`, `std::endian::big` | 알려진 작은/큰 바이트 순서 값 | [비트·바이트](bit-and-byte-utilities.md) |
-| `std::uint32_t`, `std::uint64_t`, `std::uintmax_t`, `std::byte`, `std::size_t`, `std::ptrdiff_t` | 고정·최대 폭 정수, 원시 바이트, 크기·차이 타입 | [비트·바이트](bit-and-byte-utilities.md) |
+| `std::int64_t`, `std::uint32_t`, `std::uint64_t`, `std::uintmax_t`, `std::byte`, `std::size_t`, `std::ptrdiff_t` | 고정·최대 폭 정수, 원시 바이트, 크기·차이 타입 | [비트·바이트](bit-and-byte-utilities.md) |
 
 ## 소유권과 어휘 타입
 
@@ -70,6 +70,7 @@
 | `std::visit` | variant 활성 대안 방문 | [소유권](ownership-and-vocabulary-types.md) |
 | `std::get`, `std::get_if`, `std::holds_alternative` | variant/tuple 대안 접근·검사 | [소유권](ownership-and-vocabulary-types.md) |
 | `std::pair`, `std::tuple` | 위치 기반 이종 값 묶음 | [소유권](ownership-and-vocabulary-types.md) |
+| `std::apply` | tuple-like 원소를 위치 인자로 펼치는 호출 어댑터 | [소유권](ownership-and-vocabulary-types.md) |
 | `std::reference_wrapper`, `std::cref` | 복사 가능한 비소유 참조 래퍼 | [소유권](ownership-and-vocabulary-types.md) |
 | `std::function` | 호출 가능 객체 타입 소거 래퍼 | [소유권](ownership-and-vocabulary-types.md) |
 | `std::move_only_function` | 이동 전용 호출 가능 객체 타입 소거 래퍼 | [소유권](ownership-and-vocabulary-types.md) |

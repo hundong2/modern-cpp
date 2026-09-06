@@ -50,7 +50,7 @@
 | `<syncstream>` | 레코드 단위 동시 출력 `osyncstream`과 동기 버퍼 |
 | `<system_error>` | `error_code`, `errc` 오류 값 |
 | `<thread>` | `jthread`, `this_thread` 함수 |
-| `<tuple>` | 이종 값 묶음 `tuple`과 `get` |
+| `<tuple>` | 이종 값 묶음 `tuple`, 원소 접근 `get`, tuple-like 호출 어댑터 `apply` |
 | `<type_traits>` | `is_same_v`, `decay_t`, `remove_cvref_t` |
 | `<unordered_map>` | 해시 연관 컨테이너 `unordered_map` |
 | `<utility>` | `move`, `forward`, `exchange`, `pair` |
