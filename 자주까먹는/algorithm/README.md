@@ -53,8 +53,23 @@
     - left, right point 를 통해 left_max, right_max 를 비교하여 현재 left, right포인트에서 물의 깊이를 구하는 알고리즘 
     - O(N)의 시간으로 물의 깊이를 구할 수 있다. 
 - [문자열 곱셈- 세로셈 곱셈(Grade-School Multiplication)](./43.MultiplyStrings.md)  
-
-
+    - carry 되는 데이터에 대해 합을 저장 한 뒤 추후 해당 array에 해당하는 값 연산 시 올림 수 계산
+    - number1, number2의 합만큼 array를 할당 후 저장 
+    - number1 * number2 에서 i+j자리에 값 연산에 대하여 i+j+1부터 저장 
+    - 243 * 34 일때 끝자리 수부터 곱하면 i=2, j=1 => i+j = 3 이고 4자리에 값을 일의 자리를 저장 i+j만큼 할당 된 array의 경우 (0,1,2,3, i + j, i + j + 1) 까지 생성 되기 때문. 
+- **DP, Dynamic Programming Problem**
+    - [(Hard))egular Expression](./regular_expression_hard.md)  
+        - 'c*' 일 경우 문자열이 0이거나 c가 1이상 반복되는 경우임. 
+    - [Hard Wild Card Problem](./44.WildCardMatching.md). 
+        - `*` 일때는 없거나 1개 이상인 경우를 따져야 하고, dp에서 대각선 앞 s, p 문자열에서 s문자 하나 앞(s문자 없거나, 하나 먹혔을 때)와 p하나 앞(* 없을때) 이기때문 `dp[i][j] = dp[i-1][j] || dp[i][j-1]`
+        - `?`이고 p와 s 문자가 같을 때 이므로 대각 선 앞 `dp[i][j] = dp[i-1][j-1]` 이다. 
+- [Greedy Algorithm을 이용한 Count Search](./45.JumpGame2.md). 
+    - O(n) 동안 Counting 할 수 있는 알고리즘 
+    - 다음 최대 index에서 최대 일 경우 까지 모든 경우들은 그 최대 이하이므로 최대까지 Search하고 난 뒤 count를 수행. 끝까지 검색한 후 break후 결과 리턴 
+    - C#에서는 배열의 내장 함수 `Length`를 적극 활용, Count()는 Linq함수 이므로 성능 저하 유발 
+- [Permutation 조합 만들기 문제](./46.Permutation.md). 
+    - C#의 경우 DFS 를 통해 결과 도출
+    - C++의 경우 `Algorithm`라이브러리의 `next_permutation` function을 사용하여 문제를 해결 ( [std::next_permutation](./next_permutation.md)). 
 
 
 ## C++
@@ -133,3 +148,4 @@ public class Solution {
 // var sol = new Solution();
 // Console.WriteLine(sol.MyAtoi("4193 with words")); // 출력: 4193
 ```
+
