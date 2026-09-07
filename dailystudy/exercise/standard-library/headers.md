@@ -33,7 +33,7 @@
 | `<memory>` | 스마트 포인터와 `make_unique`/`make_shared` |
 | `<memory_resource>` | `std::pmr` 메모리 자원과 컨테이너 별칭 |
 | `<mdspan>` | C++23 다차원 비소유 뷰 `mdspan`, 동적 차원 `dextents`, 레이아웃 정책 |
-| `<mutex>` | `mutex`, `scoped_lock`, `unique_lock` |
+| `<mutex>` | `mutex`, `scoped_lock`, `unique_lock`, 일회 초기화 `once_flag`/`call_once` |
 | `<numbers>` | `pi_v` 등 수학 상수 템플릿 |
 | `<numeric>` | `accumulate`, `iota` 수치 알고리즘 |
 | `<optional>` | 선택적 값 `optional`, 빈 태그 `nullopt` |

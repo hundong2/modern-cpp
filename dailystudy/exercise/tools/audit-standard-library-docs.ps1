@@ -56,6 +56,32 @@ $headers = [Collections.Generic.HashSet[string]]::new()
 $observedMembers = [Collections.Generic.HashSet[string]]::new()
 $observedOperations = [Collections.Generic.HashSet[string]]::new()
 
+# 선언 specifier는 순서를 바꿔 조합할 수 있다. extern은 새 객체를 구성하지 않으므로
+# 기본 생성자 감사에서 의도적으로 뺀다.
+$declarationQualifierPattern =
+    '(?:(?:inline|static|thread_local|mutable|constexpr|constinit|const|volatile)\s+)*'
+
+# once_flag의 기본 생성은 plain, {}, = {} 표기와 합리적인 qualifier 조합을 모두 인식한다.
+$onceFlagDefaultConstructionPattern =
+    '(?m)^[ \t]*' + $declarationQualifierPattern +
+    'std::once_flag\s+[A-Za-z_][A-Za-z0-9_]*\s*(?:\{\s*\}|=\s*\{\s*\})?\s*;'
+
+# greedy-to-line-end 타입 부분은 optional<vector<int>>, optional<pair<int, int>> 같은
+# 중첩 template의 마지막 `>`까지 소비한 뒤 수신 객체 이름 앞에서 backtrack한다.
+$optionalDefaultConstructionPattern =
+    '(?m)^[ \t]*' + $declarationQualifierPattern +
+    'std::optional\s*<[^;\r\n]+>\s*(?:(?:const|volatile)\s+)*' +
+    '(?<Receiver>[A-Za-z_][A-Za-z0-9_]*)\s*(?:\{\s*\}|=\s*\{\s*\})?\s*;'
+$optionalReceiverDeclarationPattern =
+    '(?m)^[ \t]*' + $declarationQualifierPattern +
+    'std::optional\s*<[^;\r\n]+>\s*(?:(?:const|volatile)\s+)*' +
+    '(?:[&*]\s*)?(?<Receiver>[A-Za-z_][A-Za-z0-9_]*)\b(?=[^;\r\n]*;)'
+
+# direct-list/direct-initialization 모두와 개행된 initializer를 인식한다. 빈 ()는 함수 선언이므로 제외한다.
+$jthreadConstructionPattern =
+    '(?m)^[ \t]*' + $declarationQualifierPattern +
+    'std::jthread\s+[A-Za-z_][A-Za-z0-9_]*\s*(?:\{|\((?!\s*\)))'
+
 # std::가 이름에 드러나지 않는 표준 멤버 중 현재 학습 코드에서 자주 쓰는 항목만 검사한다.
 $knownStandardMembers = [Collections.Generic.HashSet[string]]::new(
     [string[]]@(
@@ -103,6 +129,10 @@ foreach ($file in $cppFiles) {
     }
     if ($source -match 'std::(?:cout|cerr|clog)\s*<<') {
         $null = $observedOperations.Add('operator<<')
+    }
+    if ($source -match $onceFlagDefaultConstructionPattern) {
+        # once_flag의 default member initializer도 실제 기본 생성자 호출이므로 대표 계약을 요구한다.
+        $null = $observedOperations.Add('once_flag(')
     }
 }
 
@@ -284,6 +314,12 @@ if (-not $tableMatch.Success) {
 }
 
 $contractPatterns = @(
+    [pscustomobject]@{ Name = 'std::once_flag default constructor'; Pattern = $onceFlagDefaultConstructionPattern; Readme = 'std::once_flag()' },
+    [pscustomobject]@{ Name = 'std::call_once'; Pattern = '(?m)^(?!\s*//)\s*[^\r\n]*std::call_once\s*\('; Readme = 'std::call_once(' },
+    [pscustomobject]@{ Name = 'std::optional default constructor'; Pattern = $optionalDefaultConstructionPattern; Readme = 'std::optional()' },
+    [pscustomobject]@{ Name = 'optional::emplace'; OptionalMember = 'emplace'; Readme = 'optional::emplace(' },
+    [pscustomobject]@{ Name = 'optional::value'; OptionalMember = 'value'; Readme = 'optional::value(' },
+    [pscustomobject]@{ Name = 'std::jthread constructor'; Pattern = $jthreadConstructionPattern; Readme = 'std::jthread' },
     [pscustomobject]@{ Name = 'std::move'; Pattern = '(?m)^(?!\s*//)\s*[^\r\n]*std::move\s*\('; Readme = 'std::move(' },
     [pscustomobject]@{ Name = 'std::apply'; Pattern = '(?m)^(?!\s*//)\s*[^\r\n]*std::apply\s*\('; Readme = 'std::apply(' },
     [pscustomobject]@{ Name = 'sync_with_stdio'; Pattern = '(?m)^(?!\s*//)\s*[^\r\n]*std::ios::sync_with_stdio\s*\('; Readme = 'sync_with_stdio(' },
@@ -307,18 +343,51 @@ $contractPatterns = @(
 foreach ($file in Get-ChildItem -LiteralPath $latestDirectory.FullName -Filter '*.cpp' -File) {
     $source = Get-Content -LiteralPath $file.FullName -Encoding UTF8 -Raw
     $lines = @(Get-Content -LiteralPath $file.FullName -Encoding UTF8)
+
+    # 단순 `.value()`/`.emplace()` 전역 정규식은 domain 타입, expected, vector/map 호출까지
+    # optional로 오인한다. 이 파일에서 선언한 optional 객체·참조 이름만 먼저 추출한다.
+    $optionalReceiverNames = @(
+        [regex]::Matches($source, $optionalReceiverDeclarationPattern) |
+            ForEach-Object { $_.Groups['Receiver'].Value } |
+            Sort-Object -Unique
+    )
+    $optionalReceiverAlternation = (
+        $optionalReceiverNames |
+            ForEach-Object { [regex]::Escape($_) }
+    ) -join '|'
+
     foreach ($candidate in $contractPatterns) {
         # vector 멤버·생성자 후보는 vector를 직접 사용하는 번역 단위에서만 표준 호출로 간주한다.
         if ($candidate.Name.StartsWith('vector') -and $source -notmatch 'std::vector\s*<') {
             continue
         }
-        $match = [regex]::Match($source, $candidate.Pattern)
+        $candidatePattern = $candidate.Pattern
+        $optionalMemberProperty = $candidate.PSObject.Properties['OptionalMember']
+        if ($null -ne $optionalMemberProperty) {
+            if ($optionalReceiverNames.Count -eq 0) {
+                continue
+            }
+            $candidatePattern =
+                '(?m)^(?!\s*//)\s*[^\r\n]*\b(?:' + $optionalReceiverAlternation +
+                ')\s*(?:\.|->)\s*' + [regex]::Escape($candidate.OptionalMember) + '\s*\('
+        }
+
+        $match = [regex]::Match($source, $candidatePattern)
         if (-not $match.Success) {
             continue
         }
 
         $lineNumber = [regex]::Matches($source.Substring(0, $match.Index), "`n").Count + 1
+        # 여섯 항목을 정확히 적은 계약은 9줄보다 길 수 있다. 가까운 계약 marker가
+        # 24줄 안에 있으면 그 블록 전체를 검사하고, marker가 없을 때만 기존 9줄 window를 쓴다.
         $contextStart = [Math]::Max(0, $lineNumber - 9)
+        $contractSearchStart = [Math]::Max(0, $lineNumber - 25)
+        for ($index = $lineNumber - 2; $index -ge $contractSearchStart; $index--) {
+            if ($lines[$index] -match '^\s*//\s*\[(?:호출|생성) 계약:') {
+                $contextStart = $index
+                break
+            }
+        }
         $context = ($lines[$contextStart..($lineNumber - 1)] -join "`n")
         $missingParts = @()
         if ($context -notmatch '인자|피연산자|수신|입력|받아|생성자에는') { $missingParts += 'inputs/receiver' }

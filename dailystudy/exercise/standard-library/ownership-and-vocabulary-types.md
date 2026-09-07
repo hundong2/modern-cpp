@@ -49,6 +49,20 @@
 - `std::nullopt`는 빈 상태를 명시하는 태그 객체다.
 - `optional<reference_wrapper<T>>`는 선택적 비소유 참조를 표현하지만 원본 수명을 연장하지 않는다.
 
+### 기본 생성·`emplace`·`value` 호출 계약
+
+| 대표 형태 | 수신 객체·각 입력 | 반환값 | 호출 뒤 상태·계약 |
+|---|---|---|---|
+| `std::optional()` (`constexpr optional() noexcept`) | 아직 구성되지 않은 `optional<T>` 목적 객체. 명시적 데이터 인자와 외부 소유권은 없다. | 생성자는 별도 반환값이 없다. | 빈 optional의 수명이 시작된다. contained `T`는 아직 존재하지 않으며 optional 자체가 동적 할당을 요구하지 않는다. |
+| `template<class... Args> constexpr T& emplace(Args&&... args)` | 살아 있는 optional 수신 lvalue와 `T`를 구성할 수 있는 전달 인자 팩. 각 참조 인자 대상은 구성 중 살아 있어야 한다. | 새 contained `T`의 lvalue 참조를 반환한다. 호출자는 즉시 사용하거나 의도적으로 버릴 수 있다. | 기존 값이 있으면 먼저 파괴하고 전달 인자로 새 T를 직접 구성한다. 성공 뒤 값이 있다. T 생성이 던지면 optional은 비어 있고 과거 contained 참조·포인터는 무효다. |
+| `constexpr T& value() &` / `constexpr const T& value() const &` | 값을 가질 수도 있는 non-const/const optional lvalue. 데이터 인자는 없다. | contained T의 cv가 맞는 lvalue 참조를 반환한다. | 수신 상태와 소유권은 바뀌지 않는다. 비어 있으면 `std::bad_optional_access`를 던진다. 반환 참조는 optional 수명과 다음 reset/emplace/대입 중 먼저 오는 때까지만 유효하다. |
+
+- 기본 생성과 `value()`의 성공 경로는 `O(1)`·무할당이다. `emplace` 비용과 예외는 선택된 T 생성자 비용에 따르고 optional 자체가 별도 heap allocation을 요구하지는 않지만 T가 내부에서 할당할 수 있다.
+- `emplace`는 기존 값을 먼저 파괴하므로 새 T 생성 실패 시 옛 값을 보존하는 강한 보장을 주지 않는다. “옛 값 또는 새 값”이 필요하면 먼저 별도 candidate를 완성한 뒤 예외 없는 교체 전략을 설계한다.
+- `value()`는 빈 상태를 정의된 예외로 보고한다. 반면 `operator*`와 `operator->`는 값 존재 전제조건을 호출자가 지켜야 하므로 검사 없이 빈 optional에 적용하면 안 된다.
+- optional 객체 자체를 다른 스레드가 변경하는 동안 `value()`로 읽는 것은 안전하지 않다. [`../2026-09-08/main.cpp`](../2026-09-08/main.cpp)은 `std::call_once`의 returning→passive 동기화 뒤 cache를 다시 변경하지 않는 불변식으로 const reference 공유를 안전하게 만든다.
+- 오늘 `cache_.emplace(source_.load())`는 load 결과 prvalue를 contained Config/Report로 소유하고 반환 `T&`는 버린다. 이어 `const optional<T>&`로 바인딩한 `published_cache.value()`가 반환한 `const T&`는 Provider/Cache가 파괴되기 전까지만 유효하다.
+
 ## `std::expected<T, E>`와 `std::unexpected<E>` — `<expected>`
 
 - 성공값 `T` 또는 오류값 `E` 중 정확히 하나를 보관하는 C++23 어휘 타입이다.

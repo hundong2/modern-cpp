@@ -69,6 +69,69 @@
 - `unique_lock`은 지연 잠금, 조건 변수 대기, 수동 unlock/relock 같은 유연한 상태를 제공한다. 그만큼 상태 확인이 필요하다.
 - 잠금 객체 수명은 보호 구역의 정확한 범위와 일치시킨다. 잠금 아래에서 외부 콜백을 호출하면 교착·지연 위험이 있다.
 
+## `std::once_flag`와 `std::call_once` — `<mutex>`
+
+`once_flag`와 `call_once`는 여러 실행 흐름이 같은 초기화를 요청해도 **처음 예외 없이 돌아온 실행 하나**의 결과만 완료 상태로 게시한다. 단순 bool 검사와 달리 검사와 실행 사이 경쟁을 막고, 성공 실행의 쓰기를 기다린 호출자가 관찰할 수 있는 동기화 관계까지 제공한다. 지연 설정, 프로세스 수명의 registry 준비, 재사용하는 lookup table 구성에 적합하다. 반복 갱신 캐시나 만료 시간이 있는 값에는 별도 mutex/atomic snapshot 정책이 필요하다.
+
+| 대표 형태 | 수신 객체·각 입력 | 반환값 | 호출 뒤 상태·계약 |
+|---|---|---|---|
+| `std::once_flag()` (`constexpr once_flag() noexcept`) | 아직 구성되지 않은 once_flag 목적 객체. 명시적 데이터 인자나 외부 소유권은 없다. | 생성자는 별도 반환값이 없다. | 내부 상태가 “이 flag를 받은 call_once가 아직 callable을 성공 실행하지 않음”이 된다. 구성 자체는 synchronized가 아니며 복사 생성·복사 대입은 삭제되어 있다. |
+| `template<class Callable, class... Args> void std::call_once(once_flag& flag, Callable&& func, Args&&... args)` | 자유 함수라 수신 객체가 없다. 첫 인자는 수명 유효한 non-const flag lvalue 참조, 둘째는 전달 참조로 빌리거나 이동할 callable, 나머지는 callable에 전달할 인자다. 전달한 식들로 callable이 호출 가능해야 한다. | `void`; active인지 passive인지 나타내는 값을 반환하지 않는다. | callable이 예외 없이 반환하면 그 실행 하나가 returning이고 flag가 완료된다. 이후 passive 호출은 callable을 실행하지 않는다. callable이 던지면 예외를 그 호출자에게 전파하고 다음 호출이 다시 active가 될 수 있다. |
+
+### 실행 분류와 동기화
+
+- **active execution**은 callable을 실제로 실행한다. 같은 flag의 모든 active 실행은 하나의 total order를 이루고, 한 active 완료는 다음 active 시작과 synchronizes-with 관계다.
+- **exceptional execution**은 callable이 예외를 던진 active 실행이다. flag를 성공 완료로 고정하지 않으므로 후속 호출이 재시도한다. 예외 전에 파일·카운터·네트워크 같은 외부 상태에 낸 부수 효과는 자동 rollback되지 않는다.
+- **returning execution**은 예외 없이 끝난 active 실행이다. 같은 flag에 최대 하나이고, 존재한다면 마지막 active 실행이다.
+- **passive execution**은 callable을 실행하지 않는다. returning 실행의 반환은 모든 passive 호출의 반환과 synchronizes-with 관계이므로, 성공 callable 안에서 끝난 비원자 쓰기도 passive 반환 뒤 읽을 수 있다.
+- 어느 스레드가 active가 될지, 실패 뒤 어느 대기자가 다음 active가 될지, 공정성은 지정되지 않는다. 서로 다른 callable을 같은 flag에 넘겨도 flag 단위로 한 번이므로 최초 성공 callable 뒤의 다른 callable은 생략된다.
+
+### 전제조건·수명·소유권
+
+- flag, callable과 모든 참조 캡처/전달 인자는 해당 호출이 실행·대기하는 동안 살아 있어야 한다. flag를 포함한 owner를 thread보다 먼저 파괴하면 댕글링과 데이터 경쟁이 생긴다.
+- once_flag 생성은 다른 스레드에 대한 게시 동작이 아니다. 객체 구성을 끝낸 뒤 thread 시작, 잠금, release/acquire 같은 유효한 동기화로 접근을 공개한다.
+- once_flag는 reset API가 없고 복사/대입할 수 없다. 이동 생성도 제공하지 않으므로 이를 멤버로 가진 cache/provider는 기본적으로 복사·이동 불가능하다. 안정된 최종 주소에 직접 구성하거나 별도 indirection으로 소유한다.
+- call_once는 callable이나 인자의 수명을 연장하는 저장소가 아니다. callable이 반환 참조·포인터를 게시한다면 그 대상의 실제 owner가 모든 독자보다 오래 살아야 한다.
+- callable에서 같은 flag로 재귀 call_once하지 않는다. 표준은 이 재진입을 재사용 가능한 recursive once로 정의하지 않으며 구현 대기와 교착할 수 있다.
+
+### 오류·복잡도·무효화
+
+- callable이 던진 모든 예외는 해당 active 호출자에게 그대로 전파된다. 동시성 지원이 오류를 보고해야 하는 경우 `system_error`도 가능하다. passive 호출은 성공 callable을 다시 실행하거나 그 반환값을 소유하지 않는다.
+- 표준은 call_once에 점근 시간 복잡도, 동적 할당 여부, lock-free 구현, 공정성 또는 벽시계 대기 상한을 지정하지 않는다. 호출 비용에는 callable 작업과 경쟁·스케줄러·운영체제 대기가 더해질 수 있다.
+- API 자체가 컨테이너 반복자나 참조를 직접 무효화하지 않는다. 그러나 callable이 `emplace`, 재할당, 교체를 수행하면 해당 타입의 무효화 규칙이 그대로 적용된다.
+- 예외 안전한 지연 캐시는 외부 작업을 임시 결과로 완성한 다음 마지막에 private cache로 commit한다. call_once의 재시도는 트랜잭션 rollback이 아니므로 외부 부수 효과는 멱등성이나 보상 정책을 별도로 설계한다.
+
+### 오늘 코드에서의 역할
+
+- [`../2026-09-08/main.cpp`](../2026-09-08/main.cpp)의 `LazyConfigProvider::get()`은 두 `jthread` 요청 중 한 active 실행만 `ConfigSource::load()`와 `optional::emplace`를 수행하게 한다. 두 thread를 join한 뒤 source 횟수 1과 같은 Config 주소를 검증한다.
+- [`../2026-09-08/problem.cpp`](../2026-09-08/problem.cpp)의 `LazyReportCache::read()`은 첫 순차 호출이 returning, 둘째가 passive가 되는 가장 작은 연습이다.
+- 두 예제 모두 source를 비소유 참조로 빌리고 cache를 `mutable`로 두어, 공개 API는 `const` 관찰이지만 내부의 한 번뿐인 물리적 초기화는 허용한다.
+
+### 최소 실행 예제
+
+```cpp
+#include <mutex>
+
+int main() {
+    std::once_flag flag{};
+    int value{};
+
+    std::call_once(flag, [&] { value = 7; });
+    std::call_once(flag, [&] { value = 9; }); // passive: callable은 실행되지 않는다.
+
+    return value == 7 ? 0 : 1;
+}
+```
+
+### 흔한 실수
+
+1. `if (!initialized) initialize();` 같은 비원자 check-then-act를 여러 스레드에서 쓴다.
+2. callable이 던져도 flag가 완료됐다고 가정하거나, 반대로 다른 호출자가 예외를 자동으로 받는다고 생각한다.
+3. exceptional 실행 전의 로그·파일 쓰기·카운터 증가가 자동 취소된다고 기대한다.
+4. 매번 다른 작업을 같은 flag에 넘기고 각각 한 번 실행될 것이라 기대한다.
+5. reference-captured 지역이나 source를 먼저 파괴하고 아직 기다리는 call_once가 접근하게 한다.
+6. 한 번 만든 값을 갱신해야 하는 캐시에 reset 불가능한 once_flag를 사용한다.
+
 ## `std::condition_variable` — `<condition_variable>`
 
 조건 변수는 공유 상태가 특정 **술어(predicate)** 를 만족할 때까지 스레드가 mutex를 양보하고 기다리게 한다. 알림 자체는 상태를 저장하지 않는다. 생산자–소비자 큐에서는 `queue가 비지 않음`, `queue에 공간이 있음`, `종료됨` 같은 상태를 mutex 아래에서 바꾸고, 대기자는 같은 mutex 아래에서 술어를 재검사해야 lost wakeup과 허위 깨움을 안전하게 처리한다.
