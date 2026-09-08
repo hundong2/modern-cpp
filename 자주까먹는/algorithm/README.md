@@ -70,7 +70,13 @@
 - [Permutation 조합 만들기 문제](./46.Permutation.md). 
     - C#의 경우 DFS 를 통해 결과 도출
     - C++의 경우 `Algorithm`라이브러리의 `next_permutation` function을 사용하여 문제를 해결 ( [std::next_permutation](./next_permutation.md)). 
-
+- [Array Rotation 문제- 행렬의 전치와 reverse를 활용한 문제](./48.RotateImage.md)  
+    - c++ : `std::reverse()`, `std::swap`, `std::size()`
+    - c# : `Array.Reverse()`, `(A, B) = (B, A)`
+- [std::unordered_map과 Dictionary를 활용한 hash map을 사용하여 grouping 하는 문제](./49.GroupAnagrams.md)  
+    - c#의 경우 string을 내부적으로 Sorting하는 것이 없으므로 `ToArray`를 통해 array로 변환 후 `Array.Sort`로 변환. 그리고, ToString()또는, new string(Array Value)를 할당 받아 수행 
+- [divide and conquer - 분할정복문제](./50.Pow(x,n).md). 
+    - 2씩 나눠서 끝까지 도달 n지수가 0이 될때까지 분할하여 수행 
 
 ## C++
 
