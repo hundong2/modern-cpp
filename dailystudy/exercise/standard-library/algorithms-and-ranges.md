@@ -77,6 +77,43 @@
 - 반환값은 마지막 원소가 아니라 마지막 다음 위치이며 역참조할 수 없다.
 - 템플릿 코드에서 멤버 `end()`와 ADL `end`를 일관되게 찾게 한다.
 
+## `std::ranges::subrange<I, S, K>` — `<ranges>`
+
+`subrange`는 시작 iterator `I`와 끝 sentinel `S`를 값으로 보관해 반열린 범위 `[begin,end)`를 만드는 C++20 class template이자 view다. **iterator/sentinel 객체는 소유하지만 그들이 가리키는 원소와 저장소는 소유하지 않는다.** 컨테이너 전체가 아니라 일부 구간만 표준 range 인터페이스로 넘기되 원소 복사를 피할 때 사용한다.
+
+- 항목 종류·대표 선언: `template<input_or_output_iterator I, sentinel_for<I> S = I, subrange_kind K = ...> class subrange`. `S=I`이면 같은 iterator 타입이 끝 역할도 한다. `K`는 `sized` 또는 `unsized`이며 기본값은 `sized_sentinel_for<S,I>` 만족 여부로 정해진다.
+- iterator 쌍 생성자: 대표 형태 `subrange(I first, S last)`는 두 인자를 값으로 이동/복사해 보관한다. **호출 시점부터 `[first,last)`가 유효한 범위, 즉 sentinel `last`가 iterator `first`에서 허용된 반복으로 도달 가능한 경계여야 한다.** 이 전제조건을 어긴 생성 자체가 라이브러리 계약 위반이며 미정의 동작이다. `K==sized`인데 `S`와 `I`의 차이를 바로 구할 수 없는 형태는 별도 size 인자가 필요하다. 생성자는 반환값이 없고 원본 범위·원소를 변경하지 않는다.
+- range 생성자: 적합한 `borrowed_range<R>`에서는 `subrange(R&&)` 형태로 `ranges::begin/end`를 얻을 수 있다. 임시 소유 컨테이너처럼 borrowed range가 아닌 입력을 거부하는 overload 제약은 흔한 dangling을 줄이지만, 사용자가 임시 컨테이너 iterator를 직접 꺼내 쌍 생성자에 넣는 잘못까지 막지는 못한다.
+- `begin()` / `end()`: 저장한 시작 iterator와 끝 sentinel을 값으로 반환한다. vector iterator처럼 복사 가능한 `I`에서는 수신 subrange와 원소가 바뀌지 않는다. `end()` 결과는 마지막 원소가 아니라 마지막 다음 경계이므로 역참조하면 안 된다.
+- `size()`: `K==subrange_kind::sized`일 때만 제공한다. 저장 크기가 있으면 그 값을, `sized_sentinel_for`이면 끝과 시작의 차이를 부호 없는 차이 타입 값으로 반환한다. random-access vector iterator 쌍에서는 `O(1)`이다.
+- 복잡도·할당: iterator 복사/이동과 sentinel 차이가 상수 시간인 오늘 타입에서는 생성, 복사, `begin`, `end`, `size` 모두 `O(1)`이며 subrange 자체가 동적 할당을 요구하지 않는다. 사용자 iterator의 연산 비용·예외가 다르면 그 계약을 따른다.
+- 수명·무효화: vector에서 얻은 iterator라면 owner 파괴, 재할당, 그리고 erase 위치에 따른 vector 무효화 규칙을 그대로 따른다. `const_iterator`는 그 iterator를 통한 쓰기만 막고 다른 별칭의 vector mutation을 막지 않는다. 생성 뒤 owner 변화로 dangling이 된 subrange의 비교·차이·역참조·순회도 전제조건을 깨며 미정의 동작으로 이어질 수 있다.
+- 예외·보장: 표준 컨테이너 iterator처럼 복사·차이 계산이 던지지 않는 타입에서는 오늘 호출도 예외를 내지 않고 원본 상태를 바꾸지 않는다. 일반 사용자 iterator/sentinel은 복사·이동·연산에서 예외를 던질 수 있으므로 generic 코드에서는 그 예외 보장을 전파한다.
+- 스레드: subrange는 동기화를 제공하지 않는다. 서로 다른 실행 흐름이 같은 원소를 읽기만 하는 것은 원본 타입의 규칙을 따르지만, 한쪽이 vector 구조나 같은 원소를 쓰는 동안 동기화 없이 순회하면 iterator 무효화 또는 데이터 경쟁이 생길 수 있다.
+- 오늘 코드의 역할: `RecordBook::Page{first,last}`는 owner보다 짧게 살아 있는 읽기 전용 페이지를 서비스 함수 안에서 즉시 집계한다. page를 장기 저장하지 않는 구조가 비소유 수명 계약을 API 흐름에 드러낸다.
+
+기계 실행 관점에서 vector의 random-access iterator 두 개는 주소와 비슷한 값으로 최적화될 수 있고 `size()`는 뺄셈이 될 수 있다. 그러나 iterator 표현, load·비교·분기 수와 bounds 관련 최적화는 CPU, ABI, 표준 라이브러리, 컴파일러와 옵션에 따라 달라 특정 어셈블리로 단정하지 않는다.
+
+### 최소 실행 예제
+
+```cpp
+#include <iostream>
+#include <ranges>
+#include <vector>
+
+int main() {
+    std::vector<int> values{10, 20, 30, 40};
+    using Iterator = std::vector<int>::const_iterator;
+    const std::ranges::subrange<Iterator> middle{values.cbegin() + 1, values.cbegin() + 3};
+
+    int sum{};
+    for (const int value : middle) {
+        sum += value;
+    }
+    std::cout << middle.size() << ' ' << sum << '\n'; // 2 50
+}
+```
+
 ## 비교 함수 객체 `std::less`, `std::greater` — `<functional>`
 
 - 두 값을 비교하는 함수 객체다. `less<T>{}(a,b)`는 보통 `a<b`, `greater<T>{}(a,b)`는 `a>b` 의미다.
@@ -108,3 +145,5 @@ int main() {
 2. `sort` 비교자로 `left <= right`를 쓰면 엄격 약순서의 어떤 규칙을 깨는지 설명한다.
 3. `find_if`가 반환한 반복자를 `vector::push_back` 뒤에도 보관할 수 있는 조건을 말한다.
 4. `views::filter`를 만든 뒤 원본 `vector`를 파괴하는 최소 댕글링 예를 작성한다.
+5. `subrange`와 `span`이 각각 표현할 수 있는 sentinel/연속 메모리 조건과 원소 소유권을 비교한다.
+6. vector iterator subrange를 만든 뒤 `push_back`이 재할당할 때 생기는 무효화를 설명한다.

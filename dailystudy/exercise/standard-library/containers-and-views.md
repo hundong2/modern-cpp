@@ -13,20 +13,20 @@
 - `vector(count)`의 대표 형태는 `explicit vector(size_type count, const Allocator& alloc = Allocator());`다. `count`는 값으로 전달되며 `max_size()` 이하여야 하고, 생략된 allocator는 기본값을 쓴다. 성공하면 `count`개 원소를 기본 삽입해 소유한다. `vector<int>(5)`의 원소는 모두 0이다. 시간·공간은 `O(count)`이고 `length_error`, `bad_alloc`, 원소 생성 예외가 가능하다.
 - `vector(count, value)`의 대표 형태는 `vector(size_type count, const T& value, const Allocator& alloc = Allocator());`다. `count`와 빌린 `value`를 받아 같은 값을 `count`번 복사한다. 반환값은 없고 성공 후 `size()==count`이며 각 원소 수명은 vector와 함께 관리된다. 시간·공간은 `O(count)`이고 길이·할당·복사 예외가 가능하다.
 - `vector{a, b, c}`는 `initializer_list` 생성자를 선택해 세 원소를 만든다. 괄호와 중괄호의 의미가 다를 수 있다.
-- `size()`는 현재 원소 수를 부호 없는 `size_type`으로 `O(1)`에 반환한다.
-- `empty()`는 `size()==0` 여부를 `O(1)`에 반환한다. `size() > 0`보다 의도가 직접적이다.
+- `size()`의 대표 형태는 `size_type size() const noexcept`다. 살아 있는 vector를 const로 빌리고 데이터 인자 없이 현재 원소 수 값을 `O(1)`에 반환한다. 수신 객체·원소·capacity·관찰자를 바꾸지 않고 할당·예외·동기화를 추가하지 않는다.
+- `empty()`의 대표 형태는 `bool empty() const noexcept`다. 데이터 인자 없이 `size()==0` 여부를 `O(1)`에 반환하며 수신 vector를 바꾸지 않는다. `size() > 0`보다 의도가 직접적이고, 이 관찰 자체는 할당·무효화·예외가 없다.
 - `operator[](i)`의 대표 오버로드는 `reference operator[](size_type i)`와 `const_reference operator[](size_type i) const`다. 정확히 한 값 인자를 받으며 수신 객체의 const 여부에 따라 `T&` 또는 `const T&`를 `O(1)`에 반환한다. 컨테이너의 크기·용량·원소는 바뀌지 않고 할당도 없다. 범위 검사가 없어 `i>=size()`면 미정의 동작이며, 반환 참조는 해당 원소 제거·재할당 또는 vector 파괴 시 무효가 된다. 구현에서 식이 `noexcept`여도 대표 선언에 일률적으로 예외 명세가 있다고 가정하지 않는다.
 - `at(i)`는 범위를 검사하고 잘못된 인덱스면 `std::out_of_range`를 던진다.
 - `front()`와 `back()`은 첫/마지막 원소 참조를 반환한다. 빈 컨테이너에서 호출하면 안 된다.
 - `data()`는 연속 저장소 첫 원소 포인터를 반환한다. 빈 컨테이너에서는 역참조하면 안 된다.
-- `begin()/end()`는 시작과 마지막 다음 반복자를 반환한다. `cbegin()/cend()`는 읽기 전용 반복자다.
+- `begin()/end()`는 시작과 마지막 다음 반복자를 값으로 반환하고, const 수신 overload와 `cbegin()/cend()`는 읽기 전용 `const_iterator`를 반환한다. 모두 데이터 인자 없이 `O(1)`·무할당·`noexcept`이고 vector를 바꾸지 않지만, 반환 관찰자는 vector 파괴·재할당·해당 erase 규칙에 따라 무효화된다. `end()`/`cend()`는 역참조하면 안 된다. random-access iterator의 `operator+(difference_type n)`은 같은 저장소의 `[begin,end]` 안 위치만 만들어야 하며 O(1)에 새 iterator를 반환한다. 범위를 벗어나게 계산하거나 서로 다른 배열 iterator를 빼는 것은 전제조건을 깨고 미정의 동작이 될 수 있다.
 - `push_back(value)`는 끝에 값을 복사 또는 이동한다. 용량 부족 시 재할당될 수 있다.
 - `assign(count, value)`는 기존 원소를 모두 파괴하고 `count`개의 `value` 복사본으로 내용을 교체한다. 반환형은 `void`, 시간·공간은 새 원소 수에 선형이며 기존 포인터·참조·반복자는 모두 무효화된다. 원소 복사나 할당 실패는 예외가 될 수 있다.
 - `emplace_back(args...)`는 전달받은 인자로 끝 원소를 직접 생성한다. 임시 객체를 항상 없앤다고 단정하지 말고 생성 계약과 가독성을 본다.
 - `pop_back()`은 마지막 원소를 파괴하며 값을 반환하지 않는다. 빈 벡터에서 호출하면 미정의 동작이다. 제거 원소를 가리키던 포인터·참조·반복자와 이전 past-the-end 반복자는 무효가 되고, 그보다 앞선 원소 관찰자와 capacity는 유지된다.
+- `clear()`의 대표 형태는 `void clear() noexcept`다. 데이터 인자와 반환값 없이 모든 원소 수명을 끝내 `size()==0`으로 만들지만 capacity는 줄이지 않는다. 원소 수에 선형이며 별도 할당을 하지 않고, 모든 원소 관찰자와 과거 past-the-end 반복자를 무효화한다. `noexcept` 함수 안에서 계약을 어기고 던지는 원소 소멸자가 있다면 정상 복구가 아니라 종료로 이어질 수 있다. 다른 실행 흐름이 같은 vector를 읽거나 쓰는 동안 외부 동기화 없이 호출하면 안 된다.
 - `reserve(n)`의 대표 형태는 `void reserve(size_type new_cap)`다. `new_cap<=capacity()`면 상태를 유지하고, 더 크면 용량을 최소 `new_cap`으로 늘리되 크기는 바꾸지 않는다. 시간은 현재 `size()`에 선형이며 실제 재할당이 일어나면 모든 원소 관찰자가 무효화된다. `new_cap>max_size()`는 `length_error`, 할당 실패는 `bad_alloc`이 될 수 있다. 일반 원소 타입은 던지는 이동 생성자 조건에 따라 예외 보장이 약해질 수 있지만, 복사 가능하거나 nothrow 이동 가능한 타입에서는 실패 시 기존 vector가 유지된다.
 - `resize(n)`은 크기를 바꾼다. 커지면 새 원소를 생성하고 작아지면 뒤 원소를 파괴한다.
-- `clear()`는 모든 원소를 파괴해 크기를 0으로 만들지만 용량 반환은 보장하지 않는다.
 
 ```cpp
 #include <vector>

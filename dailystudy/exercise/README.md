@@ -57,12 +57,13 @@
 | [2026-09-04](./2026-09-04/README.md) | `promise`/`future` 단일 결과 경계와 Hierholzer 오일러 회로 | C++20 |
 | [2026-09-07](./2026-09-07/README.md) | `std::apply` tuple 경계 어댑터와 Andrew 볼록 껍질 | C++20 |
 | [2026-09-08](./2026-09-08/README.md) | `call_once` 지연 초기화 경계와 Hamiltonian 경로 비트마스크 DP | C++20 |
+| [2026-09-09](./2026-09-09/README.md) | `ranges::subrange` 비소유 페이지와 센트로이드 분할 | C++20 |
 
 ## 표준 라이브러리 설명 찾기
 
 - [표준 라이브러리 학습 지도](./standard-library/README.md): 설명 품질 기준과 분야별 대표 문서
-- [날짜별 사용 색인](./standard-library/by-date.md): 현재 53개 날짜, 140개 C++ 파일의 헤더와 `std::` 심볼
-- [심볼 색인](./standard-library/symbol-index.md): 133개 현재 심볼의 역할과 상세 문서 링크
+- [날짜별 사용 색인](./standard-library/by-date.md): 현재 54개 날짜, 143개 C++ 파일의 헤더와 `std::` 심볼
+- [심볼 색인](./standard-library/symbol-index.md): 134개 현재 심볼의 역할과 상세 문서 링크
 - [공통 용어](./standard-library/terms.md): 반복자, 뷰, 술어, 소유권, 무효화, 예외 보장, 원자성
 - [표준 헤더](./standard-library/headers.md): 현재 사용하는 52개 헤더와 대표 선언
 
