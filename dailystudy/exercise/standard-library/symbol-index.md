@@ -62,6 +62,8 @@
 |---|---|---|
 | `std::unique_ptr` | 독점 소유 스마트 포인터 | [소유권](ownership-and-vocabulary-types.md) |
 | `std::make_unique` | 객체와 unique_ptr 생성 | [소유권](ownership-and-vocabulary-types.md) |
+| `std::out_ptr` | `T**` 출력 API를 스마트 포인터 소유권으로 잇는 C++23 어댑터 함수 | [소유권](ownership-and-vocabulary-types.md) |
+| `std::out_ptr_t` | 출력 슬롯과 스마트 포인터 재채택 수명을 관리하는 임시 어댑터 타입 | [소유권](ownership-and-vocabulary-types.md) |
 | `std::shared_ptr` | 참조 횟수 기반 공유 소유권 | [소유권](ownership-and-vocabulary-types.md) |
 | `std::make_shared` | 객체와 shared_ptr 생성 | [소유권](ownership-and-vocabulary-types.md) |
 | `std::weak_ptr` | shared_ptr 객체의 비소유 관찰자 | [소유권](ownership-and-vocabulary-types.md) |

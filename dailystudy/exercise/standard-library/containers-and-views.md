@@ -115,7 +115,9 @@ int main() {
 
 - `char`를 연속 메모리에 소유하는 `basic_string<char>` 별칭이다.
 - 복사하면 문자 값을 복사하고 이동하면 내부 버퍼 소유권을 넘길 수 있다.
-- `size()`는 문자 수, `empty()`는 빈 여부, `data()/c_str()`는 null 종료 저장소 포인터를 제공한다.
+- `size()`와 `length()`는 같은 문자 수를 `size_type` 값으로 상수 시간에 반환한다. 둘 다 인자 없이
+  수신 문자열을 바꾸지 않고, 할당·참조 무효화·예외가 없다. `empty()`는 빈 여부,
+  `data()/c_str()`는 null 종료 저장소 포인터를 제공한다.
 - `append(text)`와 `operator+=`는 끝에 문자를 추가한다. 용량 부족 재할당 시 기존 포인터·참조·반복자가 무효화될 수 있다.
 - `substr(pos,count)`는 새 소유 문자열을 만들어 복사한다. `string_view::substr`는 뷰만 조정한다는 차이가 있다.
 - `find(needle)`은 첫 위치를 반환하고 없으면 `std::string::npos`를 반환한다. 반환형이 부호 없는 `size_type`이므로 `-1`과 직접 섞지 않는다.

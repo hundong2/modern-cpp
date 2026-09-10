@@ -320,6 +320,7 @@ $contractPatterns = @(
     [pscustomobject]@{ Name = 'optional::emplace'; OptionalMember = 'emplace'; Readme = 'optional::emplace(' },
     [pscustomobject]@{ Name = 'optional::value'; OptionalMember = 'value'; Readme = 'optional::value(' },
     [pscustomobject]@{ Name = 'std::jthread constructor'; Pattern = $jthreadConstructionPattern; Readme = 'std::jthread' },
+    [pscustomobject]@{ Name = 'std::out_ptr'; Pattern = '(?m)^(?!\s*//)\s*[^\r\n]*std::out_ptr(?:\s*<[^;\r\n()]+>)?\s*\('; Readme = 'std::out_ptr(' },
     [pscustomobject]@{ Name = 'std::move'; Pattern = '(?m)^(?!\s*//)\s*[^\r\n]*std::move\s*\('; Readme = 'std::move(' },
     [pscustomobject]@{ Name = 'std::apply'; Pattern = '(?m)^(?!\s*//)\s*[^\r\n]*std::apply\s*\('; Readme = 'std::apply(' },
     [pscustomobject]@{ Name = 'sync_with_stdio'; Pattern = '(?m)^(?!\s*//)\s*[^\r\n]*std::ios::sync_with_stdio\s*\('; Readme = 'sync_with_stdio(' },

@@ -11,6 +11,31 @@
 - `make_unique<T>(args...)`는 `T`를 동적 생성하고 `unique_ptr<T>` prvalue를 반환한다. 직접 `new`보다 예외 안전성과 가독성이 좋다.
 - 파생 객체를 기반 `unique_ptr<Base>`로 소유해 기반 포인터로 삭제한다면 기반 소멸자는 보통 가상이어야 한다.
 
+## `std::out_ptr`와 `std::out_ptr_t` — `<memory>`의 C++23 출력 포인터 어댑터
+
+`std::out_ptr`는 `T**` 또는 `void**` 출력 매개변수에 새 자원의 원시 포인터를 써 주는 C API와 C++ 스마트 포인터 사이를 잇는 C++23 함수 템플릿이다. 반환되는 `std::out_ptr_t` 임시 객체가 출력 슬롯을 제공하고, 자신의 수명이 끝날 때 그 슬롯의 non-null 포인터를 스마트 포인터에 다시 채택시킨다. 수동 `release()`/임시 raw pointer/`reset()` 사이의 누수 경로를 없애는 RAII 경계지만, C API의 상태 코드나 포인터 계약 자체를 검증하지는 않는다.
+
+### `std::out_ptr(s, args...)` 호출 계약
+
+- **항목 종류·대표 선언:** 자유 함수 템플릿 `template<class Pointer = void, class Smart, class... Args> constexpr auto out_ptr(Smart& s, Args&&... args);`와 non-copyable class template `out_ptr_t<Smart, Pointer, Args...>`이며 `<memory>`에 선언된다. 명시한 `Pointer`가 `void`가 아니면 그것을 쓰고, 생략하면 `Smart::pointer`, `Smart::element_type*`, `pointer_traits<Smart>::element_type*` 순서의 표준 선택 규칙으로 실제 포인터 타입 `P`를 정한다.
+- **수신 객체·인자:** 자유 함수라 별도 수신자는 없다. 첫 인자 `s`는 수명이 유효한 수정 가능한 `Smart` lvalue를 non-const reference로 빌리며 복사하거나 소유하지 않는다. `args...`는 `Smart::reset(p,args...)` 또는 `Smart(p,args...)`에 넘길 deleter·allocator 같은 추가 정책을 전달한다. `P`는 null 상태를 표현하고 비교할 수 있는 NullablePointer 요구사항을 만족해야 한다.
+- **반환형·사용:** 반환형은 `std::out_ptr_t<Smart, P, Args&&...>` prvalue다. 보통 `legacy_create(std::out_ptr(owner))`처럼 같은 full-expression에서 C 함수의 `P*` 출력 인자로 즉시 변환해 사용한다. 어댑터는 복사할 수 없으며, 반환값을 오래 이름 붙여 보관하기보다 호출 한 번의 범위에 가두는 편이 수명 순서를 명확하게 한다.
+- **생성 직후 상태:** 어댑터는 `s`와 추가 인자를 보관하고 내부 `P` 슬롯을 null로 값 초기화한다. 이어 가능한 경우 `s.reset()`, 아니면 `s = Smart()`로 기존 스마트 포인터를 비운다. 따라서 기존 자원이 있었다면 이 시점에 기존 deleter로 해제될 수 있고, 그 자원을 보던 raw pointer·reference는 무효가 된다. 기존 값을 C 함수가 입력으로도 사용하거나 직접 해제하는 API에는 `out_ptr`가 아니라 `inout_ptr` 계약을 검토해야 한다.
+- **출력 포인터 변환:** `operator P*() const noexcept`는 내부 슬롯의 주소를 반환한다. C 함수는 호출 동안 그 주소가 가리키는 슬롯에 새 포인터 또는 null을 쓸 수 있지만, `P*` 자체를 저장해 어댑터 수명 뒤 접근하면 안 된다. `operator void**()`도 조건부로 제공되며, 같은 어댑터에서 `P*` 변환과 `void**` 변환을 둘 다 평가하는 것은 각각의 전제조건을 어긴다. 특히 반환된 `void**`가 가리키는 슬롯을 어댑터 수명 밖에서 접근하는 것은 미정의 동작이다.
+- **파괴와 사후 상태:** C 호출을 포함한 full-expression 끝에서 어댑터가 파괴된다. 내부 슬롯 `p`가 non-null이면 `s.reset(static_cast<SP>(p), forwarded_args...)`, 또는 지원되는 `Smart` 직접 구성·대입과 동등한 동작으로 새 자원을 채택한다. `p`가 null이면 `s`는 앞서 비운 상태로 남는다. 상태 코드가 실패여도 C API가 non-null을 썼다면 어댑터는 그 포인터를 채택하므로, 성공/실패 시 출력 슬롯을 어떻게 다루는지는 반드시 그 API 문서로 따로 확인한다.
+- **복잡도·할당:** 표준은 모든 `Smart`와 deleter에 공통인 점근 상한을 정하지 않는다. 빈 `unique_ptr`와 단순 deleter를 쓰는 오늘 예제에서 어댑터의 슬롯 준비와 소유권 채택은 상수 시간이고 별도 할당이 필요 없지만, 기존 자원 해제 비용과 사용자 정의 `Smart`/deleter 비용은 각각의 계약을 따른다. `shared_ptr` 적응은 제어 블록을 준비하기 위해 어댑터 생성 중 할당할 수 있다.
+- **예외·컴파일 오류:** 어댑터 생성자는 일반적으로 `noexcept`가 아니므로 전달 인자 보관, 기존 소유자 비우기, `shared_ptr` 제어 블록 준비의 예외가 C 함수 호출 전에 전파될 수 있다. 파괴 시 채택 경로에서 예외가 안전하게 빠져나올 것이라 기대하면 안 되며, `noexcept`인 스마트 포인터 동작이나 deleter가 던지면 종료될 수 있다. `Smart`가 `shared_ptr` 특수화인데 추가 인자가 하나도 없으면 프로그램은 ill-formed이므로 새 raw pointer에 맞는 deleter를 추가 인자로 전달해야 한다. 반면 `unique_ptr<T,D>`는 저장된 `D`를 유지한 채 새 pointer를 reset하므로 보통 별도 deleter 인자가 필요 없다. `Smart`를 비우거나 새 포인터와 인자로 다시 구성할 수 없는 조합도 ill-formed다.
+- **수명·소유권·무효화:** C 함수가 쓴 새 자원은 어댑터 파괴 전까지 임시 슬롯에 있고, 파괴가 끝난 뒤 `s`가 소유한다. 그 뒤 raw observer의 유효 기간은 `s`의 다음 reset/이동/소멸과 deleter 계약에 묶인다. 어댑터와 `s`, 전달한 참조 인자는 적어도 어댑터 파괴가 끝날 때까지 살아 있어야 한다. C API가 출력한 포인터를 별도로 해제하거나 다른 owner에도 채택하면 이중 해제 위험이 있다.
+- **스레드 보장:** 어댑터는 같은 `Smart` 객체를 비우고 다시 쓴다. 같은 스마트 포인터 객체나 같은 어댑터 변환을 다른 실행 흐름과 동기화 없이 함께 평가하면 데이터 경쟁 또는 충돌 연산이 될 수 있다. 스마트 포인터가 가리키는 대상의 동시 접근 안전성도 별도 문제이며 `out_ptr`가 동기화를 추가하지 않는다.
+- **오늘 코드에서의 역할:** [`2026-09-10 main.cpp`](../2026-09-10/main.cpp)의 `legacy_connect(endpoint, std::out_ptr(handle))`는 빈 `ConnectionPtr`를 `LegacyConnection**` 출력 슬롯으로 잠시 적응한다. C 함수가 성공해 기록한 포인터는 full-expression 끝에 custom deleter를 보존한 `unique_ptr`가 채택하고, 실패해 슬롯이 null이면 owner는 빈 상태로 남는다.
+
+### 선택 판단과 흔한 실수
+
+- API가 **새 값만 출력**하고 기존 포인터를 읽지 않는다면 `out_ptr`가 맞다. 기존 포인터를 입력으로 받아 재할당·교체하거나 직접 해제한다면 `inout_ptr` 또는 그 API 전용 래퍼가 필요하다.
+- `if (legacy_create(std::out_ptr(owner)) == 0 && owner)`처럼 같은 full-expression 안에서 owner를 이어 검사하면 오른쪽 피연산자를 평가할 때 어댑터 임시가 아직 파괴되지 않아 owner가 여전히 비어 있다. 상태 코드를 먼저 받은 뒤 다음 문장에서 owner를 관찰한다.
+- `P**` 출력 주소를 C 라이브러리가 호출 뒤에도 비동기로 보관하는 API에는 임시 `out_ptr_t`를 넘길 수 없다. 그 주소의 유효 기간은 어댑터 수명뿐이다.
+- `shared_ptr`에는 자원에 맞는 deleter를 추가 인자로 넘긴다. `unique_ptr<T,D>`는 기존 `D` 객체를 유지한 채 새 `pointer`를 reset하므로 보통 별도 deleter 인자가 필요 없다.
+
 ## `std::shared_ptr<T>`, `std::weak_ptr<T>`, `std::make_shared<T>`
 
 - `shared_ptr` 복사는 공유 참조 횟수를 늘리고 마지막 소유자가 사라질 때 객체를 파괴한다.

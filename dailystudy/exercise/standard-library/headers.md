@@ -30,7 +30,7 @@
 | `<latch>` | C++20 일회성 카운트다운 동기화 객체 `std::latch` |
 | `<limits>` | `numeric_limits` 타입별 수치 한계 |
 | `<map>` | 정렬 연관 컨테이너 `map` |
-| `<memory>` | 스마트 포인터와 `make_unique`/`make_shared` |
+| `<memory>` | 스마트 포인터, `make_unique`/`make_shared`, C++23 출력 포인터 어댑터 `out_ptr` |
 | `<memory_resource>` | `std::pmr` 메모리 자원과 컨테이너 별칭 |
 | `<mdspan>` | C++23 다차원 비소유 뷰 `mdspan`, 동적 차원 `dextents`, 레이아웃 정책 |
 | `<mutex>` | `mutex`, `scoped_lock`, `unique_lock`, 일회 초기화 `once_flag`/`call_once` |
