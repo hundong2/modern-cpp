@@ -59,12 +59,13 @@
 | [2026-09-08](./2026-09-08/README.md) | `call_once` 지연 초기화 경계와 Hamiltonian 경로 비트마스크 DP | C++20 |
 | [2026-09-09](./2026-09-09/README.md) | `ranges::subrange` 비소유 페이지와 센트로이드 분할 | C++20 |
 | [2026-09-10](./2026-09-10/README.md) | `out_ptr` C 출력 포인터 소유권 adapter와 Manacher | C++23 |
+| [2026-09-11](./2026-09-11/README.md) | `ranges::to` 소유 스냅숏 materialization과 영속 세그먼트 트리 | C++23 |
 
 ## 표준 라이브러리 설명 찾기
 
 - [표준 라이브러리 학습 지도](./standard-library/README.md): 설명 품질 기준과 분야별 대표 문서
-- [날짜별 사용 색인](./standard-library/by-date.md): 현재 55개 날짜, 146개 C++ 파일의 헤더와 `std::` 심볼
-- [심볼 색인](./standard-library/symbol-index.md): 136개 현재 심볼의 역할과 상세 문서 링크
+- [날짜별 사용 색인](./standard-library/by-date.md): 현재 56개 날짜, 149개 C++ 파일의 헤더와 `std::` 심볼
+- [심볼 색인](./standard-library/symbol-index.md): 137개 현재 심볼의 역할과 상세 문서 링크
 - [공통 용어](./standard-library/terms.md): 반복자, 뷰, 술어, 소유권, 무효화, 예외 보장, 원자성
 - [표준 헤더](./standard-library/headers.md): 현재 사용하는 52개 헤더와 대표 선언
 

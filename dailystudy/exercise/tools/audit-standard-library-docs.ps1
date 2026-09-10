@@ -323,6 +323,7 @@ $contractPatterns = @(
     [pscustomobject]@{ Name = 'std::out_ptr'; Pattern = '(?m)^(?!\s*//)\s*[^\r\n]*std::out_ptr(?:\s*<[^;\r\n()]+>)?\s*\('; Readme = 'std::out_ptr(' },
     [pscustomobject]@{ Name = 'std::move'; Pattern = '(?m)^(?!\s*//)\s*[^\r\n]*std::move\s*\('; Readme = 'std::move(' },
     [pscustomobject]@{ Name = 'std::apply'; Pattern = '(?m)^(?!\s*//)\s*[^\r\n]*std::apply\s*\('; Readme = 'std::apply(' },
+    [pscustomobject]@{ Name = 'std::ranges::to'; Pattern = '(?m)^(?!\s*//)\s*[^\r\n]*std::ranges::to\s*<[^;\r\n()]+>\s*\('; Readme = 'std::ranges::to<' },
     [pscustomobject]@{ Name = 'sync_with_stdio'; Pattern = '(?m)^(?!\s*//)\s*[^\r\n]*std::ios::sync_with_stdio\s*\('; Readme = 'sync_with_stdio(' },
     [pscustomobject]@{ Name = 'tie'; Pattern = '(?m)^(?!\s*//)\s*[^\r\n]*std::cin\.tie\s*\('; Readme = 'std::cin.tie(' },
     [pscustomobject]@{ Name = 'operator>>'; Pattern = '(?m)^(?!\s*//)\s*[^\r\n]*std::cin\s*>>'; Readme = 'std::cin >>' },

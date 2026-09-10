@@ -20,6 +20,7 @@
 | `std::ranges::find` | 범위에서 값 탐색 | [알고리즘](algorithms-and-ranges.md) |
 | `std::ranges::sort` | 범위·프로젝션 기반 정렬 | [알고리즘](algorithms-and-ranges.md) |
 | `std::ranges::subrange` | iterator·sentinel로 만든 비소유 반열린 view | [알고리즘](algorithms-and-ranges.md) |
+| `std::ranges::to` | 입력 범위를 지정한 소유 컨테이너 값으로 materialize | [알고리즘](algorithms-and-ranges.md) |
 | `std::views::filter` | 조건을 만족하는 원소의 지연 뷰 | [알고리즘](algorithms-and-ranges.md) |
 | `std::views::transform` | 변환 결과의 지연 뷰 | [알고리즘](algorithms-and-ranges.md) |
 | `std::less`, `std::greater` | 엄격 순서 비교 함수 객체 | [알고리즘](algorithms-and-ranges.md) |
