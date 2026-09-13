@@ -34,10 +34,11 @@
 | `std::map` | 정렬 키 연관 컨테이너 | [컨테이너](containers-and-views.md) |
 | `std::unordered_map` | 해시 기반 연관 컨테이너 | [컨테이너](containers-and-views.md) |
 | `std::queue` | FIFO 컨테이너 어댑터 | [컨테이너](containers-and-views.md) |
-| `std::priority_queue` | 힙 기반 우선순위 어댑터 | [컨테이너](containers-and-views.md) |
+| `std::priority_queue`, `std::priority_queue::empty`, `std::priority_queue::top`, `std::priority_queue::pop` | 힙 기반 우선순위 어댑터와 상태·최우선 원소·제거 연산 | [컨테이너](containers-and-views.md) |
 | `std::vector` | 동적 연속 배열 | [컨테이너](containers-and-views.md) |
 | `std::string` | 소유 문자 시퀀스 | [컨테이너](containers-and-views.md) |
 | `std::string::npos` | string 검색 실패 위치 상수 | [컨테이너](containers-and-views.md) |
+| `std::char_traits` | 문자 비교·길이 계산 정책 | [컨테이너](containers-and-views.md) |
 | `std::string_view` | 비소유 문자 범위 | [컨테이너](containers-and-views.md) |
 | `std::string_view::npos` | 검색 실패 위치 상수 | [컨테이너](containers-and-views.md) |
 | `std::span` | 비소유 연속 원소 범위 | [컨테이너](containers-and-views.md) |
@@ -68,7 +69,7 @@
 | `std::shared_ptr` | 참조 횟수 기반 공유 소유권 | [소유권](ownership-and-vocabulary-types.md) |
 | `std::make_shared` | 객체와 shared_ptr 생성 | [소유권](ownership-and-vocabulary-types.md) |
 | `std::weak_ptr` | shared_ptr 객체의 비소유 관찰자 | [소유권](ownership-and-vocabulary-types.md) |
-| `std::optional`, `std::nullopt` | 선택적 값과 빈 상태 태그 | [소유권](ownership-and-vocabulary-types.md) |
+| `std::optional`, `std::nullopt_t`, `std::nullopt`, `std::bad_optional_access` | 선택적 값, 빈 상태 태그 타입·객체와 검사형 접근 실패 예외 | [소유권](ownership-and-vocabulary-types.md) |
 | `std::expected`, `std::unexpected` | 성공값 또는 오류값 | [소유권](ownership-and-vocabulary-types.md) |
 | `std::variant` | 여러 후보 중 하나의 태그된 합 | [소유권](ownership-and-vocabulary-types.md) |
 | `std::visit` | variant 활성 대안 방문 | [소유권](ownership-and-vocabulary-types.md) |
@@ -125,8 +126,10 @@
 | `std::format` | 타입 검사 형식 문자열과 인자로 새 소유 문자열 생성 | [입출력](io-parsing-and-utilities.md) |
 | `std::bad_alloc` | 동적 할당 요청 실패를 나타내는 예외 타입 | [입출력](io-parsing-and-utilities.md) |
 | `std::cin`, `std::cout`, `std::cerr` | 표준 입력·출력·오류 스트림 객체 | [입출력](io-parsing-and-utilities.md) |
+| `std::basic_ios` | stream 상태 비트와 명시적 bool 관찰을 제공하는 공통 기반 | [입출력](io-parsing-and-utilities.md) |
 | `std::istream` | 추출 연산이 같은 입력 스트림 참조를 이어 반환하는 기반 타입 | [입출력](io-parsing-and-utilities.md) |
 | `std::ostream` | 출력 연산이 같은 스트림 참조를 이어 반환하는 기반 타입 | [입출력](io-parsing-and-utilities.md) |
+| `std::basic_ospanstream`, `std::ospanstream` | 호출자 소유 고정 문자 버퍼에 형식 출력하는 C++23 비소유 스트림과 char 별칭 | [입출력](io-parsing-and-utilities.md) |
 | `std::osyncstream` | 스레드별 출력 조각을 한 덩어리로 emit하는 동기 스트림 | [입출력](io-parsing-and-utilities.md) |
 | `std::ostringstream` | 내부 문자열 버퍼를 소유하는 메모리 출력 스트림 | [입출력](io-parsing-and-utilities.md) |
 | `std::ios::sync_with_stdio` | C/C++ 표준 스트림 동기화 설정 | [입출력](io-parsing-and-utilities.md) |

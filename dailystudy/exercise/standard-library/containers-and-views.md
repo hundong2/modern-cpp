@@ -105,10 +105,12 @@ int main() {
 
 ## `std::priority_queue<T, Container, Compare>` — `<queue>`의 우선순위 큐
 
-- `top()`이 비교 규칙상 가장 높은 우선순위 원소의 `const` 참조를 반환한다.
+- `std::priority_queue::empty()`는 데이터 인자 없이 수신 queue의 원소 유무를 `bool` 값으로 반환한다. 상태를 바꾸지 않는 상수 시간 관찰이며, 같은 queue를 다른 실행 흐름이 동시에 변경하지 않아야 한다.
+- `std::priority_queue::top()`이 비교 규칙상 가장 높은 우선순위 원소의 `const_reference`를 반환한다. 데이터 인자는 없고 수신 queue가 비어 있지 않아야 하며, 빈 queue 호출은 미정의 동작이다. 상수 시간·무할당이지만 반환 참조는 `pop`, `push`/`emplace`, 대입·파괴 같은 변경을 넘어 보관하지 않는다.
 - 기본 `std::less<T>`는 가장 큰 값이 먼저 나오는 최대 힙이다. `std::greater<T>`를 쓰면 최소 힙이 된다.
 - `push`/`emplace`와 `pop`은 `O(log N)`, `top`은 `O(1)`이다.
-- `pop()`은 값을 반환하지 않으므로 `top()`을 복사한 뒤 제거한다. `top` 참조는 컨테이너 변경 뒤 보관하지 않는다.
+- `std::priority_queue::pop()`은 데이터 인자와 반환값 없이 최고 우선순위 원소를 제거하고 size를 1 줄인다. 비어 있지 않아야 하며, 내부 `pop_heap`과 원소 파괴 비용을 포함해 `O(log N)`이다. 제거 원소 참조는 무효가 되고 예외 보장은 내부 컨테이너·비교자·원소 교환/이동 계약에 따른다.
+- `pop()`은 제거된 값을 반환하지 않으므로 `top()`을 값으로 복사한 뒤 제거한다. `top` 참조는 컨테이너 변경 뒤 보관하지 않는다.
 - `Compare(a,b)==true`는 `a`의 우선순위가 `b`보다 낮다는 의미로 읽어야 해 정렬 비교와 직관이 뒤집혀 보일 수 있다.
 
 ## `std::string` — `<string>`의 소유 문자열
@@ -126,6 +128,7 @@ int main() {
 ## `std::string_view` — `<string_view>`의 비소유 문자 뷰
 
 - 문자 포인터와 길이를 보관하며 원본 문자를 소유하거나 수명을 연장하지 않는다.
+- `std::char_traits<CharT>`는 `basic_string`과 `basic_string_view`가 문자 비교·길이 계산 등에 쓰는 정책 클래스다. `basic_string_view(const char*)`는 `std::char_traits<char>::length`로 NUL까지 읽으므로 유효한 NUL 종료 범위가 전제이고 시간은 문자 수에 선형이다. 포인터와 길이를 함께 주는 생성자는 이 탐색 없이 상수 시간이다.
 - 복사 비용은 작지만 원본 `string` 파괴·재할당·수정 뒤 댕글링 또는 의미 변화가 생길 수 있다.
 - 문자열 리터럴은 프로그램 수명 동안 살아 있어 뷰로 안전하게 보관하기 쉽다.
 - 임시 `std::string`에서 만든 `string_view`를 반환하거나 멤버에 저장하면 임시 소멸 뒤 댕글링된다.

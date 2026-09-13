@@ -82,6 +82,27 @@ $jthreadConstructionPattern =
     '(?m)^[ \t]*' + $declarationQualifierPattern +
     'std::jthread\s+[A-Za-z_][A-Za-z0-9_]*\s*(?:\{|\((?!\s*\)))'
 
+# span/ospanstream은 기반 문자를 소유하지 않는다. 최신 학습 코드에서 생성된 정확한 수신자만
+# 추출해 domain 타입의 data/size/span 호출이나 일반 ostream 삽입을 잘못 잡지 않는다.
+$spanConstructionPattern =
+    '(?m)^[ \t]*' + $declarationQualifierPattern +
+    'std::span\s*<[^;\r\n]+>\s+[A-Za-z_][A-Za-z0-9_]*\s*(?:\{|\((?!\s*\)))'
+$spanReceiverDeclarationPattern =
+    '(?m)^[ \t]*' + $declarationQualifierPattern +
+    'std::span\s*<[^;\r\n]+>\s+(?<Receiver>[A-Za-z_][A-Za-z0-9_]*)\s*(?:\{|\((?!\s*\)))'
+$ospanstreamConstructionPattern =
+    '(?m)^[ \t]*' + $declarationQualifierPattern +
+    'std::(?:basic_)?ospanstream(?:\s*<[^;\r\n]+>)?\s+[A-Za-z_][A-Za-z0-9_]*\s*(?:\{|\((?!\s*\)))'
+$ospanstreamReceiverDeclarationPattern =
+    '(?m)^[ \t]*' + $declarationQualifierPattern +
+    'std::(?:basic_)?ospanstream(?:\s*<[^;\r\n]+>)?\s+(?<Receiver>[A-Za-z_][A-Za-z0-9_]*)\s*(?:\{|\((?!\s*\)))'
+$vectorReceiverDeclarationPattern =
+    '(?m)^[ \t]*' + $declarationQualifierPattern +
+    'std::vector\s*<[^;\r\n]+>\s*(?:[&*]\s*)?(?<Receiver>[A-Za-z_][A-Za-z0-9_]*)\b'
+$priorityQueueReceiverDeclarationPattern =
+    '(?m)^[ \t]*' + $declarationQualifierPattern +
+    'std::priority_queue\s*<[^;\r\n]+>\s*(?:[&*]\s*)?(?<Receiver>[A-Za-z_][A-Za-z0-9_]*)\b'
+
 # std::가 이름에 드러나지 않는 표준 멤버 중 현재 학습 코드에서 자주 쓰는 항목만 검사한다.
 $knownStandardMembers = [Collections.Generic.HashSet[string]]::new(
     [string[]]@(
@@ -89,7 +110,7 @@ $knownStandardMembers = [Collections.Generic.HashSet[string]]::new(
         'error', 'expired', 'extent', 'extract', 'fetch_add', 'file_size', 'find', 'front', 'get',
         'has_value', 'is_absolute', 'is_regular_file', 'join', 'joinable', 'lexically_normal', 'load',
         'insert', 'key', 'lock', 'mapped', 'message', 'pop', 'pop_back', 'pop_front', 'push', 'push_back', 'push_front', 'release',
-        'notify_all', 'notify_one', 'reserve', 'reset', 'resize', 'size', 'store', 'str', 'substr', 'swap', 'tie', 'top', 'value', 'wait',
+        'notify_all', 'notify_one', 'reserve', 'reset', 'resize', 'size', 'span', 'store', 'str', 'substr', 'swap', 'tie', 'top', 'value', 'wait',
         'value_or'
     )
 )
@@ -320,6 +341,13 @@ $contractPatterns = @(
     [pscustomobject]@{ Name = 'optional::emplace'; OptionalMember = 'emplace'; Readme = 'optional::emplace(' },
     [pscustomobject]@{ Name = 'optional::value'; OptionalMember = 'value'; Readme = 'optional::value(' },
     [pscustomobject]@{ Name = 'std::jthread constructor'; Pattern = $jthreadConstructionPattern; Readme = 'std::jthread' },
+    [pscustomobject]@{ Name = 'std::span constructor'; Pattern = $spanConstructionPattern; Readme = 'std::span<char>' },
+    [pscustomobject]@{ Name = 'std::ospanstream constructor'; Pattern = $ospanstreamConstructionPattern; Readme = 'std::ospanstream' },
+    [pscustomobject]@{ Name = 'ospanstream::operator<<'; OspanstreamInsertion = $true; Readme = 'ostream::operator<<' },
+    [pscustomobject]@{ Name = 'basic_ios::operator bool'; OspanstreamBool = $true; Readme = 'basic_ios::operator bool' },
+    [pscustomobject]@{ Name = 'ospanstream::span'; OspanstreamMember = 'span'; Readme = 'ospanstream::span' },
+    [pscustomobject]@{ Name = 'span::data'; SpanMember = 'data'; Readme = 'written.data()' },
+    [pscustomobject]@{ Name = 'span::size'; SpanMember = 'size'; Readme = 'written.size()' },
     [pscustomobject]@{ Name = 'std::out_ptr'; Pattern = '(?m)^(?!\s*//)\s*[^\r\n]*std::out_ptr(?:\s*<[^;\r\n()]+>)?\s*\('; Readme = 'std::out_ptr(' },
     [pscustomobject]@{ Name = 'std::move'; Pattern = '(?m)^(?!\s*//)\s*[^\r\n]*std::move\s*\('; Readme = 'std::move(' },
     [pscustomobject]@{ Name = 'std::apply'; Pattern = '(?m)^(?!\s*//)\s*[^\r\n]*std::apply\s*\('; Readme = 'std::apply(' },
@@ -337,7 +365,8 @@ $contractPatterns = @(
     [pscustomobject]@{ Name = 'vector::reserve'; Pattern = '(?m)^(?!\s*//)\s*[^\r\n]*\.reserve\s*\('; Readme = 'vector::reserve' },
     [pscustomobject]@{ Name = 'vector::push_back'; Pattern = '(?m)^(?!\s*//)\s*[^\r\n]*\.push_back\s*\('; Readme = 'vector::push_back' },
     [pscustomobject]@{ Name = 'vector::size'; Pattern = '(?m)^(?!\s*//)\s*[^\r\n]*\.size\s*\('; Readme = 'vector::size' },
-    [pscustomobject]@{ Name = 'vector::empty'; Pattern = '(?m)^(?!\s*//)\s*[^\r\n]*\.empty\s*\('; Readme = 'vector::empty' },
+    [pscustomobject]@{ Name = 'vector::empty'; VectorMember = 'empty'; Readme = 'vector::empty' },
+    [pscustomobject]@{ Name = 'priority_queue::empty'; PriorityQueueMember = 'empty'; Readme = 'priority_queue::empty' },
     [pscustomobject]@{ Name = 'vector::back'; Pattern = '(?m)^(?!\s*//)\s*[^\r\n]*\.back\s*\('; Readme = 'vector::back' },
     [pscustomobject]@{ Name = 'vector::pop_back'; Pattern = '(?m)^(?!\s*//)\s*[^\r\n]*\.pop_back\s*\('; Readme = 'vector::pop_back' }
 )
@@ -346,10 +375,20 @@ foreach ($file in Get-ChildItem -LiteralPath $latestDirectory.FullName -Filter '
     $source = Get-Content -LiteralPath $file.FullName -Encoding UTF8 -Raw
     $lines = @(Get-Content -LiteralPath $file.FullName -Encoding UTF8)
 
+    # 호출 정규식이 문제 설명의 `potential[v]` 같은 block-comment 식을 실제 operator[]로
+    # 오인하지 않게 주석의 비개행 문자를 marker로 바꾼다. marker는 정규식의 선행 `\s*`가
+    # 주석 줄부터 다음 코드 줄까지 건너뛰지 못하게 하고, 보존한 개행은 진단 line number를 유지한다.
+    $contractSource = [regex]::Replace(
+        $source,
+        '(?s)/\*.*?\*/',
+        { param($match) [regex]::Replace($match.Value, '[^\r\n]', '#') }
+    )
+    $contractSource = [regex]::Replace($contractSource, '(?m)//[^\r\n]*$', '#')
+
     # 단순 `.value()`/`.emplace()` 전역 정규식은 domain 타입, expected, vector/map 호출까지
     # optional로 오인한다. 이 파일에서 선언한 optional 객체·참조 이름만 먼저 추출한다.
     $optionalReceiverNames = @(
-        [regex]::Matches($source, $optionalReceiverDeclarationPattern) |
+        [regex]::Matches($contractSource, $optionalReceiverDeclarationPattern) |
             ForEach-Object { $_.Groups['Receiver'].Value } |
             Sort-Object -Unique
     )
@@ -357,10 +396,72 @@ foreach ($file in Get-ChildItem -LiteralPath $latestDirectory.FullName -Filter '
         $optionalReceiverNames |
             ForEach-Object { [regex]::Escape($_) }
     ) -join '|'
+    $spanReceiverNames = @(
+        [regex]::Matches($contractSource, $spanReceiverDeclarationPattern) |
+            ForEach-Object { $_.Groups['Receiver'].Value } |
+            Sort-Object -Unique
+    )
+    $spanReceiverAlternation = (
+        $spanReceiverNames |
+            ForEach-Object { [regex]::Escape($_) }
+    ) -join '|'
+    $ospanstreamReceiverNames = @(
+        [regex]::Matches($contractSource, $ospanstreamReceiverDeclarationPattern) |
+            ForEach-Object { $_.Groups['Receiver'].Value } |
+            Sort-Object -Unique
+    )
+    $ospanstreamReceiverAlternation = (
+        $ospanstreamReceiverNames |
+            ForEach-Object { [regex]::Escape($_) }
+    ) -join '|'
+    $vectorAliasNames = @(
+        [regex]::Matches(
+            $contractSource,
+            '(?m)^[ \t]*using\s+(?<Alias>[A-Za-z_][A-Za-z0-9_]*)\s*=\s*std::vector\s*<[^;\r\n]+>\s*;'
+        ) |
+            ForEach-Object { $_.Groups['Alias'].Value } |
+            Sort-Object -Unique
+    )
+    $vectorReceiverNames = @(
+        [regex]::Matches($contractSource, $vectorReceiverDeclarationPattern) |
+            ForEach-Object { $_.Groups['Receiver'].Value }
+        if ($vectorAliasNames.Count -gt 0) {
+            $vectorAliasAlternation = ($vectorAliasNames | ForEach-Object { [regex]::Escape($_) }) -join '|'
+            [regex]::Matches(
+                $contractSource,
+                '(?m)^[ \t]*' + $declarationQualifierPattern + '(?:' + $vectorAliasAlternation +
+                ')\s*(?:[&*]\s*)?(?<Receiver>[A-Za-z_][A-Za-z0-9_]*)\b'
+            ) | ForEach-Object { $_.Groups['Receiver'].Value }
+        }
+    ) | Sort-Object -Unique
+    $vectorReceiverAlternation = ($vectorReceiverNames | ForEach-Object { [regex]::Escape($_) }) -join '|'
+    $priorityQueueAliasNames = @(
+        [regex]::Matches(
+            $contractSource,
+            '(?m)^[ \t]*using\s+(?<Alias>[A-Za-z_][A-Za-z0-9_]*)\s*=\s*std::priority_queue\s*<[^;\r\n]+>\s*;'
+        ) |
+            ForEach-Object { $_.Groups['Alias'].Value } |
+            Sort-Object -Unique
+    )
+    $priorityQueueReceiverNames = @(
+        [regex]::Matches($contractSource, $priorityQueueReceiverDeclarationPattern) |
+            ForEach-Object { $_.Groups['Receiver'].Value }
+        if ($priorityQueueAliasNames.Count -gt 0) {
+            $priorityQueueAliasAlternation =
+                ($priorityQueueAliasNames | ForEach-Object { [regex]::Escape($_) }) -join '|'
+            [regex]::Matches(
+                $contractSource,
+                '(?m)^[ \t]*' + $declarationQualifierPattern + '(?:' + $priorityQueueAliasAlternation +
+                ')\s*(?:[&*]\s*)?(?<Receiver>[A-Za-z_][A-Za-z0-9_]*)\b'
+            ) | ForEach-Object { $_.Groups['Receiver'].Value }
+        }
+    ) | Sort-Object -Unique
+    $priorityQueueReceiverAlternation =
+        ($priorityQueueReceiverNames | ForEach-Object { [regex]::Escape($_) }) -join '|'
 
     foreach ($candidate in $contractPatterns) {
         # vector 멤버·생성자 후보는 vector를 직접 사용하는 번역 단위에서만 표준 호출로 간주한다.
-        if ($candidate.Name.StartsWith('vector') -and $source -notmatch 'std::vector\s*<') {
+        if ($candidate.Name.StartsWith('vector') -and $contractSource -notmatch 'std::vector\s*<') {
             continue
         }
         $candidatePattern = $candidate.Pattern
@@ -373,13 +474,63 @@ foreach ($file in Get-ChildItem -LiteralPath $latestDirectory.FullName -Filter '
                 '(?m)^(?!\s*//)\s*[^\r\n]*\b(?:' + $optionalReceiverAlternation +
                 ')\s*(?:\.|->)\s*' + [regex]::Escape($candidate.OptionalMember) + '\s*\('
         }
+        $spanMemberProperty = $candidate.PSObject.Properties['SpanMember']
+        if ($null -ne $spanMemberProperty) {
+            if ($spanReceiverNames.Count -eq 0) {
+                continue
+            }
+            $candidatePattern =
+                '(?m)^(?!\s*//)\s*[^\r\n]*\b(?:' + $spanReceiverAlternation +
+                ')\s*(?:\.|->)\s*' + [regex]::Escape($candidate.SpanMember) + '\s*\('
+        }
+        $ospanstreamMemberProperty = $candidate.PSObject.Properties['OspanstreamMember']
+        if ($null -ne $ospanstreamMemberProperty) {
+            if ($ospanstreamReceiverNames.Count -eq 0) {
+                continue
+            }
+            $candidatePattern =
+                '(?m)^(?!\s*//)\s*[^\r\n]*\b(?:' + $ospanstreamReceiverAlternation +
+                ')\s*(?:\.|->)\s*' + [regex]::Escape($candidate.OspanstreamMember) + '\s*\('
+        }
+        if ($null -ne $candidate.PSObject.Properties['OspanstreamInsertion']) {
+            if ($ospanstreamReceiverNames.Count -eq 0) {
+                continue
+            }
+            $candidatePattern =
+                '(?m)^(?!\s*//)\s*[^\r\n]*\b(?:' + $ospanstreamReceiverAlternation + ')\s*<<'
+        }
+        if ($null -ne $candidate.PSObject.Properties['OspanstreamBool']) {
+            if ($ospanstreamReceiverNames.Count -eq 0) {
+                continue
+            }
+            $candidatePattern =
+                '(?m)^(?!\s*//)\s*[^\r\n]*!\s*(?:' + $ospanstreamReceiverAlternation + ')\b'
+        }
+        $vectorMemberProperty = $candidate.PSObject.Properties['VectorMember']
+        if ($null -ne $vectorMemberProperty) {
+            if ($vectorReceiverNames.Count -eq 0) {
+                continue
+            }
+            $candidatePattern =
+                '(?m)^(?!\s*//)\s*[^\r\n]*\b(?:' + $vectorReceiverAlternation +
+                ')\s*(?:\.|->)\s*' + [regex]::Escape($candidate.VectorMember) + '\s*\('
+        }
+        $priorityQueueMemberProperty = $candidate.PSObject.Properties['PriorityQueueMember']
+        if ($null -ne $priorityQueueMemberProperty) {
+            if ($priorityQueueReceiverNames.Count -eq 0) {
+                continue
+            }
+            $candidatePattern =
+                '(?m)^(?!\s*//)\s*[^\r\n]*\b(?:' + $priorityQueueReceiverAlternation +
+                ')\s*(?:\.|->)\s*' + [regex]::Escape($candidate.PriorityQueueMember) + '\s*\('
+        }
 
-        $match = [regex]::Match($source, $candidatePattern)
+        $match = [regex]::Match($contractSource, $candidatePattern)
         if (-not $match.Success) {
             continue
         }
 
-        $lineNumber = [regex]::Matches($source.Substring(0, $match.Index), "`n").Count + 1
+        $lineNumber = [regex]::Matches($contractSource.Substring(0, $match.Index), "`n").Count + 1
         # 여섯 항목을 정확히 적은 계약은 9줄보다 길 수 있다. 가까운 계약 marker가
         # 24줄 안에 있으면 그 블록 전체를 검사하고, marker가 없을 때만 기존 9줄 window를 쓴다.
         $contextStart = [Math]::Max(0, $lineNumber - 9)

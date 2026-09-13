@@ -33,6 +33,22 @@
 - 정수·부동소수점·bool·포인터 삽입은 `basic_ostream& basic_ostream::operator<<(T value)` 계열 멤버 오버로드이고, `char`·문자열 등은 `operator<<(basic_ostream&, value)` 비멤버 오버로드가 선택될 수 있다. 모두 같은 `std::ostream&`를 반환해 연쇄하며 입력 값의 소유권은 유지되고 출력 위치·상태만 바뀐다. `endl`은 개행과 flush를 함께 하고 `\n`은 보통 개행만 해 더 저렴하다.
 - 형식 추출·삽입 연산 전체에 공통으로 적용할 별도 점근 복잡도 상한은 표준에 없다. 실제 비용은 소비·생성 문자 수뿐 아니라 선택된 locale facet, stream buffer, 장치와 구현에 달리므로 단순히 항상 선형이라고 단정하지 않는다.
 - `cerr`는 진단용이며 표준 출력 정답과 섞지 않는다. 버퍼링 정책만 믿기보다 필요한 시점에 명시적으로 flush한다.
+- `std::basic_ios<CharT, Traits>::operator bool() const`는 데이터 인자 없이 수신 stream의 상태를 읽고 `!fail()`과 같은 `bool` 값을 반환한다. `if (!stream)`은 이 명시적 변환 결과를 논리 부정해 `failbit` 또는 `badbit`가 있는 경로를 고른다. 상태·버퍼·소유권을 바꾸지 않는 상수 시간 관찰이며, 다른 실행 흐름이 같은 stream을 동시에 변경하지 않아야 한다. `eofbit`만 설정된 상태는 `fail()`이 아닐 수 있으므로 “모든 상태 비트가 0인가”를 묻는 `good()`과 구분한다.
+
+### 고정 버퍼 출력 `std::ospanstream`과 `span()` — `<spanstream>`
+
+`std::ospanstream`은 C++23 `std::basic_ospanstream<char>`의 별칭이다. 호출자가 소유한 가변 연속 문자 범위를 `std::span<char>`로 빌려 그 **고정된 범위 안에만** 일반 `ostream` 형식 출력을 수행한다. 내부 `basic_spanbuf`는 기반 문자 시퀀스를 소유하지도 자동 확장하지도 않으므로, 용량 상한이 있는 프로토콜 직렬화·스택 버퍼 작성 경계를 표현할 수 있다.
+
+- 대표 생성 형태는 `explicit basic_ospanstream(std::span<CharT> buffer, std::ios_base::openmode which = std::ios_base::out)`다. 첫 인자는 쓰기 가능한 문자 저장소를 가리키는 비소유 span 값이고, 둘째 인자를 생략한 오늘의 호출은 출력 모드와 처음 위치 0을 사용한다. 생성자는 별도 반환값이 없으며 stream과 그 내부 spanbuf의 수명을 시작하지만, 문자 배열의 소유권이나 수명을 가져오지 않는다.
+- 수신 stream이 살아 있는 동안뿐 아니라 `span()`에서 얻은 뷰를 사용하는 동안에도 기반 배열이 살아 있어야 한다. 배열 파괴, 재사용 또는 stream의 버퍼 재지정 뒤 과거 내용·뷰를 독립 snapshot처럼 취급하면 안 된다. 서로 같은 기반 문자를 공유하는 stream/뷰를 여러 스레드가 무동기 변경하면 데이터 경쟁 위험이 있다.
+- `stream << value`는 `basic_ostream`의 산술 삽입 멤버 또는 문자·문자열용 비멤버 오버로드를 선택하고 같은 `std::ostream&`를 반환해 연쇄한다. 입력 값을 읽어 형식화한 문자를 현재 put 위치부터 저장하며 입력의 소유권은 옮기지 않는다. 표준은 모든 형식 출력에 하나의 점근 복잡도를 정하지 않으므로 생성 문자 수, locale과 선택된 오버로드 비용을 함께 본다.
+- 기반 sequence에는 capacity 증가나 재할당이 없다. 남은 공간보다 긴 출력을 시도하면 spanbuf가 짧은 쓰기/EOF를 보고하고 ostream이 실패 상태를 기록한다. 예외 mask에 해당 상태가 설정돼 있으면 `std::ios_base::failure`가 전파될 수 있다. 따라서 경계 코드는 결과를 소비하기 전에 `operator bool`, `good()` 또는 동등한 상태 검사로 성공을 확인한다.
+- getter `std::span<CharT> span() const noexcept`는 데이터 인자가 없고, 출력 모드에서는 기반 버퍼 시작부터 **현재 put pointer까지**의 쓰기 완료 prefix를 비소유 span 값으로 반환한다. 호출은 stream 상태·위치·문자를 바꾸지 않고 동적 할당도 하지 않는다. 반환 span의 `size()`는 기록한 문자 수이지 전체 capacity가 아니며, 끝에 null 문자를 자동으로 추가하지 않는다.
+- `span()` getter 자체는 상수 시간이고 `noexcept`다. 반환된 `std::span<char>`는 문자를 소유하지 않아 stream보다 오래 보관할 수 있는지는 오직 기반 저장소 수명에 달려 있다. 불변 텍스트 뷰로 공개하려면 `std::span<const char>` 또는 길이를 함께 가진 `std::string_view`로 권한을 줄이고, 독립 소유 결과가 필요하면 명시적으로 `std::string`에 복사한다.
+- setter `void span(std::span<CharT> replacement) noexcept`도 존재하지만 getter와 인자 수가 다르다. setter는 내부 비소유 버퍼를 새 범위로 바꾸고 입출력 위치를 모드에 따라 다시 초기화하므로, 이전 기반 범위를 계속 쓰는 호출과 혼동하면 안 된다.
+- “고정 기반 sequence가 확장되지 않는다”는 계약은 spanbuf 저장소에 관한 것이다. locale/사용자 정의 삽입 연산자 같은 주변 구현까지 프로그램 전체의 무할당을 자동 보장한다고 확대 해석하지 않는다.
+
+오늘 자료 [`../2026-09-14/main.cpp`](../2026-09-14/main.cpp)는 고정 배열 owner와 `ospanstream` writer를 같은 짧은 수명 경계에 두고, 상태 확인 뒤 `span()`이 반환한 정확한 written prefix만 소비한다.
 
 ### 동시 레코드 출력 `std::osyncstream` — `<syncstream>`
 

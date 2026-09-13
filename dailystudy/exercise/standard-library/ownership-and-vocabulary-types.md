@@ -71,7 +71,7 @@
 - `operator*`와 `operator->`는 값 존재를 호출자가 보장해야 한다. 빈 상태 접근은 잘못이다.
 - `value()`는 값 참조를 반환하고 비어 있으면 `std::bad_optional_access`를 던진다.
 - `value_or(fallback)`는 값이 있으면 복사/이동한 값, 없으면 대체값을 값으로 반환한다.
-- `std::nullopt`는 빈 상태를 명시하는 태그 객체다.
+- `std::nullopt_t`는 빈 상태를 선택하는 태그 타입이고 `std::nullopt`는 그 타입의 표준 상수 객체다. `optional(nullopt_t)`는 인자를 값으로 받아 상수 시간·무할당·`noexcept`로 disengaged 객체를 만들며 contained `T`를 생성하지 않는다.
 - `optional<reference_wrapper<T>>`는 선택적 비소유 참조를 표현하지만 원본 수명을 연장하지 않는다.
 
 ### 기본 생성·`emplace`·`value` 호출 계약
