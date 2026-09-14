@@ -54,7 +54,7 @@
 | `<tuple>` | 이종 값 묶음 `tuple`, 원소 접근 `get`, tuple-like 호출 어댑터 `apply` |
 | `<type_traits>` | `is_same_v`, `decay_t`, `remove_cvref_t` |
 | `<unordered_map>` | 해시 연관 컨테이너 `unordered_map` |
-| `<utility>` | `move`, `forward`, `exchange`, `pair` |
+| `<utility>` | `move`, `forward`, C++23 `forward_like`, `exchange`, `pair` |
 | `<variant>` | 태그된 합 타입 `variant`와 방문 API |
 | `<vector>` | 동적 연속 컨테이너 `vector`, `erase_if` 오버로드 |
 

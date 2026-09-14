@@ -137,7 +137,7 @@
 | `std::from_chars`, `std::errc` | 비예외 문자 범위 숫자 파싱 | [입출력](io-parsing-and-utilities.md) |
 | `std::getline` | 구분자 전까지 한 줄을 소유 문자열에 입력 | [입출력](io-parsing-and-utilities.md) |
 | `std::to_string` | 숫자를 소유 문자열로 변환 | [입출력](io-parsing-and-utilities.md) |
-| `std::move`, `std::forward`, `std::exchange` | 값 범주 변환·전달·값 교체 | [입출력](io-parsing-and-utilities.md) |
+| `std::move`, `std::forward`, `std::forward_like`, `std::exchange` | 값 범주 변환·전달·const/참조 범주 투영·값 교체 | [입출력](io-parsing-and-utilities.md) |
 | `std::numeric_limits` | 기본 타입 수치 한계 | [입출력](io-parsing-and-utilities.md) |
 | `std::abs` | 절댓값 계산 | [입출력](io-parsing-and-utilities.md) |
 | `std::numbers::pi_v` | 타입별 원주율 상수 | [입출력](io-parsing-and-utilities.md) |

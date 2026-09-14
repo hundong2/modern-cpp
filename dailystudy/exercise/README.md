@@ -61,12 +61,13 @@
 | [2026-09-10](./2026-09-10/README.md) | `out_ptr` C 출력 포인터 소유권 adapter와 Manacher | C++23 |
 | [2026-09-11](./2026-09-11/README.md) | `ranges::to` 소유 스냅숏 materialization과 영속 세그먼트 트리 | C++23 |
 | [2026-09-14](./2026-09-14/README.md) | `ospanstream` 고정 버퍼 직렬화와 potential 기반 최소 비용 유량 | C++23 |
+| [2026-09-15](./2026-09-15/README.md) | 명시적 객체 매개변수·`forward_like` const/값 범주 투영과 트리 거리 합 재루팅 DP | C++23 |
 
 ## 표준 라이브러리 설명 찾기
 
 - [표준 라이브러리 학습 지도](./standard-library/README.md): 설명 품질 기준과 분야별 대표 문서
-- [날짜별 사용 색인](./standard-library/by-date.md): 현재 57개 날짜, 152개 C++ 파일의 헤더와 `std::` 심볼
-- [심볼 색인](./standard-library/symbol-index.md): 146개 현재 심볼의 역할과 상세 문서 링크
+- [날짜별 사용 색인](./standard-library/by-date.md): 현재 58개 날짜, 155개 C++ 파일의 헤더와 `std::` 심볼
+- [심볼 색인](./standard-library/symbol-index.md): 147개 현재 심볼의 역할과 상세 문서 링크
 - [공통 용어](./standard-library/terms.md): 반복자, 뷰, 술어, 소유권, 무효화, 예외 보장, 원자성
 - [표준 헤더](./standard-library/headers.md): 현재 사용하는 53개 헤더와 대표 선언
 

@@ -32,6 +32,7 @@
 - 입력 실패 시 fail 상태가 설정되고 대상 값은 추출 계약에 따라 유지되거나 바뀔 수 있다. `if (!(cin >> value))`로 검사한다.
 - 정수·부동소수점·bool·포인터 삽입은 `basic_ostream& basic_ostream::operator<<(T value)` 계열 멤버 오버로드이고, `char`·문자열 등은 `operator<<(basic_ostream&, value)` 비멤버 오버로드가 선택될 수 있다. 모두 같은 `std::ostream&`를 반환해 연쇄하며 입력 값의 소유권은 유지되고 출력 위치·상태만 바뀐다. `endl`은 개행과 flush를 함께 하고 `\n`은 보통 개행만 해 더 저렴하다.
 - 형식 추출·삽입 연산 전체에 공통으로 적용할 별도 점근 복잡도 상한은 표준에 없다. 실제 비용은 소비·생성 문자 수뿐 아니라 선택된 locale facet, stream buffer, 장치와 구현에 달리므로 단순히 항상 선형이라고 단정하지 않는다.
+- C stdio와 동기화된 표준 iostream 객체의 형식/비형식 입출력 함수는 여러 스레드가 동시에 호출해도 data race를 만들지 않는다. 다만 문자 단위로 섞일 수 있어 여러 `<<` 호출로 만든 한 레코드의 원자성은 보장하지 않는다. `sync_with_stdio(false)` 뒤에는 이 특별 보장을 적용할 수 없으므로 같은 stream 동시 접근을 외부에서 막는다.
 - `cerr`는 진단용이며 표준 출력 정답과 섞지 않는다. 버퍼링 정책만 믿기보다 필요한 시점에 명시적으로 flush한다.
 - `std::basic_ios<CharT, Traits>::operator bool() const`는 데이터 인자 없이 수신 stream의 상태를 읽고 `!fail()`과 같은 `bool` 값을 반환한다. `if (!stream)`은 이 명시적 변환 결과를 논리 부정해 `failbit` 또는 `badbit`가 있는 경로를 고른다. 상태·버퍼·소유권을 바꾸지 않는 상수 시간 관찰이며, 다른 실행 흐름이 같은 stream을 동시에 변경하지 않아야 한다. `eofbit`만 설정된 상태는 `fail()`이 아닐 수 있으므로 “모든 상태 비트가 0인가”를 묻는 `good()`과 구분한다.
 
@@ -77,6 +78,7 @@
 
 - `static bool ios_base::sync_with_stdio(bool sync = true)`는 인스턴스 수신자 없이 bool 값 하나를 받고 이전 설정을 반환한다. `false`는 C stdio와 C++ iostream의 동기화를 끈다.
 - 표준 입출력 전에 한 번 호출하며 이후 C와 C++ 스트림을 같은 파일에서 임의로 섞지 않는다.
+- `false`로 바꾼 뒤에는 synchronized 표준 stream에만 주어진 동시 formatted/unformatted 입출력의 data-race 예외 보장을 쓸 수 없다. 이 ICPC 설정은 단일 스레드 입출력을 전제로 한다.
 - setter `std::ostream* basic_ios::tie(std::ostream* tied)`는 `cin` 수신 객체와 비소유 포인터 인자 하나를 받고 이전 연결 포인터를 반환한다. `nullptr`를 넘기면 입력 전 `cout` 자동 flush 연결을 해제하며 두 스트림 객체나 버퍼의 소유권은 바뀌지 않는다.
 - 두 설정 함수에는 표준이 별도 복잡도 상한을 명시하지 않는다. `tie`는 스트림 연결 포인터 관계만 바꾸며 소유권을 이전하거나 문자 버퍼를 할당하지 않는다.
 - 대화형 문제에서는 프롬프트가 보이도록 수동 flush가 필요할 수 있다.
@@ -110,7 +112,7 @@
 - 반환 문자열은 문자 메모리를 소유하며 할당이 일어날 수 있다.
 - 형식과 로케일 세부 제어가 필요하면 `std::format`, 스트림 또는 `to_chars`를 검토한다.
 
-## `std::move`, `std::forward`, `std::exchange` — `<utility>`
+## `std::move`, `std::forward`, `std::forward_like`, `std::exchange` — `<utility>`
 
 ### `std::move`
 
@@ -125,6 +127,20 @@
 - 전달 참조로 받은 식의 원래 lvalue/rvalue 범주를 복원하는 조건부 캐스트다.
 - 템플릿 인자 `T`를 추론된 그대로 사용해야 한다. 일반 코드에서 무조건 `forward`하면 수명과 다중 사용 문제가 생긴다.
 - 한 인자를 여러 번 forward하면 첫 호출에서 자원이 이동된 뒤 다시 사용할 수 있어 주의한다.
+
+### `std::forward_like<T>`
+
+`std::forward_like`는 C++23에서 도입된 값 범주 투영 도구다. 전달 참조 하나의 원래 범주를 복원하는 `forward<T>`와 달리, **모델 타입 `T`의 `const` 성질과 lvalue/rvalue 성질을 별도 식 `x`에 입힌다**. 명시적 객체 매개변수와 함께 쓰면 네 개의 cv/ref 접근자 오버로드를 한 함수 템플릿으로 합칠 수 있다.
+
+- 대표 공개 형태는 `template<class T, class U> constexpr auto forward_like(U&& x) noexcept -> V;`이며 실제 반환형 `V`는 아래 const·참조 범주 투영 규칙으로 정해진다. 수신 객체는 없고 템플릿 인자 `T`는 따라 할 모델 타입, 함수 인자 `x`는 참조를 반환할 실제 대상이다. `T`는 참조를 만들 수 있는 referenceable type이어야 한다. `x`가 가리키는 대상은 유효해야 하며 반환 참조를 사용하는 동안 그 대상의 수명과 별도 전제조건이 유지되어야 한다.
+- `T`가 lvalue 참조이면 결과도 lvalue 참조이고, 그렇지 않으면 결과는 rvalue 참조다. `T`가 `const`를 보존하는 타입이면 결과 참조 대상에도 `const`가 붙는다. 명시적 객체 접근자 안의 `self.payload_`는 항상 lvalue 식이지만 mutable owner에서는 `U=Payload&`, const owner에서는 `U=const Payload&`로 추론된다. 모델이 `Owner&`, `const Owner&`, `Owner`, `const Owner`이면 최종 결과는 각각 `Payload&`, `const Payload&`, `Payload&&`, `const Payload&&`다.
+- 이 규칙은 모델 `T`의 `volatile`을 새로 복사하지 않는다. 다만 실제 대상 타입 `remove_reference_t<U>`가 이미 `const` 또는 `volatile`이면 그 한정은 제거하지 않는다. 따라서 이를 모든 cv 한정자의 일반 투영이라고 부르기보다 “`T`의 const성과 값 범주를 `U`에 적용한다”고 읽는다.
+- 인자 `x`는 이름 있는 식이면 그 선언 타입이 `U&&`여도 표현식 자체는 lvalue다. 함수는 그 같은 객체를 가리키는 참조를 반환하며 객체를 복사·이동·수정하거나 소유하지 않는다. 반환값은 호출자가 접근 또는 뒤 이은 생성에 사용하고, 호출 직후 `x`와 소유자의 상태는 그대로다.
+- 효과는 계산된 `V`로의 `static_cast`이고 `noexcept`이며 표준의 signal-safe 유틸리티다. 표준은 별도 Complexity 항목을 두지 않지만 지정된 결과는 참조 cast이고 새 소유 저장소나 사용자 타입 연산을 요구하지 않는다. 반환 참조는 원본을 alias하므로 원본 파괴와 함께 dangling이 되고, 컨테이너 하위 객체라면 해당 컨테이너의 무효화 규칙도 그대로 따른다. 특히 임시 owner에서 얻은 참조를 full-expression 뒤까지 저장하지 않는다.
+- rvalue 참조를 얻었다고 실제 이동이 이미 일어난 것은 아니다. 그 결과로 객체를 초기화하거나 대입할 때 선택된 이동 생성자·대입 연산자가 자원을 바꾼다. `const T&&` 결과는 일반적인 `T(T&&)`에 바인딩할 수 없어 복사가 선택될 수 있다.
+- 함수 자체는 동기화를 제공하지 않는다. 같은 객체를 가리키는 반환 참조를 여러 스레드가 사용한다면 일반 객체의 데이터 경쟁 규칙을 따르며, 적어도 하나가 쓴다면 외부 동기화가 필요하다.
+
+오늘 자료 [`../2026-09-15/main.cpp`](../2026-09-15/main.cpp)는 `service(this Self&& self)`와 `ports(this Self&& self)` 안에서 `Self`의 const성과 lvalue/rvalue 성질을 소유 멤버에 적용한다. const lvalue owner는 읽기 전용 참조를 빌려 주고, 명시적으로 소비하는 rvalue owner는 이동 생성에 쓸 xvalue 참조를 돌려준다.
 
 ### `std::exchange`
 

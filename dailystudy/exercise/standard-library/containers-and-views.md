@@ -13,6 +13,7 @@
 - `vector(count)`의 대표 형태는 `explicit vector(size_type count, const Allocator& alloc = Allocator());`다. `count`는 값으로 전달되며 `max_size()` 이하여야 하고, 생략된 allocator는 기본값을 쓴다. 성공하면 `count`개 원소를 기본 삽입해 소유한다. `vector<int>(5)`의 원소는 모두 0이다. 시간·공간은 `O(count)`이고 `length_error`, `bad_alloc`, 원소 생성 예외가 가능하다.
 - `vector(count, value)`의 대표 형태는 `vector(size_type count, const T& value, const Allocator& alloc = Allocator());`다. `count`와 빌린 `value`를 받아 같은 값을 `count`번 복사한다. 반환값은 없고 성공 후 `size()==count`이며 각 원소 수명은 vector와 함께 관리된다. 시간·공간은 `O(count)`이고 길이·할당·복사 예외가 가능하다.
 - `vector{a, b, c}`는 `initializer_list` 생성자를 선택해 세 원소를 만든다. 괄호와 중괄호의 의미가 다를 수 있다.
+- `vector(vector&& source) noexcept`는 allocator 인자 없는 이동 생성자다. 새 vector는 `source`의 이동 전 값을 소유하고 `source`는 유효하지만 값이 미지정된 상태로 남으며, `std::vector`에서는 상수 시간이다. 이동 전에 원소를 가리키던 포인터·참조·반복자는 과거 past-the-end 반복자를 제외하면 계속 같은 원소를 가리키되 이제 그 원소는 destination에 속한다. 반면 `source` vector 객체 자체를 가리키던 참조·포인터는 여전히 source 객체를 가리키며 destination으로 재바인딩되지 않는다. 명시적 allocator를 받는 이동 생성자는 allocator가 다르면 원소별 이동과 새 할당이 필요할 수 있으므로 이 규칙과 비용을 그대로 적용하지 않는다.
 - `size()`의 대표 형태는 `size_type size() const noexcept`다. 살아 있는 vector를 const로 빌리고 데이터 인자 없이 현재 원소 수 값을 `O(1)`에 반환한다. 수신 객체·원소·capacity·관찰자를 바꾸지 않고 할당·예외·동기화를 추가하지 않는다.
 - `empty()`의 대표 형태는 `bool empty() const noexcept`다. 데이터 인자 없이 `size()==0` 여부를 `O(1)`에 반환하며 수신 vector를 바꾸지 않는다. `size() > 0`보다 의도가 직접적이고, 이 관찰 자체는 할당·무효화·예외가 없다.
 - `operator[](i)`의 대표 오버로드는 `reference operator[](size_type i)`와 `const_reference operator[](size_type i) const`다. 정확히 한 값 인자를 받으며 수신 객체의 const 여부에 따라 `T&` 또는 `const T&`를 `O(1)`에 반환한다. 컨테이너의 크기·용량·원소는 바뀌지 않고 할당도 없다. 범위 검사가 없어 `i>=size()`면 미정의 동작이며, 반환 참조는 해당 원소 제거·재할당 또는 vector 파괴 시 무효가 된다. 구현에서 식이 `noexcept`여도 대표 선언에 일률적으로 예외 명세가 있다고 가정하지 않는다.
@@ -117,6 +118,7 @@ int main() {
 
 - `char`를 연속 메모리에 소유하는 `basic_string<char>` 별칭이다.
 - 복사하면 문자 값을 복사하고 이동하면 내부 버퍼 소유권을 넘길 수 있다.
+- `basic_string(basic_string&& source) noexcept`는 allocator 인자 없는 이동 생성자다. destination은 source의 이동 전 값을 갖고 source는 유효하지만 값이 미지정된 상태가 되며 복잡도는 상수다. 그러나 `basic_string`은 이동 전에 문자를 가리키던 포인터·참조·반복자가 계속 유효하거나 destination 문자를 가리킨다고 보장하지 않으므로 모두 다시 얻어야 한다. 작은 문자열 최적화 여부와 실제 버퍼 주소 이전도 표준 보장이 아니다. source 문자열 객체 자체를 가리키던 참조·포인터는 source에 남아 destination으로 재바인딩되지 않는다.
 - `size()`와 `length()`는 같은 문자 수를 `size_type` 값으로 상수 시간에 반환한다. 둘 다 인자 없이
   수신 문자열을 바꾸지 않고, 할당·참조 무효화·예외가 없다. `empty()`는 빈 여부,
   `data()/c_str()`는 null 종료 저장소 포인터를 제공한다.
