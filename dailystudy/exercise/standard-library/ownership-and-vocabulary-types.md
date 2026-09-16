@@ -36,6 +36,68 @@
 - `P**` 출력 주소를 C 라이브러리가 호출 뒤에도 비동기로 보관하는 API에는 임시 `out_ptr_t`를 넘길 수 없다. 그 주소의 유효 기간은 어댑터 수명뿐이다.
 - `shared_ptr`에는 자원에 맞는 deleter를 추가 인자로 넘긴다. `unique_ptr<T,D>`는 기존 `D` 객체를 유지한 채 새 `pointer`를 reset하므로 보통 별도 deleter 인자가 필요 없다.
 
+## `std::any`, `std::any_cast`, `std::bad_any_cast` — `<any>`
+
+`std::any`는 C++17부터 제공되는 **소유형 단일 값 타입 소거(type erasure) 컨테이너**다. 한 `any` 객체는 현재 정확히 한 타입의 값을 소유하거나 비어 있다. 저장 타입 후보를 컴파일 시간에 열거하는 `variant`와 달리 호출 시점에 CopyConstructible인 여러 타입을 받을 수 있지만, 읽을 때는 저장 타입과 `typeid`가 일치하는 타입을 다시 알아야 한다. 이 비교는 최상위 cv 한정을 별도 런타임 타입으로 구별하지 않는다. `int{5}`는 `int`로 저장되며 `double`이나 문자열로 암시 변환해 꺼내 주지 않는다.
+
+실무에서는 플러그인 속성, 추적 문맥, 프레임워크 확장 슬롯처럼 핵심 계층이 모든 확장 타입을 미리 알 수 없는 좁은 경계에 적합하다. 도메인 상태가 닫힌 집합이면 `variant`, 값이 없을 수 있을 뿐이면 `optional`, 공통 동작이 중요하면 가상 인터페이스가 보통 더 명시적이다. `any`를 비즈니스 모델 전체에 퍼뜨리면 타입 오류가 컴파일 시점에서 실행 시점으로 늦어지므로 키와 타입의 대응을 한 래퍼 안에 가둔다.
+
+### 값 생성·복사·이동 계약
+
+- **항목 종류·대표 선언:** `<any>`의 비템플릿 클래스 `std::any`다. 주요 생성자는 `constexpr any() noexcept`, `any(const any&)`, `any(any&&) noexcept`, `template<class T> any(T&& value)`다. 템플릿 생성자는 `VT = decay_t<T>`를 실제 저장 타입으로 삼고, `VT`가 `any`나 `in_place_type_t` 특수화가 아니며 CopyConstructible일 때 참여한다.
+- **값 생성자 인자와 결과:** `any(T&& value)`의 `value`는 전달 참조다. lvalue는 보통 복사되고 rvalue는 이동될 수 있지만, 완성된 `any`는 `decay_t<T>` 객체를 독립적으로 소유한다. 생성자는 반환값이 없고 성공 뒤 `has_value()==true`다. move-only 타입은 rvalue여도 이 생성자 요구를 만족하지 않으므로 `unique_ptr`를 직접 저장할 수 없다. 필요하다면 복사 가능한 공유 소유 핸들이나 별도 타입 소거 설계를 검토한다.
+- **복사 생성:** 원본이 비어 있으면 결과도 비고, 값이 있으면 원본 contained value를 `const` lvalue로 보아 같은 타입의 새 값을 구성한다. 따라서 문자열·컨테이너 같은 소유 값은 논리적으로 독립된 복사본을 갖는다. contained 타입의 복사 생성이 던진 예외가 전파될 수 있다.
+- **이동 생성:** `any(any&& other) noexcept`는 원본이 비면 빈 결과를 만들고, 그렇지 않으면 contained value 자체를 이전하거나 그 값을 rvalue로 보아 같은 타입 객체를 구성한다. 목적지는 원래 타입과 논리 값을 이어받지만 **표준은 이동 뒤 `other.has_value()==false`를 보장하지 않는다**. 원본이 비었다고 검사하거나 원래 값에 의존하지 말고, 확실히 비워야 하면 별도로 `reset()`한다.
+- **할당·복잡도:** 표준은 모든 contained 타입과 구현에 공통인 점근 복잡도나 “항상 무할당”을 보장하지 않는다. 작은 값은 내부 버퍼에 두도록 권장하지만 그러한 small-object optimization은 nothrow-move-constructible 타입에만 적용할 수 있고 버퍼 크기·적용 여부는 구현 세부다. 큰 값은 동적 할당과 `bad_alloc` 가능성이 있다. 복사 비용은 적어도 contained 타입의 복사 비용을 포함하고, 파괴는 contained 타입 소멸 비용을 포함한다.
+- **소유권·수명:** contained value의 수명은 `any` 안에서 시작하고 그 `any`가 파괴되거나 값이 reset/대입/emplace로 교체될 때 끝난다. `any_cast`가 돌려준 포인터·참조는 값을 소유하지 않고 이 수명을 연장하지 않는다. owner가 이동됐을 때 과거 observer가 목적지 값을 가리킨다고 가정할 수도 없다.
+
+### 포인터형 `std::any_cast<T>(&operand)` 호출 계약
+
+- **항목 종류·signature:** 자유 함수 템플릿이다. 읽기 전용 overload는 `template<class T> const T* any_cast(const any* operand) noexcept`, 수정 가능 overload는 `template<class T> T* any_cast(any* operand) noexcept`다. `T`는 `void`가 아닌 객체 타입이어야 하며, 저장 타입과 `typeid(T)`가 일치해야 성공한다. `typeid` 비교는 `T`의 최상위 `const`/`volatile`을 구별하지 않는다.
+- **수신 객체·인자:** 멤버 함수가 아니므로 별도 수신자는 없다. 인자는 살아 있는 `any`를 가리키거나 null일 수 있는 비소유 포인터 prvalue다. `&context_value`처럼 주소를 넘겨도 `any`나 contained value의 소유권은 이전되지 않는다.
+- **반환형·사용:** `operand != nullptr`이고 `operand->type() == typeid(T)`일 때 contained object를 가리키는 `T*` 또는 `const T*`를 반환한다. null operand, 빈 `any`, 타입 불일치에서는 `nullptr`를 반환한다. 호출자는 결과 포인터를 `if (pointer != nullptr)`로 검사한 뒤 역참조한다.
+- **호출 뒤 상태:** cast는 `any`, contained value, 인자 포인터를 바꾸지 않는다. 반환 포인터를 통해 non-const `T`를 변경할 수는 있지만 그것은 cast 호출 뒤의 별도 접근이다. `int`가 든 객체에 `long`이나 사용자 변환 가능한 타입을 요청해도 “비슷한 타입” 변환을 하지 않는다. 반면 `any_cast<const int>(&value)`는 최상위 cv를 제외한 `typeid`가 일치하므로 성공해 읽기 전용 포인터를 반환할 수 있다. 코드에서는 저장 타입과 요청 타입의 이 규칙을 한 API에서 맞춘다.
+- **복잡도·할당·오류:** 이 overload들은 `noexcept`이며 실패를 예외가 아닌 null로 표현하고 새 저장소를 소유하지 않는다. 표준은 별도의 모든 구현 공통 점근 상한을 명시하지 않으므로 특정 RTTI 테이블 조회 명령 수로 단정하지 않는다. null 검사 없이 결과를 역참조하면 null pointer UB이고, 성공 포인터도 owner의 값 교체·reset·파괴 뒤 사용하면 dangling이다.
+- **스레드 보장:** cast가 동기화를 추가하지 않는다. 같은 `any`와 contained value를 여러 실행 흐름이 읽기만 하는 경우에도 contained 타입의 계약을 따르고, 한쪽이 reset/대입/이동/수정하는 동안 다른 쪽이 cast 결과를 읽으면 별도 mutex 같은 동기화가 필요하다.
+
+### 값·참조형 `std::any_cast<T>(operand)`와 `bad_any_cast`
+
+- `any_cast<T>(const any&)`, `any_cast<T>(any&)`, `any_cast<T>(any&&)`는 `T`가 요구하는 cv/ref와 생성 가능성에 맞는 overload를 고른다. 저장 타입이 `remove_cvref_t<T>`와 다르면 `std::bad_any_cast`를 던진다.
+- `T`를 값 타입으로 요청하면 contained value를 복사하거나 rvalue overload에서 이동해 새 값을 반환할 수 있다. `T&`/`const T&`는 같은 contained object의 참조를 반환하므로 owner 수명과 교체에 묶인다. 예외 기반 제어가 불필요한 조회 경계에서는 포인터형이 실패를 값으로 드러내 더 간단하다.
+- `bad_any_cast`는 `std::bad_cast`에서 파생한 예외 타입이고 `what()`은 구현 정의 null-terminated 문자열 포인터를 반환한다. 오늘 코드는 예상 가능한 키 누락·타입 불일치를 정상 분기로 처리하므로 이 예외 경로를 사용하지 않는다.
+
+### `std::any::has_value()`와 `std::any::reset()` 계약
+
+| 대표 형태 | 수신 객체·인자 | 반환값·사후 상태 | 비용·수명·오류 |
+|---|---|---|---|
+| `bool has_value() const noexcept` | 살아 있는 const 또는 non-const `any` lvalue, 데이터 인자 없음 | contained object가 있으면 `true`, 비면 `false`; 수신 상태는 바뀌지 않는다. | `noexcept`; 새 할당·observer 무효화 없음. 표준의 별도 점근 상한은 없고 동시 변경과 함께 쓰지 않는다. |
+| `void reset() noexcept` | 값이 있거나 비어 있는 수정 가능한 `any` lvalue, 데이터 인자 없음 | 값이 있으면 contained object를 파괴하고, 반환값 없이 반드시 빈 상태로 만든다. | contained 소멸이 실행되고 과거 포인터·참조가 모두 무효가 된다. `noexcept` 경계이므로 소멸자가 던져 빠져나오게 설계하면 종료될 수 있다. |
+
+### 컨테이너 안에서 사용할 때
+
+`unordered_map<string, any>`에 저장하면 map node가 `any`를 소유하고 그 `any`가 실제 값을 소유한다. 새 key 삽입이나 rehash는 map 반복자를 무효화할 수 있지만 원소 포인터·참조는 일반적으로 살아 있는 node를 계속 가리킨다. 그러나 같은 key의 mapped `any`를 `insert_or_assign`로 교체하면 과거 contained value는 파괴되므로 그 값에 대한 `any_cast` 포인터·참조는 즉시 무효다. key erase와 map 파괴도 같은 효과를 낸다. 따라서 조회 포인터는 짧은 표현식 안에서만 사용하고 mutation 경계를 넘어 보관하지 않는다.
+
+### 최소 예제
+
+```cpp
+#include <any>
+#include <cassert>
+#include <string>
+#include <utility>
+
+int main() {
+    std::any value{std::string{"trace"}};
+    const std::string* text{std::any_cast<std::string>(&value)};
+    assert(text != nullptr && *text == "trace");
+    assert(std::any_cast<int>(&value) == nullptr);
+
+    std::any destination{std::move(value)};
+    // 이동만으로 value가 빈다고 가정하지 않는다. 확실한 빈 상태는 reset이 만든다.
+    value.reset();
+    return destination.has_value() && !value.has_value() ? 0 : 1;
+}
+```
+
 ## `std::shared_ptr<T>`, `std::weak_ptr<T>`, `std::make_shared<T>`
 
 - `shared_ptr` 복사는 공유 참조 횟수를 늘리고 마지막 소유자가 사라질 때 객체를 파괴한다.

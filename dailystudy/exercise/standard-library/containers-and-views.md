@@ -77,12 +77,14 @@ int main() {
 - 원소 증가로 재해시가 일어나면 반복자는 무효가 될 수 있다. 원소에 대한 포인터·참조의 규칙은 연산별로 확인한다.
 - `reserve(count)`는 예상 원소 수를 알려 재해시를 줄인다. 버킷 수와 원소 용량은 `vector`의 capacity와 다른 개념이다.
 
-### 조회·제자리 생성 호출 계약
+### `std::unordered_map::find`·`std::unordered_map::insert_or_assign`·`std::unordered_map::reserve` 호출 계약
 
 - `bool contains(const Key& key) const`: `key`를 소유하지 않고 빌려 동등 키 존재 여부를 반환한다. 수신 map은 바뀌지 않는다. 평균 `O(1)`, 최악 `O(N)`이며 해시·동등 비교가 예외를 던질 수 있다.
 - `iterator find(const Key& key)`와 const 오버로드: 일치 원소 또는 `end()` 반복자를 반환한다. 반환 반복자는 원소를 소유하지 않는다. 재해시 뒤 모든 반복자가 무효화되고, 해당 원소 삭제 뒤 그 반복자·포인터·참조가 무효화된다.
 - `iterator end()`와 const 오버로드: 과거-끝 sentinel 반복자를 반환하고 map을 바꾸지 않는 `O(1)` 관찰이다. 역참조하면 미정의 동작이다.
 - `template<class... Args> pair<iterator, bool> emplace(Args&&... args)`: 인자들을 원소 생성자에 완벽 전달한다. `bool`은 새 삽입 여부이며 키가 이미 있으면 기존 원소를 유지한다. 평균 `O(1)`, 할당 실패나 사용자 생성자·해시·비교 예외가 가능하다. 삽입으로 재해시되면 반복자는 무효화되지만 원소 포인터·참조는 유지된다.
+- `template<class M> pair<iterator, bool> insert_or_assign(Key&& key, M&& object)`와 `const Key&` overload: 동등 key가 없으면 전달한 key와 mapped value로 새 원소를 삽입하고 반환 `bool`이 `true`다. 있으면 그 node의 mapped object에 `std::forward<M>(object)`를 대입하고 `bool`이 `false`다. 둘 다 iterator는 최종 원소를 가리킨다. 새 삽입은 평균 `O(1)`, 최악 `O(N)`이고 node/bucket 할당, hash/equality, key/mapped 생성 예외가 가능하다. 재해시되면 모든 iterator가 무효화되지만 기존 원소 포인터·참조는 유지된다. 기존 key 대입에서는 map iterator/node 주소가 유지되어도 **mapped object가 교체하면서 파괴한 하위 객체의 포인터·참조는 무효**다. 대입 예외 뒤 mapped 값의 상태는 그 타입의 대입 보장을 따르며, 함수는 자체 동기화를 제공하지 않는다.
+- `void reserve(size_type count)`: 현재 `max_load_factor()`를 넘지 않으면서 적어도 `count`개 원소를 담을 수 있도록 `rehash(ceil(count / max_load_factor()))`와 같은 효과를 낸다. 반환값은 없고 논리 원소 수·값은 바꾸지 않지만 bucket 수는 바뀔 수 있다. 평균 `O(size())`, 최악 `O(size()^2)`이며 실제 재해시는 모든 iterator를 무효화하되 원소 포인터·참조는 무효화하지 않는다. bucket 할당, hash 연산과 길이 제한에서 예외가 가능하고 같은 map의 동시 접근과 겹치지 않게 한다.
 
 ### C++17 노드 핸들: `extract`, `key`, `mapped`, `insert`
 

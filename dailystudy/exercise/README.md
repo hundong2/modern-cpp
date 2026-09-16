@@ -62,14 +62,15 @@
 | [2026-09-11](./2026-09-11/README.md) | `ranges::to` 소유 스냅숏 materialization과 영속 세그먼트 트리 | C++23 |
 | [2026-09-14](./2026-09-14/README.md) | `ospanstream` 고정 버퍼 직렬화와 potential 기반 최소 비용 유량 | C++23 |
 | [2026-09-15](./2026-09-15/README.md) | 명시적 객체 매개변수·`forward_like` const/값 범주 투영과 트리 거리 합 재루팅 DP | C++23 |
+| [2026-09-16](./2026-09-16/README.md) | `std::any` 소유 타입 소거 요청 메타데이터와 min-plus 행렬 이진 지수승 | C++23 |
 
 ## 표준 라이브러리 설명 찾기
 
 - [표준 라이브러리 학습 지도](./standard-library/README.md): 설명 품질 기준과 분야별 대표 문서
-- [날짜별 사용 색인](./standard-library/by-date.md): 현재 58개 날짜, 155개 C++ 파일의 헤더와 `std::` 심볼
-- [심볼 색인](./standard-library/symbol-index.md): 147개 현재 심볼의 역할과 상세 문서 링크
+- [날짜별 사용 색인](./standard-library/by-date.md): 현재 59개 날짜, 158개 C++ 파일의 헤더와 `std::` 심볼
+- [심볼 색인](./standard-library/symbol-index.md): 155개 현재 심볼의 역할과 상세 문서 링크
 - [공통 용어](./standard-library/terms.md): 반복자, 뷰, 술어, 소유권, 무효화, 예외 보장, 원자성
-- [표준 헤더](./standard-library/headers.md): 현재 사용하는 53개 헤더와 대표 선언
+- [표준 헤더](./standard-library/headers.md): 현재 사용하는 54개 헤더와 대표 선언
 
 코드의 인접 주석은 현재 호출의 인자·반환값·상태 변화를 설명한다. 공용 문서는 전제조건, 복잡도, 객체 수명, 참조·반복자 무효화, 오류·예외 계약을 설명한다. 새 심볼은 다음 감사로 누락 여부를 검사한다.
 

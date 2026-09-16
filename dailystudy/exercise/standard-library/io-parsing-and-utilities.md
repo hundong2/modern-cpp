@@ -74,7 +74,9 @@
 - `str(string)` 계열 setter는 내부 시퀀스를 교체하므로 기존에 얻은 포인터·참조·뷰를 그대로 사용할 수 없다. 사용 중인 정확한 오버로드가 getter인지 setter인지 인자 수와 cv/ref 한정으로 구분한다.
 - `ostringstream`에 여러 스레드가 직접 동시에 쓰는 것은 일반적으로 안전한 공유 접근 계약이 아니다. 오늘처럼 각 스레드가 별도 `osyncstream`으로 같은 wrapped buffer에 emit하고, 모든 join 뒤 한 스레드가 `str()`을 호출한다.
 
-### `std::ios::sync_with_stdio(false)`와 `cin.tie(nullptr)`
+### `std::ios`·`std::ios::sync_with_stdio(false)`와 `cin.tie(nullptr)`
+
+`std::ios`는 `std::basic_ios<char>`의 표준 별칭으로, 문자 스트림의 상태 비트·예외 mask·tie 포인터 같은 공통 상태 인터페이스를 나타낸다. 오늘 코드는 이 타입 이름을 통해 상속된 정적 `sync_with_stdio` 설정을 표기한다. 별칭 자체는 객체를 생성하거나 호출하지 않고, 실제 상태·오류·동시성 계약은 아래 함수와 각 stream 객체의 연산이 정한다.
 
 - `static bool ios_base::sync_with_stdio(bool sync = true)`는 인스턴스 수신자 없이 bool 값 하나를 받고 이전 설정을 반환한다. `false`는 C stdio와 C++ iostream의 동기화를 끈다.
 - 표준 입출력 전에 한 번 호출하며 이후 C와 C++ 스트림을 같은 파일에서 임의로 섞지 않는다.

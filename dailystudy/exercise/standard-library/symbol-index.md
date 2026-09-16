@@ -33,6 +33,7 @@
 | `std::deque` | 양끝 상수 시간 삽입·삭제 시퀀스 | [컨테이너](containers-and-views.md) |
 | `std::map` | 정렬 키 연관 컨테이너 | [컨테이너](containers-and-views.md) |
 | `std::unordered_map` | 해시 기반 연관 컨테이너 | [컨테이너](containers-and-views.md) |
+| `std::unordered_map::find`, `std::unordered_map::insert_or_assign`, `std::unordered_map::reserve` | 해시 key 조회, 삽입-or-대입, 예상 원소 수 기반 재해시 준비 | [컨테이너](containers-and-views.md) |
 | `std::queue` | FIFO 컨테이너 어댑터 | [컨테이너](containers-and-views.md) |
 | `std::priority_queue`, `std::priority_queue::empty`, `std::priority_queue::top`, `std::priority_queue::pop` | 힙 기반 우선순위 어댑터와 상태·최우선 원소·제거 연산 | [컨테이너](containers-and-views.md) |
 | `std::vector` | 동적 연속 배열 | [컨테이너](containers-and-views.md) |
@@ -62,6 +63,8 @@
 
 | 심볼 | 짧은 역할 | 상세 문서 |
 |---|---|---|
+| `std::any`, `std::any::has_value`, `std::any::reset` | 단일 소유 타입 소거 값, 보유 여부 관찰과 명시적 값 파괴 | [소유권](ownership-and-vocabulary-types.md) |
+| `std::any_cast` | `any` contained object의 `typeid` 일치(최상위 cv 제외) 값·참조·포인터 접근 | [소유권](ownership-and-vocabulary-types.md) |
 | `std::unique_ptr` | 독점 소유 스마트 포인터 | [소유권](ownership-and-vocabulary-types.md) |
 | `std::make_unique` | 객체와 unique_ptr 생성 | [소유권](ownership-and-vocabulary-types.md) |
 | `std::out_ptr` | `T**` 출력 API를 스마트 포인터 소유권으로 잇는 C++23 어댑터 함수 | [소유권](ownership-and-vocabulary-types.md) |
@@ -127,6 +130,7 @@
 | `std::bad_alloc` | 동적 할당 요청 실패를 나타내는 예외 타입 | [입출력](io-parsing-and-utilities.md) |
 | `std::cin`, `std::cout`, `std::cerr` | 표준 입력·출력·오류 스트림 객체 | [입출력](io-parsing-and-utilities.md) |
 | `std::basic_ios` | stream 상태 비트와 명시적 bool 관찰을 제공하는 공통 기반 | [입출력](io-parsing-and-utilities.md) |
+| `std::ios` | `basic_ios<char>` 표준 별칭과 iostream 공통 상태 인터페이스 | [입출력](io-parsing-and-utilities.md) |
 | `std::istream` | 추출 연산이 같은 입력 스트림 참조를 이어 반환하는 기반 타입 | [입출력](io-parsing-and-utilities.md) |
 | `std::ostream` | 출력 연산이 같은 스트림 참조를 이어 반환하는 기반 타입 | [입출력](io-parsing-and-utilities.md) |
 | `std::basic_ospanstream`, `std::ospanstream` | 호출자 소유 고정 문자 버퍼에 형식 출력하는 C++23 비소유 스트림과 char 별칭 | [입출력](io-parsing-and-utilities.md) |
