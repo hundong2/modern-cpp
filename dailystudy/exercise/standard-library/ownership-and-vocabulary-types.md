@@ -152,13 +152,20 @@ int main() {
 
 ## `std::expected<T, E>`와 `std::unexpected<E>` — `<expected>`
 
-- 성공값 `T` 또는 오류값 `E` 중 정확히 하나를 보관하는 C++23 어휘 타입이다.
-- `has_value()`와 `operator bool`은 성공 여부를 확인한다.
-- `operator*`, `operator->`, `value()`는 성공값에 접근한다. `value()`는 오류 상태면 `bad_expected_access`를 던진다.
-- `error()`는 오류 상태에서 `E`에 접근한다. 성공 상태에서 호출하지 않는다.
-- `std::unexpected(error)`는 오류 상태를 명시적으로 구성한다.
-- 예외를 던지지 않는다고 자동 보장하는 타입이 아니다. `T`/`E`의 생성·복사·이동이 예외를 던질 수 있다.
-- 호출자가 성공과 실패를 처리하도록 함수 서명에 계약을 드러내는 장점이 있다.
+`expected<T,E>`는 성공 `T` 또는 실패 `E`를 **자기 저장소 안에 정확히 하나** 소유하는 C++23 클래스 템플릿이다. `unexpected<E>`는 실패 값을 명시적으로 싣는 별도 클래스 템플릿이다. `optional<T>`의 단순 부재와 달리 실패 이유가 호출 경계에 남는다. 오늘 [`../2026-09-17/main.cpp`](../2026-09-17/main.cpp)는 파싱 결과를 `expected<Config,ParseError>`로 반환하고, 성공 객체를 완성한 뒤에만 현재 설정을 교체한다.
+
+`std::in_place`는 `<utility>`에 선언된 `const std::in_place_t` 태그 객체다. 값을 보관하지 않고 `expected`의 성공값 직접 생성 오버로드를 선택한다. 인자 자체를 넘기는 데 할당·상태 변경·참조 무효화가 없으며, 실제 객체 구성의 비용과 예외는 뒤따르는 생성자 인자가 결정한다. 태그의 정적 저장 기간과 결과 객체의 수명은 별개다.
+
+- **생성·입력:** `expected<T,E>{std::in_place,args...}`는 `<utility>`의 `std::in_place_t` 태그 객체와 `Args&&...`를 받아 저장소 안에서 `T`를 직접 생성한다. 생성자에는 별도 반환값이 없고 성공 상태의 목적 객체가 생긴다. `T` 생성 비용·예외를 그대로 따르며 `expected` 자체가 별도 heap 할당을 요구하지는 않지만 `T`가 내부에서 할당할 수 있다. 오늘 `parsed`는 `Config::Port` 값으로 복사되고 임시 `std::string`은 `Config` 안으로 이동된다. 반환되는 `expected` prvalue는 호출자 결과 객체를 직접 초기화할 수 있어 같은 타입의 중간 `expected` 복사·이동을 요구하지 않는다.
+- **실패 생성:** `unexpected(E&&)` 또는 `unexpected(const E&)`는 인자의 값 범주에 맞게 `E`를 소유한다. `std::unexpected{ParseError::Invalid}`는 CTAD로 `E=ParseError`를 추론하고, `expected<T,E>`의 `unexpected<G>` 생성 경로가 오류 대안을 만든다. 새 성공 `T`는 생성되지 않는다. 열거형 오류는 상수 시간·무할당·무예외지만 일반 `E`의 복사·이동·할당은 예외가 될 수 있다.
+- **상태 관찰:** `bool has_value() const noexcept`와 `explicit operator bool() const noexcept`는 인자 없이 성공 여부를 `bool` 값으로 돌려준다. 수신 객체와 저장 값은 그대로이고 `O(1)`·무할당·무효화 없음이다. 오늘 `if (candidate)` 검사가 다음 역참조의 전제조건을 세운다.
+- **성공 접근:** lvalue 수신자의 `T& operator*() & noexcept`, const lvalue의 `const T& operator*() const & noexcept` 및 대응 `operator->`는 인자 없이 소유 `T`를 빌려준다. 반드시 성공 상태여야 하며 실패 상태 역참조는 미정의 동작이다. `value()`도 cv/ref 수신자에 따라 `T&`, `const T&`, `T&&`, `const T&&`를 돌려주되 실패 상태에서는 `bad_expected_access<E>`를 던진다. 참조·포인터는 수신 `expected`의 값 대안 교체 또는 파괴 뒤 무효다. 접근 자체는 `O(1)`·무할당이지만 `value()`의 오류 예외 구성에는 `E` 복사 등이 관여할 수 있다.
+- **오류 접근:** lvalue의 `E& error() & noexcept`, const lvalue의 `const E& error() const & noexcept` 등은 실패 대안을 빌려준다. 인자는 없고 반환 참조를 읽거나 수정할 수 있지만, 반드시 오류 상태여야 한다. 성공 상태에서 `error()` 호출은 미정의 동작이다. `O(1)`·무할당이며 참조는 수신 객체의 오류 대안 수명에 묶인다. 오늘 `if (!rejected)`가 이 전제조건을 세운다. 코드 주석의 `std::expected::error`는 이 멤버를 가리킨다.
+- **성공값 변환 `transform`:** C++23 `template<class F> constexpr auto transform(F&& f) &&`는 rvalue 수신 `expected<T,E>`가 성공이면 `T&&`를 `f`에 전달해 결과 `U`를 보관한 `expected<U,E>`를 반환하고, 실패이면 `f`를 실행하지 않고 오류 `E`를 새 결과로 이동시킨다. 반환값은 독립 소유 객체이며 호출자가 사용한다. 오늘 [`../2026-09-17/problem.cpp`](../2026-09-17/problem.cpp)의 `expected<Quota::Units,ValidationError>` prvalue에서 `F`는 람다 타입, 입력 `unsigned` 값은 람다 값 매개변수로 복사되고 성공 결과 `Quota`가 직접 소유된다. 수신 임시 객체는 전체 식 끝에서 파괴되며 외부 `requested`는 바뀌지 않는다. 분기 자체는 상수 시간이고 실제 비용은 함수 객체 실행·`U/E` 생성 비용이다. 저장 객체 생성·할당 예외는 전파될 수 있으며 참조·포인터를 임시 내부에 저장해 반환하면 수명 종료 뒤 댕글링된다.
+- **결과 연결 `and_then`:** C++23 `template<class F> constexpr auto and_then(F&& f) &&`는 성공 수신자의 `T&&`를 `f`에 넘기고 `f`가 돌려준 `expected<U,E>`를 반환한다. 실패면 `f`를 부르지 않고 같은 오류 타입 `E`를 새 `expected<U,E>`에 이동해 반환한다. `F`의 반환형이 호환되는 `expected`여야 하며 `transform`과 달리 함수 결과를 다시 `expected`로 감싸지 않는다. 오늘 성공 `int`를 `validate(int)`에 값으로 넘겨 `expected<Units,ValidationError>`를 받고, 실패면 검증 함수를 건너뛴다. 반환 prvalue는 바로 다음 `transform` 수신자가 되고, 원래 임시의 수명은 전체 식 끝까지다. 분기 자체는 상수 시간, 전체는 `f` 및 `T/E` 이동·생성 비용을 따르며 그 예외가 전파될 수 있다. 같은 수신 객체에 동시 변경을 허용하지 않는다.
+- **소유권과 변경:** `std::move(*candidate)`는 성공 `Config&`를 `Config&&` xvalue로 표시할 뿐 즉시 이동하지 않는다. 뒤따르는 `Config` 이동 대입이 `active`를 바꾸며, `candidate`는 여전히 성공 상태이고 담긴 `Config`도 살아 있지만 이동된 문자열 값은 미지정이다. 파싱 실패에서는 이 대입 자체를 건너뛰므로 기존 설정을 보존한다. 다만 성공 후 실제 `Config` 대입에서 할당 또는 사용자 타입 연산이 예외를 던지는 경우까지 무조건 강한 예외 보장으로 확대하지 않는다. 필요하면 완성 후보와 예외 없는 `swap` 등을 별도로 설계한다.
+- **무효화·스레드:** 상태 읽기는 수신 객체를 바꾸지 않고 별도 외부 관찰자를 무효화하지 않는다. 상태 전환·대입·파괴는 이전 활성 대안의 참조·포인터를 무효화할 수 있다. 같은 `expected` 객체의 무동기 읽기/쓰기는 데이터 경쟁이며, 한 실행 흐름에서 완성한 불변 결과를 적절히 게시한 뒤 여러 흐름이 읽는 형태로 사용한다.
+- **실수 방지:** `expected`가 있다는 사실만으로 함수 전체가 `noexcept`가 되는 것은 아니다. `T`/`E` 생성·복사·이동과 내부 소유 객체 할당이 예외를 던질 수 있다. 성공 접근과 오류 접근은 반드시 상태 검사와 짝지으며, `error()`는 `value()`처럼 잘못된 상태를 예외로 바꾸는 검사형 접근자가 아니다.
 
 ## `std::variant<Ts...>`, `std::visit`, `std::get`, `std::get_if`
 

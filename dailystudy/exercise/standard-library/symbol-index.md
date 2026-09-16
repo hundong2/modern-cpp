@@ -41,6 +41,7 @@
 | `std::string::npos` | string 검색 실패 위치 상수 | [컨테이너](containers-and-views.md) |
 | `std::char_traits` | 문자 비교·길이 계산 정책 | [컨테이너](containers-and-views.md) |
 | `std::string_view` | 비소유 문자 범위 | [컨테이너](containers-and-views.md) |
+| `std::string_view::empty`, `std::string_view::data` | 빈 여부 관찰과 비소유 문자 포인터 획득 | [컨테이너](containers-and-views.md) |
 | `std::string_view::npos` | 검색 실패 위치 상수 | [컨테이너](containers-and-views.md) |
 | `std::span` | 비소유 연속 원소 범위 | [컨테이너](containers-and-views.md) |
 | `std::mdspan`, `std::dextents` | 다차원 비소유 뷰와 동적 차원 | [컨테이너](containers-and-views.md) |
@@ -73,7 +74,9 @@
 | `std::make_shared` | 객체와 shared_ptr 생성 | [소유권](ownership-and-vocabulary-types.md) |
 | `std::weak_ptr` | shared_ptr 객체의 비소유 관찰자 | [소유권](ownership-and-vocabulary-types.md) |
 | `std::optional`, `std::nullopt_t`, `std::nullopt`, `std::bad_optional_access` | 선택적 값, 빈 상태 태그 타입·객체와 검사형 접근 실패 예외 | [소유권](ownership-and-vocabulary-types.md) |
-| `std::expected`, `std::unexpected` | 성공값 또는 오류값 | [소유권](ownership-and-vocabulary-types.md) |
+| `std::expected`, `std::unexpected`, `std::expected::error` | 성공값 또는 오류값과 오류 대안 접근 | [소유권](ownership-and-vocabulary-types.md) |
+| `std::in_place` | `expected` 성공값을 내부 저장소에 직접 생성하는 태그 | [소유권](ownership-and-vocabulary-types.md) |
+| `expected::and_then`, `expected::transform` | 실패를 전파하고 성공값만 연결·변환하는 C++23 멤버 | [소유권](ownership-and-vocabulary-types.md) |
 | `std::variant` | 여러 후보 중 하나의 태그된 합 | [소유권](ownership-and-vocabulary-types.md) |
 | `std::visit` | variant 활성 대안 방문 | [소유권](ownership-and-vocabulary-types.md) |
 | `std::get`, `std::get_if`, `std::holds_alternative` | variant/tuple 대안 접근·검사 | [소유권](ownership-and-vocabulary-types.md) |
@@ -138,7 +141,7 @@
 | `std::ostringstream` | 내부 문자열 버퍼를 소유하는 메모리 출력 스트림 | [입출력](io-parsing-and-utilities.md) |
 | `std::ios::sync_with_stdio` | C/C++ 표준 스트림 동기화 설정 | [입출력](io-parsing-and-utilities.md) |
 | `std::fixed`, `std::setprecision` | 부동소수점 출력 형식 조작 | [입출력](io-parsing-and-utilities.md) |
-| `std::from_chars`, `std::errc` | 비예외 문자 범위 숫자 파싱 | [입출력](io-parsing-and-utilities.md) |
+| `std::from_chars`, `std::errc`, `std::errc::result_out_of_range` | 비예외 문자 범위 숫자 파싱과 범위 초과 오류 | [입출력](io-parsing-and-utilities.md) |
 | `std::getline` | 구분자 전까지 한 줄을 소유 문자열에 입력 | [입출력](io-parsing-and-utilities.md) |
 | `std::to_string` | 숫자를 소유 문자열로 변환 | [입출력](io-parsing-and-utilities.md) |
 | `std::move`, `std::forward`, `std::forward_like`, `std::exchange` | 값 범주 변환·전달·const/참조 범주 투영·값 교체 | [입출력](io-parsing-and-utilities.md) |

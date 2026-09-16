@@ -11,7 +11,7 @@
 | `<barrier>` | C++20 반복 단계 동기화 객체 `std::barrier`와 도착 token |
 | `<bit>` | `bit_cast`, `byteswap`, `endian` 객체 표현·바이트 순서 도구 |
 | `<cassert>` | 디버그 검증 매크로 `assert` (`NDEBUG`에서 제거 가능) |
-| `<charconv>` | 비예외 숫자 파싱 `from_chars` |
+| `<charconv>` | 비예외 정수 파싱 `from_chars`와 `{ptr, ec}` 결과 |
 | `<chrono>` | duration, time_point, clock, 시간 리터럴 |
 | `<compare>` | 삼방향 비교 범주 `strong_ordering` |
 | `<concepts>` | `same_as`, `integral`, `convertible_to` |
@@ -21,7 +21,7 @@
 | `<cstdint>` | `uint64_t` 등 고정 폭 정수 별칭 |
 | `<cstdlib>` | 정수 `abs`, `exit` 등 C 호환 유틸리티 |
 | `<deque>` | 양끝 큐 `std::deque`와 앞·뒤 삽입/삭제 API |
-| `<expected>` | C++23 `expected`, `unexpected` |
+| `<expected>` | C++23 `expected`, `unexpected`, 성공 전용 `and_then`·`transform` |
 | `<filesystem>` | `path`, 디렉터리 반복자와 파일 상태 API |
 | `<format>` | 타입 안전 문자열 형식화 `std::format`, 형식 오류 `std::format_error` |
 | `<functional>` | `function`, C++23 `move_only_function`, 비교 함수 객체, 참조 래퍼 |
@@ -48,14 +48,14 @@
 | `<sstream>` | 문자열 버퍼를 소유하는 입력·출력 스트림과 `ostringstream` |
 | `<stop_token>` | 협력적 취소 상태 `stop_token` |
 | `<string>` | 소유 문자열 `string`, 변환 보조 함수 |
-| `<string_view>` | 비소유 문자 뷰 `string_view` |
+| `<string_view>` | 비소유 문자 뷰 `string_view`와 `empty/data/size` 범위 관찰 |
 | `<syncstream>` | 레코드 단위 동시 출력 `osyncstream`과 동기 버퍼 |
 | `<system_error>` | `error_code`, `errc` 오류 값 |
 | `<thread>` | `jthread`, `this_thread` 함수 |
 | `<tuple>` | 이종 값 묶음 `tuple`, 원소 접근 `get`, tuple-like 호출 어댑터 `apply` |
 | `<type_traits>` | `is_same_v`, `decay_t`, `remove_cvref_t` |
 | `<unordered_map>` | 해시 연관 컨테이너 `unordered_map` |
-| `<utility>` | `move`, `forward`, C++23 `forward_like`, `exchange`, `pair` |
+| `<utility>` | `in_place` 태그, `move`, `forward`, C++23 `forward_like`, `exchange`, `pair` |
 | `<variant>` | 태그된 합 타입 `variant`와 방문 API |
 | `<vector>` | 동적 연속 컨테이너 `vector`, `erase_if` 오버로드 |
 

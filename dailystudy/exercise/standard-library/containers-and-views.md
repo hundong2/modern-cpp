@@ -2,6 +2,8 @@
 
 ## `std::vector<T>` — `<vector>`의 동적 연속 배열
 
+`std::allocator<T>`는 `<memory>`에 선언된, 기본 `std::vector<T>`가 저장소 확보·반환에 쓰는 표준 할당자 클래스 템플릿이다. 오늘 `std::vector<int>`는 별도 할당자를 지정하지 않아 `std::allocator<int>`를 템플릿 기본 인자로 쓴다. 생성 전에는 원소 저장소가 없으며 vector의 fill 생성자와 `reserve`는 필요한 저장소를 확보할 수 있다. 할당자의 `allocate(n)`은 미초기화 저장소 포인터를 돌려주고 `deallocate(p,n)`은 같은 할당자 계약에 맞게 반환한다. 이 타입 자체가 스레드 간 vector 객체의 동시 변경을 동기화하지 않으며, 실제 원소 수명·무효화·예외는 아래 vector 연산 계약을 따른다.
+
 - `T` 원소를 연속 메모리에 소유한다. 크기는 실행 중 변하며 인덱스 접근이 `O(1)`이다.
 - 복사하면 원소를 새 저장소에 복사하고, 이동하면 보통 내부 저장소 소유권을 넘긴다.
 - 끝 삽입은 상각 `O(1)`, 중간 삽입·삭제는 뒤 원소 이동 때문에 `O(N)`이다.
@@ -132,6 +134,7 @@ int main() {
 ## `std::string_view` — `<string_view>`의 비소유 문자 뷰
 
 - 문자 포인터와 길이를 보관하며 원본 문자를 소유하거나 수명을 연장하지 않는다.
+- `std::string_view::empty()`는 `constexpr bool empty() const noexcept`로 데이터 인자 없이 길이가 0인지 돌려준다. `std::string_view::data()`는 `constexpr const char* data() const noexcept`로 첫 문자 포인터를 반환하고 `size()`는 `size_type` 길이를 반환한다. 셋 모두 `O(1)`·무할당·무예외이며 뷰와 원본 문자를 바꾸거나 관찰자를 무효화하지 않는다. 빈 뷰의 `data()` 결과를 역참조하면 안 되고, 포인터에 길이를 더할 때도 살아 있는 원본 범위 안에서만 계산한다. 세 반환값은 파싱 범위의 정확한 `[first,last)`를 만드는 데 쓰이며 반환 포인터는 원본 수명에 묶인다. 동시 읽기는 원본이 불변일 때만 안전하다.
 - `std::char_traits<CharT>`는 `basic_string`과 `basic_string_view`가 문자 비교·길이 계산 등에 쓰는 정책 클래스다. `basic_string_view(const char*)`는 `std::char_traits<char>::length`로 NUL까지 읽으므로 유효한 NUL 종료 범위가 전제이고 시간은 문자 수에 선형이다. 포인터와 길이를 함께 주는 생성자는 이 탐색 없이 상수 시간이다.
 - 복사 비용은 작지만 원본 `string` 파괴·재할당·수정 뒤 댕글링 또는 의미 변화가 생길 수 있다.
 - 문자열 리터럴은 프로그램 수명 동안 살아 있어 뷰로 안전하게 보관하기 쉽다.

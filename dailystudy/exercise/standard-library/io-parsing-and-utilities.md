@@ -27,6 +27,8 @@
 
 `std::istream`은 문자 입력 스트림의 기반 타입이고 `std::ostream`은 문자 출력 스트림의 기반 타입이다. `std::cin`은 입력 인터페이스, `std::cout`과 `std::cerr`는 출력 인터페이스를 사용한다. 추출 연산자 `operator>>`는 보통 `std::istream&`, 삽입 연산자 `operator<<`는 보통 `std::ostream&`를 반환한다. 따라서 `std::cin >> a >> b`와 `std::cout << a << b`는 첫 호출이 돌려준 같은 스트림 참조에 다음 호출을 이어 붙인다. 반환값은 새 스트림이나 복사본이 아니며 스트림 객체의 수명은 호출 전후로 계속 유지된다.
 
+`std::basic_istream<CharT,Traits>`와 `std::basic_ostream<CharT,Traits>`는 `<istream>`·`<ostream>`의 클래스 템플릿이고, `<iostream>`의 `std::istream`·`std::ostream`은 각각 `char` 특수화 별칭이다. 출력 삽입 `operator<<`는 오른쪽 피연산자 타입에 따라 정수 멤버 함수나 문자·문자열 비멤버 함수 등이 선택된다. 모든 삽입·추출이 반드시 멤버 함수인 것은 아니다.
+
 - `cin`은 표준 입력에 연결된 `istream`, `cout`은 일반 표준 출력, `cerr`는 오류 표준 출력에 연결된 `ostream` 객체다.
 - 정수·부동소수점·포인터 추출은 `basic_istream& basic_istream::operator>>(T& value)` 계열 멤버 오버로드다. 수신자는 `cin` 같은 `std::istream` lvalue이고 데이터 인자는 수정할 대상 lvalue 참조 하나다. 같은 `std::istream&`를 반환하므로 `cin >> a >> b`의 첫 반환이 두 번째 수신자가 된다. 문자·문자열 등에는 비멤버 추출 오버로드도 있으므로 실제 피연산자 타입으로 구분한다.
 - 입력 실패 시 fail 상태가 설정되고 대상 값은 추출 계약에 따라 유지되거나 바뀔 수 있다. `if (!(cin >> value))`로 검사한다.
@@ -78,7 +80,7 @@
 
 `std::ios`는 `std::basic_ios<char>`의 표준 별칭으로, 문자 스트림의 상태 비트·예외 mask·tie 포인터 같은 공통 상태 인터페이스를 나타낸다. 오늘 코드는 이 타입 이름을 통해 상속된 정적 `sync_with_stdio` 설정을 표기한다. 별칭 자체는 객체를 생성하거나 호출하지 않고, 실제 상태·오류·동시성 계약은 아래 함수와 각 stream 객체의 연산이 정한다.
 
-- `static bool ios_base::sync_with_stdio(bool sync = true)`는 인스턴스 수신자 없이 bool 값 하나를 받고 이전 설정을 반환한다. `false`는 C stdio와 C++ iostream의 동기화를 끈다.
+- `std::ios_base::sync_with_stdio`는 `static bool ios_base::sync_with_stdio(bool sync = true)`로 선언되며 인스턴스 수신자 없이 bool 값 하나를 받고 이전 설정을 반환한다. `std::ios::sync_with_stdio(false)`는 상속된 같은 정적 함수를 별칭을 통해 부른다. `false`는 C stdio와 C++ iostream의 동기화를 끈다.
 - 표준 입출력 전에 한 번 호출하며 이후 C와 C++ 스트림을 같은 파일에서 임의로 섞지 않는다.
 - `false`로 바꾼 뒤에는 synchronized 표준 stream에만 주어진 동시 formatted/unformatted 입출력의 data-race 예외 보장을 쓸 수 없다. 이 ICPC 설정은 단일 스레드 입출력을 전제로 한다.
 - setter `std::ostream* basic_ios::tie(std::ostream* tied)`는 `cin` 수신 객체와 비소유 포인터 인자 하나를 받고 이전 연결 포인터를 반환한다. `nullptr`를 넘기면 입력 전 `cout` 자동 flush 연결을 해제하며 두 스트림 객체나 버퍼의 소유권은 바뀌지 않는다.
@@ -102,11 +104,11 @@
 
 ## `std::from_chars`와 `std::errc` — `<charconv>`, `<system_error>`
 
-- `from_chars(first,last,value,base)`는 문자 범위를 숫자로 파싱하고 `{ptr,ec}`를 반환한다.
-- 로케일을 사용하지 않고 동적 할당을 요구하지 않으며 예외를 던지지 않는 저수준 변환 API다.
-- `ec == std::errc{}`이면 변환 성공이다. `invalid_argument`는 시작부터 변환할 문자가 없고 `result_out_of_range`는 대상 타입 범위를 넘었다는 뜻이다.
-- `ptr`은 변환을 멈춘 위치다. 전체 문자열이 숫자여야 하면 `ptr == last`도 검사한다.
-- 문자열이 null 종료일 필요 없이 `[first,last)` 범위를 정확히 넘긴다.
+`std::from_chars`는 `<charconv>`의 비멤버 함수다. 정수 오버로드의 대표 형태는 `template<class Integer> from_chars_result from_chars(const char* first, const char* last, Integer& value, int base = 10)`이다. 오늘 [`../2026-09-17/main.cpp`](../2026-09-17/main.cpp)는 `Integer=unsigned`, 생략된 `base=10`을 선택해 포트 문자를 읽는다.
+
+- **인자·소유권:** `first`와 `last`는 살아 있는 동일 연속 문자 범위 `[first,last)`의 경계 포인터이며 `first <= last`여야 한다. 함수는 문자를 빌려 읽을 뿐 소유하거나 수정하지 않는다. `value`는 쓰기 가능한 정수 lvalue 참조이며 성공할 때만 변환 값을 저장한다. 널 종료는 요구하지 않고, 범위 바깥을 읽지 않는다. 정수 문법에서 선행 공백과 `+`는 허용되지 않는다.
+- **반환·오류:** 반환형 `std::from_chars_result`의 `ptr`은 파싱 종료 위치, `ec`는 `std::errc`다. `ec == std::errc{}`이면 적어도 유효한 숫자를 읽어 성공했고, `ptr == last`까지 확인해야 접미 쓰레기 없이 **전체** 범위를 읽었다고 말할 수 있다. 시작부터 변환할 수 없으면 `invalid_argument`, 대상 정수 범위를 넘으면 `std::errc::result_out_of_range`이며 두 오류에서 `value`는 그대로다. 오늘은 타입 범위를 넘는 오류와 도메인 상한 65535 초과를 모두 `OutOfRange`로, 나머지 실패·0·접미 문자를 `Invalid`로 분류한다.
+- **비용·수명·동시성:** 검사한 문자 수에 선형이며 로케일이나 동적 할당을 요구하지 않고 이 오버로드는 예외를 던지지 않는다. 호출 뒤 입력 포인터·문자 저장소는 그대로이고 참조 무효화도 없다. 반환 `ptr`은 원본 문자 범위의 비소유 포인터여서 owner 파괴·재할당 뒤 사용할 수 없다. 다른 스레드가 같은 문자를 동시에 쓰지 않아야 한다.
 
 ## `std::to_string` — `<string>`
 
