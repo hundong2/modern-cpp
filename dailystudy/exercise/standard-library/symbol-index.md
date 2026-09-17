@@ -32,6 +32,7 @@
 | `std::array` | 컴파일 시간 고정 크기 연속 배열 | [컨테이너](containers-and-views.md) |
 | `std::deque` | 양끝 상수 시간 삽입·삭제 시퀀스 | [컨테이너](containers-and-views.md) |
 | `std::map` | 정렬 키 연관 컨테이너 | [컨테이너](containers-and-views.md) |
+| `std::flat_map` | C++23 정렬·연속 키/값 저장소의 고유 키 테이블 | [컨테이너](containers-and-views.md) |
 | `std::unordered_map` | 해시 기반 연관 컨테이너 | [컨테이너](containers-and-views.md) |
 | `std::unordered_map::find`, `std::unordered_map::insert_or_assign`, `std::unordered_map::reserve` | 해시 key 조회, 삽입-or-대입, 예상 원소 수 기반 재해시 준비 | [컨테이너](containers-and-views.md) |
 | `std::queue` | FIFO 컨테이너 어댑터 | [컨테이너](containers-and-views.md) |
@@ -136,10 +137,12 @@
 | `std::ios` | `basic_ios<char>` 표준 별칭과 iostream 공통 상태 인터페이스 | [입출력](io-parsing-and-utilities.md) |
 | `std::istream` | 추출 연산이 같은 입력 스트림 참조를 이어 반환하는 기반 타입 | [입출력](io-parsing-and-utilities.md) |
 | `std::ostream` | 출력 연산이 같은 스트림 참조를 이어 반환하는 기반 타입 | [입출력](io-parsing-and-utilities.md) |
+| `std::basic_ostream` | 문자 타입별 출력 스트림 기반 템플릿 | [입출력](io-parsing-and-utilities.md) |
 | `std::basic_ospanstream`, `std::ospanstream` | 호출자 소유 고정 문자 버퍼에 형식 출력하는 C++23 비소유 스트림과 char 별칭 | [입출력](io-parsing-and-utilities.md) |
 | `std::osyncstream` | 스레드별 출력 조각을 한 덩어리로 emit하는 동기 스트림 | [입출력](io-parsing-and-utilities.md) |
 | `std::ostringstream` | 내부 문자열 버퍼를 소유하는 메모리 출력 스트림 | [입출력](io-parsing-and-utilities.md) |
 | `std::ios::sync_with_stdio` | C/C++ 표준 스트림 동기화 설정 | [입출력](io-parsing-and-utilities.md) |
+| `std::ios_base::sync_with_stdio` | `ios`가 상속받는 정적 C/C++ 동기화 설정 함수 | [입출력](io-parsing-and-utilities.md) |
 | `std::fixed`, `std::setprecision` | 부동소수점 출력 형식 조작 | [입출력](io-parsing-and-utilities.md) |
 | `std::from_chars`, `std::errc`, `std::errc::result_out_of_range` | 비예외 문자 범위 숫자 파싱과 범위 초과 오류 | [입출력](io-parsing-and-utilities.md) |
 | `std::getline` | 구분자 전까지 한 줄을 소유 문자열에 입력 | [입출력](io-parsing-and-utilities.md) |

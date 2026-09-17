@@ -23,6 +23,7 @@
 | `<deque>` | 양끝 큐 `std::deque`와 앞·뒤 삽입/삭제 API |
 | `<expected>` | C++23 `expected`, `unexpected`, 성공 전용 `and_then`·`transform` |
 | `<filesystem>` | `path`, 디렉터리 반복자와 파일 상태 API |
+| `<flat_map>` | C++23 정렬된 고유 키의 평면 소유 연관 컨테이너 `flat_map` |
 | `<format>` | 타입 안전 문자열 형식화 `std::format`, 형식 오류 `std::format_error` |
 | `<functional>` | `function`, C++23 `move_only_function`, 비교 함수 객체, 참조 래퍼 |
 | `<future>` | 단일 결과 shared state의 생산자 `promise`와 소비자 `future` |
