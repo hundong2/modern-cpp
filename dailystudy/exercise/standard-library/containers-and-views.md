@@ -121,11 +121,13 @@ int main() {
 ## `std::string` — `<string>`의 소유 문자열
 
 - `char`를 연속 메모리에 소유하는 `basic_string<char>` 별칭이다.
-- 복사하면 문자 값을 복사하고 이동하면 내부 버퍼 소유권을 넘길 수 있다.
+- `basic_string(const char* source)` 대표 생성자는 유효한 NUL 종료 문자 범위의 첫 NUL 전 문자를 새 문자열에 복사한다. 포인터는 값으로 전달되고 원본 배열을 빌려 읽을 뿐 소유하거나 수정하지 않는다. 생성자는 반환값이 없고 성공한 destination이 문자를 소유한다. 문자 수에 선형이며 길이가 `max_size()`를 넘으면 `length_error`, 저장 할당이 실패하면 `bad_alloc` 등이 가능하다. null 포인터 또는 NUL 전까지 유효하지 않은 범위는 전제조건 위반이다. 생성 실패 시 완성 destination은 없고 원본 배열·관찰자는 그대로다. 2026-09-21은 정적 수명 리터럴 `"standard"`와 `"A-42"`를 정책/주문 소유 문자열로 복사한다.
+- `basic_string(const basic_string& source)` 복사 생성자는 살아 있는 source의 문자 값을 새 저장소에 복사해 독립 수명을 만든다. source는 const lvalue 참조로 빌리고 생성자는 별도 반환값이 없다. 성공 뒤 destination 변경·파괴는 source에 영향을 주지 않는다. 시간·추가 공간은 문자 수에 선형이고 할당·길이·문자 복사 예외가 가능하며 실패 시 완성 destination이 남지 않는다. source의 포인터·참조·반복자는 이 생성만으로 무효화되지 않지만 destination의 관찰자와 서로 교환해 쓸 수 없다. 2026-09-21은 bind-back 정책 이름을 반환 `Quote`가 독립 소유하도록 복사한다.
 - `basic_string(basic_string&& source) noexcept`는 allocator 인자 없는 이동 생성자다. destination은 source의 이동 전 값을 갖고 source는 유효하지만 값이 미지정된 상태가 되며 복잡도는 상수다. 그러나 `basic_string`은 이동 전에 문자를 가리키던 포인터·참조·반복자가 계속 유효하거나 destination 문자를 가리킨다고 보장하지 않으므로 모두 다시 얻어야 한다. 작은 문자열 최적화 여부와 실제 버퍼 주소 이전도 표준 보장이 아니다. source 문자열 객체 자체를 가리키던 참조·포인터는 source에 남아 destination으로 재바인딩되지 않는다.
 - `size()`와 `length()`는 같은 문자 수를 `size_type` 값으로 상수 시간에 반환한다. 둘 다 인자 없이
   수신 문자열을 바꾸지 않고, 할당·참조 무효화·예외가 없다. `empty()`는 빈 여부,
   `data()/c_str()`는 null 종료 저장소 포인터를 제공한다.
+- C++23 `operator[](size_type pos)`는 non-const 수신에서 `char&`, const 수신에서 `const char&`를 상수 시간에 반환하고 문자열 상태·크기·capacity를 바꾸거나 할당하지 않는다. `pos < size()`이면 해당 문자, `pos == size()`이면 값이 `char{}`인 끝 sentinel 문자를 가리킨다. 그 sentinel을 `char{}` 이외 값으로 쓰면 미정의 동작이고 `pos > size()`도 C++23에서 미정의 동작이다. 반환 참조는 문자열 파괴나 참조를 무효화하는 변경 뒤 사용할 수 없다. 2026-09-21은 먼저 `position < size()`를 증명하고 문자를 즉시 값으로 읽으므로 끝 sentinel이나 댕글링 참조에 의존하지 않는다.
 - `append(text)`와 `operator+=`는 끝에 문자를 추가한다. 용량 부족 재할당 시 기존 포인터·참조·반복자가 무효화될 수 있다.
 - `substr(pos,count)`는 새 소유 문자열을 만들어 복사한다. `string_view::substr`는 뷰만 조정한다는 차이가 있다.
 - `find(needle)`은 첫 위치를 반환하고 없으면 `std::string::npos`를 반환한다. 반환형이 부호 없는 `size_type`이므로 `-1`과 직접 섞지 않는다.

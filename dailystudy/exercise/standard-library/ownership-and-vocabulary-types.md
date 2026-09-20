@@ -224,6 +224,37 @@ int main() {
 - `std::ref(object)`는 `reference_wrapper<T>`, `std::cref(object)`는 읽기 전용 `reference_wrapper<const T>`를 만든다.
 - 원본 수명을 연장하지 않으므로 컨테이너나 `optional`에 오래 저장할 때 수명을 검증한다.
 
+## `std::bind_back` — 뒤쪽 인자를 소유하는 C++23 호출 어댑터
+
+- **항목 종류·헤더**: `<functional>`이 선언하는 C++23 함수 템플릿이다. 대표 선언은 `template<class F, class... Args> constexpr unspecified bind_back(F&& f, Args&&... args);`다. 반환 타입은 이름을 직접 쓸 수 없는 구체 perfect-forwarding call wrapper이므로 보통 `auto`로 받는다. `std::function`처럼 런타임 타입 소거를 수행하는 타입은 아니다.
+- **저장 타입과 현재 역할**: 함수 대상은 `FD = decay_t<F>`, 각 bound 인자는 `Bound_i = decay_t<Args_i>` 값으로 wrapper 안에 저장된다. 2026-09-21의 가격 예제는 함수 포인터와 이동된 `PricingPolicy` 값을 소유하고, 예약 예제는 임시 `ReservationLedger`의 값에서 별도 저장 subobject를 직접 구성해 호출 사이 변경 상태를 유지한다. 원본 임시는 전체 표현식 끝에 파괴되며, 참조 수명이 연장되는 것이 아니라 별개의 wrapper subobject가 wrapper와 함께 살아 있는 것이다.
+- **생성 인자**: 자유 함수이므로 수신 객체는 없다. `f`와 각 `args`는 전달 참조이며 각각 `std::forward<F>(f)`, `std::forward<Args_i>(args_i)`로 대응 저장 상태를 직접 초기화한다. 정확한 요구는 각 `decay_t<Arg>`가 전달된 그 `Arg` 식에서 구성 가능하고 요구되는 이동 구성을 만족하는 것이다. 보통 같은 타입 lvalue는 복사되고 rvalue는 이동되지만 이것을 무조건 `CopyConstructible` 요구로 바꾸어 말하면 안 된다. 함수 overload set은 그 자체로 타입을 추론할 수 없으므로 함수 포인터 cast나 이름 있는 정확한 함수 포인터로 먼저 해소한다.
+- **생성 결과·사후 상태**: 반환 wrapper prvalue가 함수 대상과 bound 인자의 수명을 소유한다. 생성자 같은 별도 `void` 반환이 아니라 wrapper 값 자체가 결과다. xvalue로 넘긴 원본은 실제 저장 subobject 생성이 이동을 선택하면 유효하지만 값이 미지정인 상태가 될 수 있다. wrapper의 복사·이동 가능 여부와 그 뒤 원본 상태는 모든 저장 타입의 복사·이동 계약에 의존한다.
+- **호출 위치와 순서**: wrapper의 `operator()(call_args...)`는 표준 INVOKE 의미 규칙으로 저장 함수 대상에 **호출 시 인자를 먼저**, 저장 bound 인자를 그 뒤에 붙여 정확히 한 번 호출한다. 즉 의미상 `fd(call_args..., bound_args...)`다. 반환형과 값 범주는 대상 호출의 결과를 그대로 보존하며 대상이 `void`면 wrapper 호출도 `void`다.
+- **cv/ref 전달 규칙**: non-const lvalue wrapper는 각 저장 상태를 `T&`, const lvalue는 `const T&`, non-const rvalue는 `T&&`, const rvalue는 `const T&&`로 대상에 전달한다. 호출 시 인자는 원래 값 범주를 보존한다. volatile 또는 const-volatile wrapper 호출은 지원되지 않는다. 따라서 변경 가능한 `Ledger&`를 요구하는 대상은 non-const lvalue wrapper로 호출할 수 있지만 const wrapper로는 호출할 수 없다.
+- **전제조건·컴파일 오류**: decay 저장 타입은 전달된 입력에서 구성 가능하고 표준이 요구하는 이동 구성을 만족해야 한다. 선택한 wrapper cv/ref와 call-time 인자, 저장 인자를 이어 붙였을 때 대상이 호출 가능해야 해당 `operator()`가 성립한다. 인자 순서·cv/ref·arity가 맞지 않으면 런타임 상태 코드가 아니라 컴파일 오류다.
+- **복잡도·할당**: 생성은 함수 대상 하나와 각 bound 상태 하나를 초기화하고, 호출은 대상 호출 한 번을 중계한다. 표준은 `bind_back` 전체에 대한 일반적인 시간 복잡도나 무할당 보장을 따로 주지 않으므로 저장 타입의 복사·이동·할당 비용과 구현 계약을 확인한다. “항상 O(1)” 또는 “항상 allocation-free”라고 단정하지 않는다.
+- **무효화·수명**: `bind_back` 자체가 별도의 범용 반복자 무효화 규칙을 추가하지 않으며, `string`·`vector` 같은 각 저장 타입의 연산이 그 타입 고유 규칙을 따른다. 저장 상태 내부를 가리키는 참조·포인터·반복자는 wrapper의 이동·파괴 또는 대상이 수행한 상태 변경 뒤 댕글링되거나 무효화될 수 있다. raw pointer, `string_view`, iterator, `reference_wrapper`처럼 비소유 값을 bind해도 pointee·원본·범위의 수명은 연장되지 않는다. rvalue wrapper 호출은 저장 상태를 xvalue로 전달할 수 있으므로 대상이 이를 이동 소비한 뒤 같은 wrapper를 다시 호출할 수 있는지도 대상 계약으로 증명해야 한다.
+- **예외·오류 보장**: 생성 중 저장 상태의 복사·이동·변환이 던진 예외는 호출자에게 전파되고 완성 wrapper가 남지 않는다. 호출 중에는 인자 변환과 실제 대상 함수가 던진 예외가 전파된다. 호출 불가능한 조합은 컴파일 오류이고, 댕글링 bound 상태 역참조·null 함수 포인터 호출·동기화 없는 데이터 경쟁처럼 원래 대상 계약이 금지한 실행은 미정의 동작이다. `bind_back`은 이를 런타임에 검사하지 않는다.
+- **스레드 보장**: 자체 동기화를 제공하지 않는다. 읽기 전용 저장 상태와 thread-safe 대상만 공유 호출할 수 있다. 같은 wrapper가 소유한 변경 상태를 여러 스레드가 동시에 접근하면 mutex·atomic 같은 별도 동기화가 필요하다.
+- **기계 실행 관점**: 반환 래퍼 타입과 저장 대상이 컴파일 시간에 보이므로 함수 객체 호출은 인라인될 수 있다. 함수 포인터를 저장하면 간접 호출이 남을 수도 있다. 실제 load/store, 분기, 인라인, 저장 layout은 CPU·ABI·컴파일러·최적화 옵션에 따라 달라진다.
+
+```cpp
+#include <functional>
+
+struct Policy { int add{}; };
+
+int price(int value, const Policy& policy) {
+    return value + policy.add;
+}
+
+int main() {
+    // 원본 임시는 식 끝에 파괴되고, 그 값에서 만든 별도 decay 저장 객체를 wrapper가 소유한다.
+    auto add_tax = std::bind_back(&price, Policy{10});
+    return add_tax(90) == 100 ? 0 : 1;
+}
+```
+
 ## `std::function<Signature>` — `<functional>`
 
 - 지정한 호출 서명을 만족하는 함수, 람다, 함수 객체를 타입 소거해 값으로 보관한다.

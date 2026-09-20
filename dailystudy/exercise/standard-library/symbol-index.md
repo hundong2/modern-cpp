@@ -84,6 +84,7 @@
 | `std::pair`, `std::tuple` | 위치 기반 이종 값 묶음 | [소유권](ownership-and-vocabulary-types.md) |
 | `std::apply` | tuple-like 원소를 위치 인자로 펼치는 호출 어댑터 | [소유권](ownership-and-vocabulary-types.md) |
 | `std::reference_wrapper`, `std::cref` | 복사 가능한 비소유 참조 래퍼 | [소유권](ownership-and-vocabulary-types.md) |
+| `std::bind_back` | C++23 뒤쪽 인자 decay 소유·perfect-forwarding 호출 래퍼 생성 | [소유권](ownership-and-vocabulary-types.md) |
 | `std::function` | 호출 가능 객체 타입 소거 래퍼 | [소유권](ownership-and-vocabulary-types.md) |
 | `std::move_only_function` | 이동 전용 호출 가능 객체 타입 소거 래퍼 | [소유권](ownership-and-vocabulary-types.md) |
 | `std::source_location`, `std::source_location::current` | 호출 소스 위치 캡처 | [소유권](ownership-and-vocabulary-types.md) |

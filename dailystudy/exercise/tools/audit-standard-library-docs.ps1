@@ -82,6 +82,12 @@ $jthreadConstructionPattern =
     '(?m)^[ \t]*' + $declarationQualifierPattern +
     'std::jthread\s+[A-Za-z_][A-Za-z0-9_]*\s*(?:\{|\((?!\s*\)))'
 
+# bind_back은 이름을 직접 적을 수 없는 wrapper를 auto로 받는다. 반환 수신자를 추출해
+# `std::`가 보이지 않는 첫 operator() 호출도 별도 계약 대상으로 검사한다.
+$bindBackReceiverDeclarationPattern =
+    '(?m)^[ \t]*(?:const\s+)?auto\s+(?<Receiver>[A-Za-z_][A-Za-z0-9_]*)\s*' +
+    '(?:=\s*|\{\s*)std::bind_back\s*\('
+
 # span/ospanstream은 기반 문자를 소유하지 않는다. 최신 학습 코드에서 생성된 정확한 수신자만
 # 추출해 domain 타입의 data/size/span 호출이나 일반 ostream 삽입을 잘못 잡지 않는다.
 $spanConstructionPattern =
@@ -349,6 +355,8 @@ $contractPatterns = @(
     [pscustomobject]@{ Name = 'span::data'; SpanMember = 'data'; Readme = 'written.data()' },
     [pscustomobject]@{ Name = 'span::size'; SpanMember = 'size'; Readme = 'written.size()' },
     [pscustomobject]@{ Name = 'std::out_ptr'; Pattern = '(?m)^(?!\s*//)\s*[^\r\n]*std::out_ptr(?:\s*<[^;\r\n()]+>)?\s*\('; Readme = 'std::out_ptr(' },
+    [pscustomobject]@{ Name = 'std::bind_back'; Pattern = '(?m)^(?![ \t]*//)[ \t]*[^\r\n]*\bstd::bind_back\s*\('; Readme = 'std::bind_back(' },
+    [pscustomobject]@{ Name = 'bind_back result operator()'; BindBackInvocation = $true; Readme = 'bind_back-result::operator()' },
     [pscustomobject]@{ Name = 'std::move'; Pattern = '(?m)^(?!\s*//)\s*[^\r\n]*std::move\s*\('; Readme = 'std::move(' },
     [pscustomobject]@{ Name = 'std::apply'; Pattern = '(?m)^(?!\s*//)\s*[^\r\n]*std::apply\s*\('; Readme = 'std::apply(' },
     [pscustomobject]@{ Name = 'std::ranges::to'; Pattern = '(?m)^(?!\s*//)\s*[^\r\n]*std::ranges::to\s*<[^;\r\n()]+>\s*\('; Readme = 'std::ranges::to<' },
@@ -412,6 +420,15 @@ foreach ($file in Get-ChildItem -LiteralPath $latestDirectory.FullName -Filter '
     )
     $ospanstreamReceiverAlternation = (
         $ospanstreamReceiverNames |
+            ForEach-Object { [regex]::Escape($_) }
+    ) -join '|'
+    $bindBackReceiverNames = @(
+        [regex]::Matches($contractSource, $bindBackReceiverDeclarationPattern) |
+            ForEach-Object { $_.Groups['Receiver'].Value } |
+            Sort-Object -Unique
+    )
+    $bindBackReceiverAlternation = (
+        $bindBackReceiverNames |
             ForEach-Object { [regex]::Escape($_) }
     ) -join '|'
     $vectorAliasNames = @(
@@ -506,6 +523,13 @@ foreach ($file in Get-ChildItem -LiteralPath $latestDirectory.FullName -Filter '
             $candidatePattern =
                 '(?m)^(?!\s*//)\s*[^\r\n]*!\s*(?:' + $ospanstreamReceiverAlternation + ')\b'
         }
+        if ($null -ne $candidate.PSObject.Properties['BindBackInvocation']) {
+            if ($bindBackReceiverNames.Count -eq 0) {
+                continue
+            }
+            $candidatePattern =
+                '(?m)^(?!\s*//)\s*[^\r\n]*\b(?:' + $bindBackReceiverAlternation + ')\s*\('
+        }
         $vectorMemberProperty = $candidate.PSObject.Properties['VectorMember']
         if ($null -ne $vectorMemberProperty) {
             if ($vectorReceiverNames.Count -eq 0) {
@@ -536,7 +560,7 @@ foreach ($file in Get-ChildItem -LiteralPath $latestDirectory.FullName -Filter '
         $contextStart = [Math]::Max(0, $lineNumber - 9)
         $contractSearchStart = [Math]::Max(0, $lineNumber - 25)
         for ($index = $lineNumber - 2; $index -ge $contractSearchStart; $index--) {
-            if ($lines[$index] -match '^\s*//\s*\[(?:호출|생성) 계약:') {
+            if ($lines[$index] -match '^\s*//\s*\[(?:첫\s*)?(?:호출|생성) 계약:') {
                 $contextStart = $index
                 break
             }
