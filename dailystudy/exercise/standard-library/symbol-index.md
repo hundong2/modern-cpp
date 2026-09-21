@@ -18,6 +18,7 @@
 | `std::ranges::count_if` | 범위에서 술어가 참인 개수 | [알고리즘](algorithms-and-ranges.md) |
 | `std::ranges::end` | 범위 끝 센티널 획득 | [알고리즘](algorithms-and-ranges.md) |
 | `std::ranges::find` | 범위에서 값 탐색 | [알고리즘](algorithms-and-ranges.md) |
+| `std::ranges::fold_left` | C++23 순서 보존 왼쪽 값 축약 | [알고리즘](algorithms-and-ranges.md) |
 | `std::ranges::sort` | 범위·프로젝션 기반 정렬 | [알고리즘](algorithms-and-ranges.md) |
 | `std::ranges::subrange` | iterator·sentinel로 만든 비소유 반열린 view | [알고리즘](algorithms-and-ranges.md) |
 | `std::ranges::to` | 입력 범위를 지정한 소유 컨테이너 값으로 materialize | [알고리즘](algorithms-and-ranges.md) |

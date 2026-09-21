@@ -56,6 +56,39 @@
 - 범위를 한 번 순회해 `O(N)`이다. 술어 호출 횟수와 부수 효과에 의존하는 코드는 피한다.
 - 반환형이 `int`가 아닐 수 있으므로 큰 범위나 signed/unsigned 비교를 고려한다.
 
+## `std::ranges::fold_left` — C++23 왼쪽 값 축약
+
+- **항목 종류·헤더·현재 역할**: `<algorithm>`이 선언하는 C++23 ranges 알고리즘 함수 객체(niebloid)다. 2026-09-22 코드는 읽기 전용 원장/점검 `vector`를 왼쪽부터 훑어, 입력 수명과 독립된 `BatchSummary`/`AuditReport` 소유 값 하나로 materialize한다. 공유 누산기를 밖에서 변경하는 대신 누산기 소유권을 reducer 호출 사이로 전달하는 functional-core 경계다.
+- **대표 형태와 선택된 overload**: 공개 매개변수만 단순화한 범위 overload는 `template<std::ranges::input_range R, class T, class F> constexpr auto fold_left(R&& range, T init, F f);` 형태다. 실제 참여 조건에는 표준이 설명 전용으로 정의한 left-foldable 제약이 붙으며, 그 설명용 이름은 프로그램이 직접 쓸 라이브러리 API가 아니다. iterator/sentinel overload도 있다. 결과 누산기 타입 `U`는 첫 `invoke(f, std::move(init), *first)` 결과를 decay한 타입을 바탕으로 정해지며 단순히 언제나 선언한 `T`라고 가정하면 안 된다. 오늘 reducer는 `U`와 `T`가 같은 보고서 타입이다.
+- **수신 객체·입력 상태**: ranges 알고리즘 함수 객체의 호출 연산이므로 사용자 데이터 수신 객체는 없다. 범위는 유효한 `input_range`여야 하고 `[begin,end)`가 순회가 끝날 때까지 유효해야 한다. 빈 범위에는 원소 접근이나 reducer 호출이 없고 초기값에서 결과를 만든다. 오늘의 `const vector&`는 호출 동안 구조와 원소를 바꾸지 않는다.
+- **매개변수·값 범주·소유권**: `R&&`는 forwarding reference라 lvalue 범위는 빌리고 rvalue 소유 범위는 해당 값 범주로 받는다. `init`와 `f`는 값으로 전달된다. 개념적으로 각 단계는 현재 누산기를 `std::move(accum)`인 xvalue로 reducer 첫 인자에, 현재 범위 원소를 역참조 결과의 값 범주로 둘째 인자에 넘긴다. 따라서 이동 전용 누산기도 조건을 만족할 수 있지만, 이동 뒤의 이전 누산기를 reducer가 다시 읽으면 안 된다. 함수 객체 내부의 포인터·view·참조는 별도 비소유 수명을 유지한다.
+- **반환형·반환값·사후 상태**: 최종 `U` 값을 반환한다. 오늘 호출부는 그 prvalue로 이름 있는 const 보고서를 직접 초기화한다. 성공하면 반환값이 카운트와 문자열을 소유하고 원본 범위는 그대로다. 빈 범위 결과는 초기값을 `U`로 변환한 값이다. reducer가 원본 원소를 비const 참조로 받아 바꾸거나 rvalue 원소를 소비할 수 있는 일반 호출이라면 그 부수 효과는 해당 reducer 계약을 따른다.
+- **정확성 불변식**: `k`개 원소를 처리한 누산기는 `f(...f(f(init,e0),e1)...,e[k-1])`와 같은 왼쪽 결합 결과다. `fold_left`는 결합법칙이나 교환법칙을 요구하지 않으며 순서를 임의로 재배열하는 병렬 reduce가 아니다. 문자열 연결, 첫 실패 기록처럼 순서에 민감한 reducer에도 사용할 수 있다.
+- **복잡도·할당**: 범위 크기 `N`에 reducer를 정확히 `N`번 적용하고 iterator를 선형으로 전진하므로 알고리즘 오버헤드는 `O(N)`이다. 전체 비용은 reducer의 복사·이동·할당을 더한다. 알고리즘 자체가 별도 동적 저장소를 요구한다는 보장은 없지만 값 누산기의 `string`·`vector` 연산은 할당할 수 있으므로 “항상 allocation-free”라고 단정하지 않는다.
+- **반복자·참조 무효화와 수명**: 읽기 전용 순회 자체는 vector의 반복자·참조를 무효화하지 않는다. reducer가 기반 컨테이너를 구조 변경하면 현재 iterator/sentinel이 무효화되어 이후 동작이 미정의가 될 수 있다. 반환값에 원소의 pointer, iterator, `string_view`, `reference_wrapper`를 저장하면 fold가 소유 값으로 반환돼도 가리킨 대상 수명은 연장되지 않는다. 오늘 보고서는 문자열을 깊게 복사해 그 위험을 끊는다.
+- **오류·예외 보장**: iterator 연산, 초기값/함수 객체 이동, `invoke`, 누산기 대입·구성이 던진 예외를 호출자에게 전파할 수 있다. 이미 실행한 reducer의 외부 부수 효과와 이미 이동된 원본은 자동 rollback되지 않는다. 오늘 입력은 const이고 reducer의 외부 부수 효과가 없어서 실패해도 원장/점검 목록은 그대로다. string 할당 실패는 `bad_alloc`, 크기 한계는 선택된 문자열 연산의 `length_error`로 나타날 수 있다.
+- **전제조건·컴파일 오류·미정의 동작**: 범위와 reducer가 표준의 left-foldable 개념/의미 요구를 만족하지 않으면 적합한 overload가 없어 컴파일되지 않는다. 댕글링 범위, 무효 반복자, 누산기 이동 뒤 잘못된 관찰, reducer가 순회 중 같은 vector를 재할당하는 행위, 부호 있는 정수 오버플로처럼 언어 전제조건을 깨는 연산은 미정의 동작으로 이어질 수 있다. 오늘 원장 예제는 모든 중간 합이 `long long`에 표현 가능하다는 도메인 전제를 둔다.
+- **스레드 보장**: 자체 동기화를 제공하지 않는다. 서로 다른 소유 범위를 각각 접는 호출은 독립적으로 실행할 수 있다. 같은 범위를 읽기만 하는 호출은 원소/함수 객체의 규칙을 따르지만, 다른 실행 흐름이 같은 구조나 원소를 동기화 없이 쓰면 데이터 경쟁 또는 iterator 무효화가 발생한다.
+
+기계 실행 관점에서는 범위 반복마다 iterator 전진, 끝 비교, 원소 load, reducer 호출과 누산기 store가 생길 수 있다. 구체 reducer와 타입이 보이면 호출이 인라인되고 불필요한 이동·분기가 사라질 수 있지만, 실제 명령·벡터화·복사 생략·메모리 배치는 CPU, ABI, 표준 라이브러리, 컴파일러와 최적화 옵션에 따라 달라진다.
+
+### 최소 실행 예제
+
+```cpp
+#include <algorithm>
+#include <iostream>
+#include <vector>
+
+int main() {
+    const std::vector<int> values{3, 1, 4};
+    const int decimal{std::ranges::fold_left(
+        values,
+        0,
+        [](int accumulated, int value) { return accumulated * 10 + value; })};
+    std::cout << decimal << '\n'; // 314: 왼쪽 결합이라 순서가 보존된다.
+}
+```
+
 ## `std::swap`과 `std::ranges::swap`
 
 - 두 객체의 값을 교환한다. 사용자 타입은 이동 생성·이동 대입 또는 사용자 정의 `swap`을 사용할 수 있다.
