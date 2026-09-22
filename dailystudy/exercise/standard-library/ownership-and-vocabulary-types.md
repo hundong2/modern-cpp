@@ -185,6 +185,16 @@ int main() {
 - `auto [left,right] = pair;`는 값을 복사할 수 있고 `auto& [left,right]`는 기존 원소에 참조 바인딩한다.
 - 우선순위 큐의 `(거리,정점)`처럼 작은 관계 값에 적합하지만 필드 의미가 중요하면 이름 있는 `struct`가 더 읽기 쉽다.
 
+### `std::get<I>(tuple)` — tuple 위치 접근 함수 템플릿
+
+- **항목 종류·헤더·현재 역할:** `<tuple>`의 함수 템플릿 오버로드 집합이다. 2026-09-23의 `views::zip` 반복자는 세 원소 참조를 담은 `std::tuple<const std::string&, const int&, const int&>` proxy를 값으로 돌려준다. `auto&& [name, value, limit]` 구조적 바인딩은 tuple-like 규칙에 따라 일반 이름 조회를 하지 않고 `get<0/1/2>(proxy)`를 ADL로 찾아, `std` 연관 네임스페이스의 `std::get`으로 세 참조를 꺼낸다.
+- **선택 오버로드·템플릿 인자:** 대표 위치 오버로드는 `template<std::size_t I, class... Types> constexpr std::tuple_element_t<I, std::tuple<Types...>>&& get(std::tuple<Types...>&&) noexcept`이며, 오늘 `I`는 각각 0, 1, 2이고 tuple 객체는 구조적 바인딩의 숨은 변수에서 xvalue로 전달된다. lvalue/const lvalue/const rvalue tuple에는 각각 `T&`, `const T&`, `const T&&` 계열 오버로드가 별도로 있다. 타입 기반 `get<T>`는 해당 `T`가 원소 목록에 정확히 한 번만 있을 때만 성립한다.
+- **매개변수·값 범주·소유권:** 함수 인자는 살아 있는 tuple xvalue를 참조로 빌리며 tuple이나 그 원소의 소유권을 넘기지 않는다. 오늘 tuple의 원소 타입 자체가 `const U&`이므로 `T&&` 반환형과 참조 축약한 최종 결과는 `const U&`다. 즉 proxy가 xvalue여도 기반 vector의 `string`/`int`를 이동하거나 복사하지 않는다.
+- **반환·사용:** 위치 `I`의 원소에 대한 cv/ref 보존 참조를 반환하고 구조적 바인딩 초기화가 그 결과를 사용한다. 오늘 세 이름은 각각 원본 이름·관측값·기준값을 가리키며 값 복사본이 아니다. 값 원소를 가진 일반 rvalue tuple에서는 `T&&`가 나와 뒤 호출이 이동을 선택할 수 있지만 `get` 자체가 이동 생성자를 실행하지는 않는다.
+- **호출 뒤 상태·무효화·수명:** 접근은 tuple과 기반 원소를 변경하지 않고 참조·포인터·반복자를 무효화하지 않는다. 오늘 proxy tuple은 한 range-for 반복의 구조적 바인딩 수명 동안만 살지만, 안의 참조가 가리키는 원소 수명은 owner table이 정한다. proxy 파괴는 원본 원소를 파괴하지 않는다. 반환 참조는 owner 파괴, 기반 vector 재할당 또는 해당 원소 제거 뒤 댕글링된다.
+- **전제조건·복잡도·할당·예외:** `I < sizeof...(Types)`가 컴파일 시간에 성립해야 하며 잘못된 위치는 런타임 오류가 아니라 ill-formed다. 위치 접근은 `O(1)`, 무할당, `noexcept`이고 오류값을 반환하지 않는다. 타입 기반 접근은 요청 타입이 정확히 한 번 나타나야 한다. 유효한 tuple과 살아 있는 참조 대상이 전제이며, 댕글링 결과의 역참조나 동기화 없는 공유 읽기/쓰기는 미정의 동작이다.
+- **예외·스레드·기계 관점:** `get` 자체는 예외를 던지지 않고 잠금이나 원자적 snapshot을 제공하지 않는다. 별도 tuple/owner 또는 적절히 게시된 const owner의 동시 읽기는 원소 타입 계약을 따르지만, 같은 원소를 한 실행 흐름이 쓰는 동안 다른 흐름이 읽으면 데이터 경쟁이다. 구현은 보통 컴파일 시간 offset의 참조 투영으로 인라인할 수 있으나 실제 load, 주소 계산, 복사 생략 형태는 ABI·표준 라이브러리·컴파일러·최적화 옵션에 따라 달라진다.
+
 ### `std::apply` — tuple-like 호출 어댑터
 
 - 항목 종류와 헤더: C++17부터 제공되는 `<tuple>`의 함수 템플릿이다. 오늘의 C++20 표준 선언은 `template<class F, class Tuple> constexpr decltype(auto) apply(F&& f, Tuple&& tuple)`처럼 제약과 `noexcept` 명세가 없다. C++23 선언은 `Tuple`을 표준 tuple-like 요구로 제약하고 펼친 호출의 예외 명세에 대응하는 조건부 `noexcept`를 추가한다. 템플릿 인자 `F`는 호출 가능 객체 타입, `Tuple`은 원소를 펼칠 tuple-like 타입이며 보통 호출식에서 추론하므로 직접 적지 않는다.

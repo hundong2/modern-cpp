@@ -105,6 +105,66 @@ int main() {
 - 같은 뷰를 여러 번 순회할 수 있는지는 기반 범위와 뷰 종류의 범주에 따라 다르다.
 - `forward_range` 위 `filter_view`는 첫 통과 반복자를 cache할 수 있다. 이미 순회를 시작한 view는 술어가 보는 원소를 바꾸거나 기반 `vector`를 재할당한 뒤 재사용하지 말고 새로 만든다. 원본 객체 파괴는 view를 dangling으로 만들며, 재할당은 이미 얻었거나 cache한 반복자를 무효화한다.
 
+## `std::views::zip`과 `std::ranges::zip_view` — `<ranges>`의 C++23 lockstep view
+
+`zip`은 여러 범위를 같은 위치끼리 묶어 하나의 행처럼 지연 노출한다. 2026-09-23 코드는 이름·현재값·기준값 세 열을 각각 소유하는 **길이가 같다고 검증된 columnar storage**를 유지하고, 서비스 경계에서는 복사된 행 컨테이너 대신 `zip_view`를 잠깐 빌려 row projection으로 순회한다. 각 열을 따로 저장하는 구조와 행 단위 처리 코드를 연결하되, `zip` 자체가 열 길이 불변식이나 소유권을 대신 관리한다고 오해하면 안 된다.
+
+- **항목 종류·헤더·현재 역할**: `std::views::zip`은 `<ranges>`가 선언하는 C++23 range adaptor 객체이며 평범한 사용자 정의 자유 함수가 아니다. 호출 결과의 공개 타입은 `std::ranges::zip_view<Views...>` class template이다. 오늘 `LatencyTable::rows() const &`와 `StockTable::rows() const &`는 소유 `vector` 열을 빌리는 작은 view 값을 반환하고, `&&`와 `const &&` overload를 모두 삭제해 곧 파괴될 임시 table에서 비소유 view를 꺼내지 못하게 한다.
+- **대표 형태·템플릿 인자**: 설명을 위해 단순화한 호출 형태는 `template<std::ranges::viewable_range... Rs> constexpr auto std::views::zip(Rs&&... ranges);`다. 각 `Rs`는 호출식에서 추론되고 결과는 의미상 `std::ranges::zip_view<std::views::all_t<Rs>...>`다. 공개 class template의 대표 제약은 `template<std::ranges::input_range... Views> requires (std::ranges::view<Views> && ...) && (sizeof...(Views) > 0) class zip_view;`다. 인자 없는 `views::zip()`은 빈 `tuple` 원소의 `empty_view`를 반환하는 별도 경우이고, 오늘 코드는 세 범위를 넘기는 overload를 사용한다.
+- **수신 객체·호출 전 상태**: 함수처럼 보이는 adaptor 객체의 호출이므로 열 데이터를 담은 사용자 수신 객체는 없다. 각 인자는 유효한 `viewable_range`이고 `views::all_t<Rs>`가 `input_range`를 만족해야 한다. 오늘 세 `vector`는 살아 있는 `LatencyTable` 또는 `StockTable`의 lvalue 멤버이고, 생성 경계에서 세 열의 `size()`가 같은지 검사한 뒤 호출한다. `zip`은 이 동등성을 검사하지 않는다.
+- **입력 식·값 범주·소유권**: 오늘 service/item 이름 열, 관측/재고 열, 기준 열은 모두 const vector lvalue 식으로 전달된다. 각 `views::all_t<const vector<T>&>`는 보통 해당 컨테이너를 가리키는 `ref_view`가 되므로 결과는 열 원소를 복사하거나 소유하지 않는다. 일반적으로 movable한 rvalue 비-view 범위는 `views::all`의 `owning_view`에 이동되어 결과가 그 범위를 소유할 수 있지만, 이것을 lvalue 호출에도 적용되는 규칙으로 일반화하면 안 된다. view가 보관한 사용자 정의 view 객체 내부의 포인터·참조 수명도 별도로 점검한다.
+- **반환형·반환값 사용·사후 상태**: 오늘의 세 lvalue vector 호출은 개념상 세 `ref_view`를 템플릿 인자로 가진 `zip_view` prvalue를 반환한다. 호출부는 이를 `rows()`에서 값으로 반환하고 range-for가 즉시 소비한다. 작은 view 객체의 값 반환은 원소 복사가 아니며, prvalue 직접 초기화에서는 불필요한 같은 타입 중간 객체가 필요 없다. 생성 직후 원본 열의 크기·용량·원소는 바뀌지 않고 iterator도 무효화되지 않는다.
+- **최단 범위 종료와 `size()`**: 순회는 **어느 한 기반 범위라도 끝에 도달하면** 종료한다. 따라서 길이 5와 3을 zip하면 오류나 예외 없이 3행만 보인다. 이것은 정의된 동작이지만, 열 정렬이 필수인 도메인에서는 뒤 두 원소를 조용히 잃는 논리 버그다. 모든 기반 view가 `sized_range`일 때 대표 형태 `constexpr auto size() requires (std::ranges::sized_range<Views> && ...);`가 제공되며, 인자 없이 각 크기의 최솟값을 공통의 unsigned-like 크기 타입으로 반환한다. 오늘은 생성 시 길이를 같게 검증했으므로 반환값이 모든 열의 길이와 같다. `size()`는 불변식을 새로 검증하지 않는다.
+- **`begin`/`end`와 iterator 진행 계약**: `begin()`은 각 기반 view의 시작 iterator를 tuple로 보관한 zip iterator를 만들고, `end()`는 기반 범주의 성질에 맞는 iterator 또는 sentinel을 만든다. 역참조 가능한 위치에서 `operator*`는 각 현재 iterator를 한 번씩 역참조하고, `operator++`는 모든 현재 iterator를 한 칸씩 전진시킨다. 끝 비교는 어느 구성 iterator라도 해당 끝에 닿으면 순회를 끝내는 최단 범위 의미를 구현한다. iterator concept와 지원 연산은 기반 범위 중 가장 약한 능력보다 강해지지 않으며, legacy `iterator_category`는 별도로 input category가 될 수 있다. 따라서 하나가 input range뿐이면 전체를 임의 접근 범위라고 가정할 수 없다.
+- **참조 tuple과 구조적 바인딩**: iterator 역참조 결과는 `std::tuple<std::ranges::range_reference_t<Views>...>` 형태의 prvalue다. 일반 mutable `vector<string>`과 `vector<int>`에서는 `tuple<string&, int&>`이므로 `for (auto&& [name, quantity] : rows)`의 두 이름은 원본 원소를 빌리고 `quantity` 대입은 수량 열을 바꾼다. 오늘 코드는 `const LatencyTable&`/`const StockTable&`의 열을 zip하므로 구조적 바인딩이 `const` 원소 참조를 빌리고, 결과의 문자열만 별도 소유 객체로 깊게 복사한다. 일반 범위의 reference 타입은 `vector<bool>` 같은 proxy일 수도 있으므로 항상 실제 `T&`라고 단정하지 않는다. 또한 `const zip_view` 자체가 가리키는 원소까지 자동으로 const로 만들지는 않는다. 읽기 전용 행이 필요하면 오늘처럼 const owner의 열을 zip한다.
+- **전제조건·후조건과 아키텍처 불변식**: 순회 동안 모든 기반 범위와 그 iterator/sentinel이 유효해야 한다. 성공적으로 view를 만드는 것만으로는 원소를 읽거나 사용자 동작을 실행하지 않는다. 행을 순회해 읽기만 하면 원본은 그대로이고, non-const reference 원소에 대입하면 바로 해당 열이 변경된다. 오늘 batch는 생성·교체 시에만 열 길이를 함께 바꾸고 외부에는 구조 변경 API를 노출하지 않아 equal-length 불변식을 유지한다. 한 열에만 `push_back`하는 API를 추가한다면 호출 뒤 불변식을 다시 세우기 전에는 기존 행 view를 사용하지 않는다.
+- **복잡도·할당**: 기반 범위 수를 `K`, 최단 길이를 `N`이라 하면 view 생성, `begin`, `end`, `size`, 한 번의 역참조와 전진은 각각 기반 연산을 `K`개 조합해 `O(K)`이고, 전체 순회는 `O(KN)`이다. 오늘처럼 `K=3`이 타입에 고정돼 있으면 원소 수에 대해서는 생성·행당 오버헤드가 상수이고 전체는 `O(N)`이다. `zip_view` 자체는 행 저장소를 만들거나 원소를 복사하지 않으며 동적 할당을 요구하지 않는다. 단, 사용자 정의 view의 복사·이동·`begin` 연산 또는 루프 본문이 수행하는 문자열/컨테이너 연산은 별도로 할당할 수 있다.
+- **반복자·참조 무효화**: 오늘 `ref_view` 기반 zip 객체는 vector 객체를 계속 가리키므로 vector 재할당만으로 그 작은 view 객체 안의 owner 주소가 바뀌지는 않는다. 그러나 재할당 전에 얻은 zip iterator와 역참조 결과의 원소 참조는 각 vector의 무효화 규칙에 따라 댕글링된다. `erase`, `insert`, `push_back`, 이동 대입처럼 기반 iterator를 무효화할 수 있는 연산을 진행 중인 순회와 섞지 않는다. 구조 변경 뒤 새 `begin()`을 얻더라도 한 열만 길이가 달라졌다면 zip은 새 최단 길이에서 조용히 끝나므로 도메인 불변식은 별도로 복구해야 한다.
+- **수명·dangling·borrowed range**: lvalue 컨테이너로 만든 오늘 view는 `LatencyTable`/`StockTable`의 수명을 연장하지 않는다. owner 파괴 뒤 view, iterator, 참조 tuple 또는 구조적 바인딩 이름을 사용하면 미정의 동작이다. 특히 임시 table의 `rows()` 결과를 반환하거나 저장하지 않도록 non-const/const rvalue overload를 모두 삭제한다. `zip_view`는 모든 기반 view가 `borrowed_range`일 때만 borrowed range가 되지만, borrowed라는 표지는 원본 저장소를 살려 주는 소유권이 아니라 view 임시가 사라져도 iterator가 별도 owner를 계속 가리킬 수 있다는 뜻이다.
+- **오류·예외·컴파일 실패·미정의 동작**: 입력이 필요한 range/view 제약을 만족하지 않으면 적합한 호출이 없어 컴파일에 실패하며 런타임 오류값을 반환하지 않는다. `views::all` 변환, 기반 view 복사·이동, `begin`/`end`, iterator 연산과 원소 연산이 던지는 예외는 일반적으로 전파될 수 있다. 오늘의 vector lvalue wrapper 생성은 행 저장소를 할당하거나 원소 연산을 하지 않지만 공개 호출 전체를 근거 없이 항상 `noexcept`라고 단정하지 않는다. 길이 불일치는 예외나 UB가 아니라 최단 길이 결과다. 반면 끝 iterator 역참조, owner 파괴 또는 iterator 무효화 뒤 접근, 의미 요구를 위반한 사용자 range, 데이터 경쟁은 미정의 동작으로 이어질 수 있다. 루프 본문 중 예외가 나면 앞서 변경한 원소를 `zip`이 rollback하지 않는다.
+- **스레드 보장**: `zip_view`는 잠금이나 원자성을 제공하지 않는다. 서로 독립된 owner의 view는 각 owner 규칙에 따라 독립적으로 쓸 수 있고, 같은 owner를 여러 실행 흐름이 읽기만 하는 경우도 원소 타입의 const-read 규칙을 따른다. 한 실행 흐름이 열 구조나 같은 원소를 쓰는 동안 다른 흐름이 동기화 없이 순회·접근하면 iterator 무효화 또는 데이터 경쟁이 생길 수 있다. 여러 열을 한 행처럼 보인다고 해서 열 사이의 원자적 snapshot이 생기는 것도 아니다.
+
+기계 실행 관점에서 zip iterator는 여러 기반 iterator를 묶은 상태로 구현될 수 있고, 한 행마다 끝 비교, 각 열의 원소 load, 루프 본문의 비교·조건 분기와 필요한 store가 생길 수 있다. `zip`은 columnar storage를 row-major 메모리로 재배치하거나 SIMD gather를 보장하지 않는다. 구체 타입과 반복 횟수가 보이면 컴파일러가 tuple/adaptor 층을 인라인하고 비교를 단순화할 수 있지만, 실제 명령, 메모리 접근 순서, 벡터화와 복사 생략은 CPU, ABI, 표준 라이브러리, 컴파일러 및 최적화 옵션에 따라 달라진다.
+
+### 최소 실행 예제
+
+```cpp
+#include <iostream>
+#include <ranges>
+#include <string>
+#include <vector>
+
+int main() {
+    std::vector<std::string> names{"cache", "api"};
+    std::vector<int> quantities{7, 11};
+
+    // 실제 타입에서는 이 검사를 생성 경계에 두어 이후 모든 rows() 호출의 불변식으로 만든다.
+    if (names.size() != quantities.size()) {
+        return 1;
+    }
+
+    // 두 lvalue vector는 소유권을 넘기지 않고 ref_view로 감싸진다.
+    auto rows{std::views::zip(names, quantities)};
+    std::cout << rows.size() << '\n';
+
+    // 역참조 결과는 tuple<string&, int&>이므로 quantity 대입은 원본 열을 바꾼다.
+    for (auto&& [name, quantity] : rows) {
+        ++quantity;
+        std::cout << name << ':' << quantity << '\n';
+    }
+}
+```
+
+### 흔한 실수와 점검 질문
+
+1. 길이가 다른 두 열을 zip한 뒤 예외가 날 것이라 기대한다. 실제 종료 길이와 누락되는 원소를 계산해 본다.
+2. `const auto rows = views::zip(mutable_vector, ...)`만으로 원소가 읽기 전용이 된다고 생각한다. const owner를 zip하는 설계와 차이를 설명한다.
+3. `auto&& [name, quantity]`가 행 값을 복사한다고 생각한다. 역참조 tuple의 각 원소 타입과 대입의 실제 대상을 적는다.
+4. 임시 owner의 멤버에서 반환한 zip view를 다음 문장에서 사용한다. 어느 전체 표현식 끝에 owner가 파괴되고 무엇이 dangling이 되는지 추적한다.
+5. 순회 중 한 vector에 `push_back`해 재할당을 일으킨다. zip 객체 자체, 이미 얻은 iterator, 구조적 바인딩 참조를 나누어 유효성을 판단한다.
+6. 기반 범위 하나가 input range이고 다른 하나가 random-access range일 때 zip 결과가 제공할 수 있는 iterator 능력을 설명한다.
+7. `zip_view::size()`가 equal-length 검증 함수가 아닌 이유와 오늘 생성 경계에서 별도 검사가 필요한 이유를 말한다.
+
 ## `std::ranges::to` — `<ranges>`의 C++23 범위 변환 함수 템플릿·adaptor closure
 
 `std::ranges::to`는 입력 범위를 지정한 컨테이너 값으로 materialize한다. 오늘 코드는 지연 `filter`/`transform` 파이프라인을 서비스 경계에서 `std::vector` 소유 스냅숏으로 고정해, 반환 결과가 원본 컨테이너와 중간 view 객체의 수명에 매이지 않게 한다.
@@ -200,3 +260,5 @@ int main() {
 4. `views::filter`를 만든 뒤 원본 `vector`를 파괴하는 최소 댕글링 예를 작성한다.
 5. `subrange`와 `span`이 각각 표현할 수 있는 sentinel/연속 메모리 조건과 원소 소유권을 비교한다.
 6. vector iterator subrange를 만든 뒤 `push_back`이 재할당할 때 생기는 무효화를 설명한다.
+7. 길이가 4와 2인 두 vector를 `views::zip`했을 때 `size()`와 순회 횟수를 말하고, 이것이 오류가 아닌 이유를 설명한다.
+8. mutable lvalue vector 두 개의 zip iterator를 역참조한 tuple과 `auto&&` 구조적 바인딩이 각 원소를 소유하는지 빌리는지 설명한다.

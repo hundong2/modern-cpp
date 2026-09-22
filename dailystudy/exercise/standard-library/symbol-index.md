@@ -24,6 +24,7 @@
 | `std::ranges::to` | 입력 범위를 지정한 소유 컨테이너 값으로 materialize | [알고리즘](algorithms-and-ranges.md) |
 | `std::views::filter` | 조건을 만족하는 원소의 지연 뷰 | [알고리즘](algorithms-and-ranges.md) |
 | `std::views::transform` | 변환 결과의 지연 뷰 | [알고리즘](algorithms-and-ranges.md) |
+| `std::views::zip` | C++23 여러 범위의 같은 위치를 참조 tuple 행으로 결합 | [알고리즘](algorithms-and-ranges.md) |
 | `std::less`, `std::greater` | 엄격 순서 비교 함수 객체 | [알고리즘](algorithms-and-ranges.md) |
 
 ## 컨테이너와 문자열
@@ -137,6 +138,7 @@
 | `std::cin`, `std::cout`, `std::cerr` | 표준 입력·출력·오류 스트림 객체 | [입출력](io-parsing-and-utilities.md) |
 | `std::basic_ios` | stream 상태 비트와 명시적 bool 관찰을 제공하는 공통 기반 | [입출력](io-parsing-and-utilities.md) |
 | `std::ios` | `basic_ios<char>` 표준 별칭과 iostream 공통 상태 인터페이스 | [입출력](io-parsing-and-utilities.md) |
+| `std::basic_istream` | 문자 타입별 형식 입력과 추출 상태를 관리하는 기반 템플릿 | [입출력](io-parsing-and-utilities.md) |
 | `std::istream` | 추출 연산이 같은 입력 스트림 참조를 이어 반환하는 기반 타입 | [입출력](io-parsing-and-utilities.md) |
 | `std::ostream` | 출력 연산이 같은 스트림 참조를 이어 반환하는 기반 타입 | [입출력](io-parsing-and-utilities.md) |
 | `std::basic_ostream` | 문자 타입별 출력 스트림 기반 템플릿 | [입출력](io-parsing-and-utilities.md) |
