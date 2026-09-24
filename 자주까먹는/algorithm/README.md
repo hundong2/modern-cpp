@@ -67,6 +67,8 @@
     - O(n) 동안 Counting 할 수 있는 알고리즘 
     - 다음 최대 index에서 최대 일 경우 까지 모든 경우들은 그 최대 이하이므로 최대까지 Search하고 난 뒤 count를 수행. 끝까지 검색한 후 break후 결과 리턴 
     - C#에서는 배열의 내장 함수 `Length`를 적극 활용, Count()는 Linq함수 이므로 성능 저하 유발 
+    - [Greedy Algorithm 을 이용한 끝 도달 문제](55.JumpGame.md)  
+        - 끝까지 도달하는지 맞추는 문제, 최대 도달점을 설정 한뒤 greedy로 문제 해결 
 - [Permutation 조합 만들기 문제](./46.Permutation.md). 
     - C#의 경우 DFS 를 통해 결과 도출
     - C++의 경우 `Algorithm`라이브러리의 `next_permutation` function을 사용하여 문제를 해결 ( [std::next_permutation](./next_permutation.md)). 
@@ -77,6 +79,20 @@
     - c#의 경우 string을 내부적으로 Sorting하는 것이 없으므로 `ToArray`를 통해 array로 변환 후 `Array.Sort`로 변환. 그리고, ToString()또는, new string(Array Value)를 할당 받아 수행 
 - [divide and conquer - 분할정복문제](./50.Pow(x,n).md). 
     - 2씩 나눠서 끝까지 도달 n지수가 0이 될때까지 분할하여 수행 
+- [backtracking using lambda](./51.N-Queen.md). 
+    - `i+j`, `i-j` 좌측, 우측 대각 성분의 위치는 앞의 값의 형태로 동일한 성질을 이용
+    -  c++의 경우 backtracking 을 lambda로 풀이 
+- [backtracking using lambda for counting](./52.N-Queens2.md). 
+    - lambda function 내 `count`변수를 둬서 count를 더한 뒤 return.  
+- [Maxtrix 순회 문제, 빙글빙글 돌면서 array 추가 문제](./54.Spiral%20Matrix.md). 
+    - [Matrix 순회 입력](./59.SpiralMatrix2.md). 
+        - top, bottom, left, right 를 이용
+- [Merge Interval, C++ 2차원 벡터 sorting 방법](./56.JumpGame.md)  
+    - vector sorting.
+    - vector 초기화 `push_back`
+- [Sweeping, Interval Merge Problem]
+    - [56.MergeInterval](./56.MergeIntervals.md). 
+    - [57.InsertInterval](./57.InsertInterval.md). 
 
 ## C++
 
