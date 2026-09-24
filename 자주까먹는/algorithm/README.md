@@ -93,6 +93,8 @@
 - [Sweeping, Interval Merge Problem]
     - [56.MergeInterval](./56.MergeIntervals.md). 
     - [57.InsertInterval](./57.InsertInterval.md). 
+- [Permutation - 수학적 원리를 이용한 순열 문제 풀이](./60.PermutationSequence.md)  
+    - `vector erase` 활용 ( factorial 활용 문제 )
 
 ## C++
 
