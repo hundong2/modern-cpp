@@ -4,7 +4,7 @@
 
 | 헤더 | 현재 자료에서 사용하는 대표 선언 |
 |---|---|
-| `<algorithm>` | `sort`, `find_if`, `fill`, `max_element`, ranges 알고리즘 |
+| `<algorithm>` | `sort`, `find_if`, `fill`, `max_element`, `ranges::sort`, `ranges::equal_range` 등 ranges 알고리즘 |
 | `<any>` | 소유형 단일 값 타입 소거 컨테이너 `std::any`, 안전한 `any_cast`, 실패 예외 `bad_any_cast` |
 | `<array>` | 고정 크기 `std::array` |
 | `<atomic>` | `std::atomic`, 메모리 순서 상수 |
@@ -27,6 +27,7 @@
 | `<format>` | 타입 안전 문자열 형식화 `std::format`, 형식 오류 `std::format_error` |
 | `<functional>` | `function`, C++23 `move_only_function`·`bind_back`, 비교 함수 객체, 참조 래퍼 |
 | `<future>` | 단일 결과 shared state의 생산자 `promise`와 소비자 `future` |
+| `<generator>` | C++23 동기 coroutine 기반 단일-pass lazy view `std::generator` |
 | `<iomanip>` | `setprecision` 등 스트림 형식 조작자 |
 | `<iostream>` | `cin`, `cout`, `cerr` 표준 스트림 |
 | `<latch>` | C++20 일회성 카운트다운 동기화 객체 `std::latch` |

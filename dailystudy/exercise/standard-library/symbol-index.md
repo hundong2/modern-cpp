@@ -10,12 +10,14 @@
 | `std::erase_if` | 술어가 참인 컨테이너 원소 삭제 | [알고리즘](algorithms-and-ranges.md) |
 | `std::fill` | 반복자 구간에 같은 값 대입 | [알고리즘](algorithms-and-ranges.md) |
 | `std::find_if` | 술어가 참인 첫 반복자 반환 | [알고리즘](algorithms-and-ranges.md) |
+| `std::generator` | coroutine을 재개해 원소를 지연 생산하는 이동 전용 C++23 input view | [알고리즘](algorithms-and-ranges.md) |
 | `std::iota` | 연속 증가값으로 범위 채우기 | [알고리즘](algorithms-and-ranges.md) |
 | `std::max_element` | 최댓값 원소 반복자 반환 | [알고리즘](algorithms-and-ranges.md) |
 | `std::min`, `std::max` | 두 값 중 작은/큰 값 선택 | [알고리즘](algorithms-and-ranges.md) |
 | `std::sort` | 반복자 범위 제자리 정렬 | [알고리즘](algorithms-and-ranges.md) |
 | `std::swap` | 두 객체 값 교환 | [알고리즘](algorithms-and-ranges.md) |
 | `std::ranges::count_if` | 범위에서 술어가 참인 개수 | [알고리즘](algorithms-and-ranges.md) |
+| `std::ranges::equal_range` | 정렬·분할된 범위에서 비교 동등한 연속 구간을 비소유 subrange로 반환 | [알고리즘](algorithms-and-ranges.md) |
 | `std::ranges::end` | 범위 끝 센티널 획득 | [알고리즘](algorithms-and-ranges.md) |
 | `std::ranges::find` | 범위에서 값 탐색 | [알고리즘](algorithms-and-ranges.md) |
 | `std::ranges::fold_left` | C++23 순서 보존 왼쪽 값 축약 | [알고리즘](algorithms-and-ranges.md) |

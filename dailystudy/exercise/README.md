@@ -68,14 +68,15 @@
 | [2026-09-21](./2026-09-21/README.md) | `std::bind_back` 소유 정책 호출 어댑터와 인접 자릿수 Digit DP | C++23 |
 | [2026-09-22](./2026-09-22/README.md) | `std::ranges::fold_left` 소유 스냅숏 축약과 DAG 최장 경로 복원 | C++23 |
 | [2026-09-23](./2026-09-23/README.md) | `std::views::zip` 검증 열 저장소·비소유 행 투영과 가중 구간 스케줄링 | C++23 |
+| [2026-09-25](./2026-09-25/README.md) | `std::generator` frame-owned 지연 참조 스트림과 Meet-in-the-middle 부분집합 합 | C++23 |
 
 ## 표준 라이브러리 설명 찾기
 
 - [표준 라이브러리 학습 지도](./standard-library/README.md): 설명 품질 기준과 분야별 대표 문서
-- [날짜별 사용 색인](./standard-library/by-date.md): 현재 64개 날짜, 173개 C++ 파일의 헤더와 `std::` 심볼
-- [심볼 색인](./standard-library/symbol-index.md): 167개 현재 심볼의 역할과 상세 문서 링크
+- [날짜별 사용 색인](./standard-library/by-date.md): 현재 65개 날짜, 176개 C++ 파일의 헤더와 `std::` 심볼
+- [심볼 색인](./standard-library/symbol-index.md): 169개 현재 심볼의 역할과 상세 문서 링크
 - [공통 용어](./standard-library/terms.md): 반복자, 뷰, 술어, 소유권, 무효화, 예외 보장, 원자성
-- [표준 헤더](./standard-library/headers.md): 현재 사용하는 55개 헤더와 대표 선언
+- [표준 헤더](./standard-library/headers.md): 현재 사용하는 56개 헤더와 대표 선언
 
 코드의 인접 주석은 현재 호출의 인자·반환값·상태 변화를 설명한다. 공용 문서는 전제조건, 복잡도, 객체 수명, 참조·반복자 무효화, 오류·예외 계약을 설명한다. 새 심볼은 다음 감사로 누락 여부를 검사한다.
 

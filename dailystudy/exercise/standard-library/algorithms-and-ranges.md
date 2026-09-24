@@ -4,12 +4,46 @@
 
 ## `std::sort`와 `std::ranges::sort` — `<algorithm>`
 
-- 원소를 제자리에서 오름차순으로 재배치한다. 평균·최악 비교 복잡도는 `O(N log N)` 요구사항을 따른다.
-- 같은 키 원소의 상대 순서는 보존하지 않는다. 필요하면 `std::stable_sort`를 검토한다.
-- 반복자·참조 자체가 가리키는 위치의 값이 바뀌므로 정렬 전 인덱스 의미를 보관할 때 주의한다.
-- `std::sort(first,last,comp)`는 임의 접근 반복자 쌍을 받는다.
-- `std::ranges::sort(range,comp,projection)`은 범위 자체와 선택적 프로젝션을 받으며 끝 반복자를 반환한다.
-- 비교자는 엄격 약순서를 만족해야 한다. `<=`를 비교자로 쓰면 요구사항을 깨뜨릴 수 있다.
+- **항목 종류·현재 역할**: `<algorithm>`의 `std::sort`는 반복자 기반 함수 템플릿이고 `std::ranges::sort`는 C++20 ranges 알고리즘 함수 객체(niebloid)다. 2026-09-25 풀이는 오른쪽 절반 부분집합 합을 소유한 `std::vector<long long>`을 오름차순으로 재배치해 뒤의 `equal_range`가 이진 탐색 전제조건을 만족하게 한다.
+- **C++23 range overload와 템플릿 인자**: 대표 형태는 `template<random_access_range R, class Comp = ranges::less, class Proj = identity> requires sortable<iterator_t<R>, Comp, Proj> constexpr borrowed_iterator_t<R> sort(R&& range, Comp comp = {}, Proj projection = {});`다. 오늘 호출에서는 `R=std::vector<long long>&`, `Comp=std::ranges::less`, `Proj=std::identity`이며 `iterator_t<R>`는 vector의 mutable random-access iterator다. 고전 `std::sort(first, last, comp)`는 임의 접근 반복자 쌍을 받는 별도 overload다.
+- **수신 객체·호출 전 상태**: 함수 객체 호출이라 사용자 데이터 수신 객체는 없다. `right_sums`는 유효한 non-const lvalue vector이고, 모든 원소는 살아 있으며 이동·교환 가능하다. 정렬 전 순서는 임의여도 된다.
+- **매개변수·값 범주·소유권**: `R&&`는 forwarding reference이고 lvalue `right_sums`에 바인딩되므로 저장소를 복사하거나 이동하지 않고 호출 동안 빌린다. 생략한 `comp`와 `projection`은 값으로 생성되는 `ranges::less{}`와 `identity{}`다. 사용자 비교자·projection을 넘기면 알고리즘 실행 동안 유효해야 하며 원소의 정렬 관계를 깨는 부작용을 내면 안 된다.
+- **반환형·사용 여부**: lvalue vector는 borrowed range이므로 반환형은 `std::vector<long long>::iterator`이고 정렬된 범위의 끝 위치를 가리킨다. 오늘 코드는 반환 iterator를 의도적으로 버린다. 임시 non-borrowed range라면 `borrowed_iterator_t<R>`가 `std::ranges::dangling`일 수 있다.
+- **사후 상태·안정성**: 성공하면 projected 원소가 비교자 기준 비내림차순이고 원소들은 입력의 permutation이다. 크기·capacity·저장소 소유권은 유지되지만 위치별 값은 바뀐다. 같은 키의 상대 순서는 보존되지 않으므로 필요하면 `std::stable_sort`를 검토한다.
+- **복잡도**: 원소 수를 `N`이라 할 때 `O(N log N)`회의 비교와 projection을 요구한다. 원소 이동·교환 비용은 타입에 따르고, ranges overload의 끝 iterator 계산 비용도 sentinel 성질에 따른다.
+- **할당·무효화·수명**: 표준 계약만으로 구현의 보조 저장소 사용이 없다고 단정하지 않는다. vector 자체의 구조 변경이나 재할당은 하지 않으므로 기존 iterator·포인터·참조는 계속 유효하지만, 같은 위치가 정렬 전과 같은 논리 원소를 뜻하지는 않는다. range와 원소는 호출이 끝날 때까지 살아 있어야 한다.
+- **전제조건·오류·예외·미정의 동작**: 범위는 random-access range이고 iterator는 permutable해야 하며 `comp(proj(a), proj(b))`가 전체 실행 동안 엄격 약순서를 이뤄야 한다. `<=`처럼 엄격하지 않은 비교자, 댕글링 iterator/range, 이동·교환 요구사항 위반은 전제조건 위반이며 미정의 동작이다. 비교·projection·원소 이동/교환 또는 구현의 자원 확보가 던지면 예외가 전파될 수 있고, 그때 범위는 유효하더라도 원래 순서나 완전 정렬을 보장하지 않는다. 오늘의 `long long` 기본 비교·이동은 던지지 않지만 함수 선언 자체를 `noexcept`로 가정하지 않는다.
+- **스레드·기계 실행 관점**: 자체 동기화가 없으므로 같은 vector를 다른 실행 흐름이 동시에 읽거나 쓰는 동안 정렬하면 안 된다. 구현은 비교, load/store, 원소 교환과 조건 분기를 조합할 수 있으나 구체적 정렬 전략·SIMD·명령열·보조 메모리는 CPU, 표준 라이브러리, 컴파일러와 최적화 옵션에 따라 달라진다.
+
+## `std::ranges::equal_range` — `<algorithm>`의 비교 동등 구간 이진 탐색
+
+- **항목 종류·현재 역할**: C++20 ranges 알고리즘 함수 객체(niebloid)다. 2026-09-25 CSES 1628 풀이는 정렬된 오른쪽 절반합 `vector`에서 `target-left_sum`과 비교 동등한 **모든 중복값**의 반열린 구간을 찾아 경우의 수를 더한다. 값 하나의 존재만 확인하는 `binary_search`와 목적이 다르다.
+- **C++23 range overload**: 대표 형태는 `template<forward_range R, class T, class Proj = identity, indirect_strict_weak_order<const T*, projected<iterator_t<R>, Proj>> Comp = ranges::less> constexpr borrowed_subrange_t<R> equal_range(R&& range, const T& value, Comp comp = {}, Proj projection = {});`다. C++26에서 `T` 기본 인자가 보강된 선언과 오늘 C++23 호출의 요구사항을 혼동하지 않는다.
+- **수신 객체·입력 상태**: ranges 알고리즘 함수 객체의 호출이므로 사용자 데이터 수신 객체는 없다. 오늘 `right_sums`는 유효한 `std::vector<long long>` lvalue이고 기본 비교와 항등 projection에 맞춰 오름차순 정렬돼 있다.
+- **매개변수·값 범주·소유권**: `R&&`는 forwarding reference이므로 오늘 lvalue vector의 저장소를 이동하거나 복사하지 않고 호출 동안 빌린다. `needed`는 `const long long& value`에 바인딩되는 lvalue다. 생략한 `comp`와 `projection`은 각각 `ranges::less{}`와 `identity{}` 의미이며 값으로 사용된다.
+- **반환형·반환값 사용**: vector lvalue 호출은 두 iterator를 보관한 sized `subrange`를 값으로 반환한다. 시작은 첫 비교 동등 원소, 끝은 마지막 동등 원소 다음이다. 일치가 없으면 두 iterator가 같은 삽입 위치다. 오늘 코드는 반환값을 `matches`에 저장하고 `matches.size()`로 중복 부분집합 수를 얻는다.
+- **비교 동등성과 전제조건**: 동등성은 `operator==`가 아니라 `comp(element,value)`와 `comp(value,element)`가 둘 다 거짓인 관계다. 입력은 두 비교 식에 대해 partition돼 있어야 하고 비교자는 엄격 약순서를 만족해야 한다. 같은 비교자·projection으로 전체 vector를 먼저 정렬하면 이 전제를 만족한다.
+- **사후 상태**: 알고리즘은 vector의 크기·용량·원소·소유권을 바꾸지 않고 기존 iterator도 무효화하지 않는다. 반환 subrange는 iterator를 소유하지만 원소와 저장소를 소유하지 않는다.
+- **복잡도**: 최대 `2*log2(N)+O(1)`회의 비교·projection을 수행한다. vector random-access iterator에서는 위치 이동도 로그 규모다. 일반 forward range에서는 비교 횟수는 로그여도 iterator 증가는 선형일 수 있다.
+- **할당·무효화·수명**: 알고리즘 자체는 동적 저장소를 요구하지 않는다. 반환 iterator는 owner 파괴, vector 재할당, 관련 erase 때 무효화된다. 주소가 유지돼도 검색 뒤 원소 값을 바꾸면 반환 구간이 같은 값을 뜻한다는 의미 보장은 사라진다. 임시 non-borrowed range라면 반환형이 usable iterator 구간이 아닌 `dangling`이 될 수 있다.
+- **오류·예외·미정의 동작**: 기본 정수 비교·vector iterator에는 별도 오류값이 없다. 일반 comparator, projection, iterator 연산이 던진 예외는 전파된다. partition, 엄격 약순서 또는 iterator/range 수명·유효성 전제조건을 깨고 호출하면 미정의 동작이다.
+- **스레드 보장**: 자체 동기화를 제공하지 않는다. 같은 vector를 여러 실행 흐름이 읽기만 하는 것은 원소 타입 규칙을 따르지만, 한쪽이 구조나 원소를 쓰는 동안 검색하면 데이터 경쟁 또는 iterator 무효화가 발생할 수 있다.
+- **범위 범주 주의**: `std::generator`는 `input_range`일 뿐 `forward_range`가 아니어서 이 알고리즘의 입력으로 직접 사용할 수 없다. 오늘처럼 정렬 가능한 소유 vector로 materialize한 범위를 사용해야 한다.
+
+### 최소 실행 예제
+
+```cpp
+#include <algorithm>
+#include <iostream>
+#include <ranges>
+#include <vector>
+
+int main() {
+    const std::vector<int> sorted{1, 2, 2, 2, 5};
+    const auto matches{std::ranges::equal_range(sorted, 2)};
+    std::cout << matches.size() << '\n'; // 3
+}
+```
 
 ## `std::find_if`, `std::ranges::find` — `<algorithm>`
 
@@ -94,6 +128,43 @@ int main() {
 - 두 객체의 값을 교환한다. 사용자 타입은 이동 생성·이동 대입 또는 사용자 정의 `swap`을 사용할 수 있다.
 - 일반 템플릿 코드에서는 `using std::swap; swap(a,b);`로 ADL 사용자 정의 교환을 허용하는 관용구가 있다.
 - Union-Find에서 랭크가 큰 루트를 왼쪽에 두는 등 불변식을 단순화할 때 사용한다.
+
+## `std::generator<Ref, Val, Allocator>` — `<generator>`의 C++23 동기 lazy input range
+
+- **항목 종류·현재 역할**: coroutine이 `co_yield`에 도달할 때마다 원소 하나를 생산하는 이동 전용 class template이자 `view`·`input_range`다. 2026-09-25의 `std::generator<const MetricSample&>`와 `std::generator<const StockItem&>`는 별도 필터 결과 컨테이너를 먼저 만들지 않고 frame-owned 배치의 원소를 읽기 전용 참조로 지연 노출한다.
+- **대표 선언**: `template<class Ref, class Val = void, class Allocator = void> class generator;`, 삭제된 복사 생성자, `generator(generator&&) noexcept`, `iterator begin()`, `default_sentinel_t end() const noexcept`가 핵심이다. `Ref=const MetricSample&`, `Val=void`이면 설명용 `value`는 `MetricSample`, iterator의 `reference`와 공개 `yielded`는 참조 축약 뒤 모두 `const MetricSample&`다.
+- **생성·소유권**: coroutine 함수 호출은 coroutine state를 소유하는 generator prvalue를 반환하고 initial suspend 때문에 본문은 아직 실행하지 않는다. generator는 **frame**을 소유하지만 외부 컨테이너 원소를 yield했다면 그 원소를 자동 소유하지 않는다. 오늘 코드는 owner를 coroutine 값 매개변수로 이동해 frame 안에 두므로 원소 수명을 generator에 묶는다.
+- **숨은 coroutine protocol**: 호출 시 구현이 필요하면 `promise_type::operator new(size_t)`로 frame 저장소를 확보하고 promise와 매개변수 사본을 만든다. `get_return_object() noexcept`가 generator owner를 만들고 `initial_suspend() const noexcept`가 본문 전 실행을 멈춘다. 정상 본문 끝은 `return_void() const noexcept` 뒤 `final_suspend() noexcept`로 owner가 파괴할 때까지 frame을 유지한다. 본문 예외는 `unhandled_exception()` 경로로 처리돼 재개 호출자에게 전달된다. generator 소멸자는 보유 handle이 있으면 frame을 destroy하고 대응 delete가 저장소를 해제하므로 iterator·frame 지역·참조 수명도 끝난다.
+- **첫 `begin()` 계약**: 수신 generator는 유효하고 initial suspend 지점을 가리켜야 한다. `begin()`은 active coroutine stack에 handle을 등록한 뒤 coroutine을 첫 `co_yield` 또는 종료까지 재개하고 같은 coroutine을 가리키는 iterator 값을 반환한다. `begin()`은 `noexcept`가 아니며 active-stack bookkeeping과 최초 재개가 실패할 수 있다. 같은 generator에 `begin()`을 두 번 호출하는 것은 미정의 동작이다. 비const 멤버라 const generator를 일반 range-for로 순회할 수도 없다.
+- **`end`, 역참조, 증가와 비교**: `end()`는 상태를 바꾸지 않고 default sentinel 값을 반환한다. 유효한 yield 지점에서 iterator `operator*`는 현재 `reference`, 오늘은 `const T&`를 반환한다. `operator++`는 다음 yield 또는 종료까지 coroutine을 재개하고 iterator&를 반환한다. sentinel 비교는 coroutine 완료 여부를 bool로 돌려준다.
+- **`co_yield`/`yield_value`**: 참조형 specialization에서 `co_yield sample`은 promise의 `yield_value(const T&)`에 현재 원소 주소를 연결하고 `suspend_always`로 중단한다. T를 복사하지 않지만 원소 owner가 안정적으로 살아 있어야 한다. 값형 specialization은 선택된 `yield_value` overload에 따라 별도 임시 저장 수명이 개입할 수 있으므로 참조형 규칙을 무조건 일반화하지 않는다.
+- **단일 통과**: generator는 `forward_range`가 아니라 `input_range`다. iterator나 현재 참조를 복제해 독립적으로 여러 번 순회한다는 가정을 할 수 없다. 멀티패스·정렬·이진 탐색이 필요하면 원소를 소유 컨테이너로 materialize한다.
+- **수명·무효화**: generator 파괴는 frame과 frame 지역/값 매개변수를 파괴해 iterator와 그 객체를 가리키는 참조를 무효화한다. 외부 vector 원소를 yield했다면 vector 파괴·재할당·관련 erase도 참조를 댕글링시킨다. 현재 참조를 iterator 증가 뒤 보관하려면 yield 대상 주소·수명이 계속 안정적임을 별도로 증명해야 한다. generator 이동은 frame 소유권을 목적 객체로 넘기며 기존 iterator는 목적 generator 쪽 coroutine을 계속 가리킨다.
+- **복잡도·할당**: coroutine state 저장소가 필요할 수 있어 생성이 항상 allocation-free라고 단정하지 않는다. 첫 `begin()`의 active-stack bookkeeping도 자원을 확보할 수 있다. `begin()`과 각 증가는 다음 yield까지 사용자 코드를 실행하므로 고정 `O(1)`이 아니다. 오늘처럼 N개 원소를 한 번 검사하고 원소당 상수 작업이면 전체가 `O(N)`이며 generator 자체는 N개짜리 결과 컨테이너를 만들지 않는다.
+- **오류·예외**: 생성은 frame 할당에 실패할 수 있고, `begin()`은 active-stack bookkeeping 또는 최초 resume에서 실패할 수 있으며, iterator 증가는 재개된 본문의 예외를 전파할 수 있다. 참조형 `yield_value` 자체는 복사를 요구하지 않는다. 두 번째 begin, 종료 iterator 역참조·증가, generator나 owner 파괴 뒤 iterator·참조 사용은 미정의 동작이다.
+- **스레드 보장**: 스레드를 만들거나 동기화를 제공하지 않는 동기식 범위다. 같은 generator를 동시에 resume·이동·파괴하면 안 되며 yield 원소의 동시 읽기·쓰기도 원본 타입의 동기화 규칙을 따른다.
+- **설계 경계**: 외부 owner를 빌리는 generator라면 owner가 순회보다 오래 산다는 API 보장이 필요하다. 오늘은 owner를 frame에 값으로 넣고, owner 관찰자는 `items() const &`만 허용하며 `items() const && = delete`로 임시에서 참조를 꺼내는 별도 경로도 막는다.
+
+기계 실행 관점에서 frame 생성은 상태 저장소 확보, `begin`/증가는 저장된 재개 지점 load와 간접 제어 이동, `co_yield`는 현재 주소와 중단 상태 store를 포함할 수 있다. 실제 할당 제거, 프레임 배치, 분기와 인라인 여부는 CPU·ABI·표준 라이브러리·컴파일러·최적화 옵션에 따라 달라 특정 명령으로 단정하지 않는다.
+
+### 최소 실행 예제
+
+```cpp
+#include <generator>
+#include <iostream>
+
+std::generator<int> countdown(int value) {
+    while (value > 0) {
+        co_yield value--;
+    }
+}
+
+int main() {
+    for (const int value : countdown(3)) {
+        std::cout << value << ' ';
+    }
+}
+```
 
 ## `std::views::filter`와 `std::views::transform` — `<ranges>`
 

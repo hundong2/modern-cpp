@@ -2,7 +2,9 @@
 
 ## `std::vector<T>` — `<vector>`의 동적 연속 배열
 
-`std::allocator<T>`는 `<memory>`에 선언된, 기본 `std::vector<T>`가 저장소 확보·반환에 쓰는 표준 할당자 클래스 템플릿이다. 오늘 `std::vector<int>`는 별도 할당자를 지정하지 않아 `std::allocator<int>`를 템플릿 기본 인자로 쓴다. 생성 전에는 원소 저장소가 없으며 vector의 fill 생성자와 `reserve`는 필요한 저장소를 확보할 수 있다. 할당자의 `allocate(n)`은 미초기화 저장소 포인터를 돌려주고 `deallocate(p,n)`은 같은 할당자 계약에 맞게 반환한다. 이 타입 자체가 스레드 간 vector 객체의 동시 변경을 동기화하지 않으며, 실제 원소 수명·무효화·예외는 아래 vector 연산 계약을 따른다.
+`std::allocator<T>`는 `<memory>`에 선언된, 기본 `std::vector<T>`가 저장소 확보·반환에 쓰는 표준 할당자 클래스 템플릿이다. 예를 들어 `std::vector<int>`는 별도 할당자를 지정하지 않아 `std::allocator<int>`를 템플릿 기본 인자로 쓴다. 생성 전에는 원소 저장소가 없으며 vector의 fill 생성자와 `reserve`는 필요한 저장소를 확보할 수 있다. 할당자의 `allocate(n)`은 미초기화 저장소 포인터를 돌려주고 `deallocate(p,n)`은 같은 할당자 계약에 맞게 반환한다. 이 타입 자체가 스레드 간 vector 객체의 동시 변경을 동기화하지 않으며, 실제 원소 수명·무효화·예외는 아래 vector 연산 계약을 따른다.
+
+2026-09-25 코드는 `vector<MetricSample>`·`vector<StockItem>`로 coroutine frame에 이동할 도메인 배치를, `vector<string>`으로 generator 밖에 남길 깊은 복사 결과를, `vector<long long>`으로 입력과 두 절반의 부분집합 합을 소유한다. 기본/count 생성, 이동 생성, `reserve`, `push_back`, `size`, `operator[]`, `begin/end` 계약을 각각 아래 규칙에 맞춰 사용한다.
 
 - `T` 원소를 연속 메모리에 소유한다. 크기는 실행 중 변하며 인덱스 접근이 `O(1)`이다.
 - 복사하면 원소를 새 저장소에 복사하고, 이동하면 보통 내부 저장소 소유권을 넘긴다.
@@ -11,7 +13,7 @@
 
 ### 생성자와 주요 멤버
 
-- `vector()`는 기존 수신 객체·데이터 인자·반환값 없이 기본 allocator를 가진 빈 컨테이너를 만든다. 성공 후 `size()==0`이고 원소 수명은 아직 시작하지 않으며 상수 시간이다.
+- `vector()`의 C++23 대표 선언은 `constexpr vector() noexcept(noexcept(Allocator())) : vector(Allocator()) {}`다. 기존 수신 객체·데이터 인자·반환값 없이 allocator를 기본 생성해 빈 컨테이너를 만들고, 성공 후 `size()==0`이며 원소 수명은 아직 시작하지 않는다. 상수 시간이고 원소 저장소 할당을 요구하지 않지만 구현 내부 배치를 더 강하게 단정하지 않는다. 예외 명세는 allocator 기본 생성에 조건부이며, 오늘 쓰는 기본 `std::allocator<T>` 특수화에서는 `noexcept`다. 아직 원소 관찰자·무효화·공유 원소 수명은 없고 새 객체를 여러 스레드에 공개하기 전까지 동기화 대상도 없다.
 - `vector(count)`의 대표 형태는 `explicit vector(size_type count, const Allocator& alloc = Allocator());`다. `count`는 값으로 전달되며 `max_size()` 이하여야 하고, 생략된 allocator는 기본값을 쓴다. 성공하면 `count`개 원소를 기본 삽입해 소유한다. `vector<int>(5)`의 원소는 모두 0이다. 시간·공간은 `O(count)`이고 `length_error`, `bad_alloc`, 원소 생성 예외가 가능하다.
 - `vector(count, value)`의 대표 형태는 `vector(size_type count, const T& value, const Allocator& alloc = Allocator());`다. `count`와 빌린 `value`를 받아 같은 값을 `count`번 복사한다. 반환값은 없고 성공 후 `size()==count`이며 각 원소 수명은 vector와 함께 관리된다. 시간·공간은 `O(count)`이고 길이·할당·복사 예외가 가능하다.
 - `vector{a, b, c}`는 `initializer_list` 생성자를 선택해 세 원소를 만든다. 괄호와 중괄호의 의미가 다를 수 있다.
@@ -23,7 +25,7 @@
 - `front()`와 `back()`은 첫/마지막 원소 참조를 반환한다. 빈 컨테이너에서 호출하면 안 된다.
 - `data()`는 연속 저장소 첫 원소 포인터를 반환한다. 빈 컨테이너에서는 역참조하면 안 된다.
 - `begin()/end()`는 시작과 마지막 다음 반복자를 값으로 반환하고, const 수신 overload와 `cbegin()/cend()`는 읽기 전용 `const_iterator`를 반환한다. 모두 데이터 인자 없이 `O(1)`·무할당·`noexcept`이고 vector를 바꾸지 않지만, 반환 관찰자는 vector 파괴·재할당·해당 erase 규칙에 따라 무효화된다. `end()`/`cend()`는 역참조하면 안 된다. random-access iterator의 `operator+(difference_type n)`은 같은 저장소의 `[begin,end]` 안 위치만 만들어야 하며 O(1)에 새 iterator를 반환한다. 범위를 벗어나게 계산하거나 서로 다른 배열 iterator를 빼는 것은 전제조건을 깨고 미정의 동작이 될 수 있다.
-- `push_back(value)`는 끝에 값을 복사 또는 이동한다. 용량 부족 시 재할당될 수 있다.
+- `push_back(value)`의 대표 overload는 `void push_back(const T& value)`와 `void push_back(T&& value)`다. 살아 있는 vector가 수신자이고 `value`는 각각 복사해 읽는 const lvalue 또는 소유권 이전 후보인 xvalue/prvalue다. `T`는 선택 overload에 맞게 CopyInsertable 또는 MoveInsertable이어야 하며, 성공하면 반환값 없이 새 마지막 원소의 수명을 시작하고 `size()`가 1 증가한다. 상각 `O(1)`, 재할당 시 기존 원소 수에 선형이고 할당·원소 생성/이동 예외가 가능하다. 재할당되면 모든 포인터·참조·반복자가 무효화된다. 재할당되지 않으면 기존 원소의 포인터·참조·반복자는 유지되지만 **과거 past-the-end 반복자**는 언제나 무효화된다. 일반적으로 실패 시 효과가 없지만 non-CopyInsertable `T`의 던지는 이동 생성자에서 난 예외에는 효과가 미지정일 수 있다. 같은 vector의 동시 읽기·쓰기를 자체 동기화하지 않는다.
 - `assign(count, value)`는 기존 원소를 모두 파괴하고 `count`개의 `value` 복사본으로 내용을 교체한다. 반환형은 `void`, 시간·공간은 새 원소 수에 선형이며 기존 포인터·참조·반복자는 모두 무효화된다. 원소 복사나 할당 실패는 예외가 될 수 있다.
 - `emplace_back(args...)`는 전달받은 인자로 끝 원소를 직접 생성한다. 임시 객체를 항상 없앤다고 단정하지 말고 생성 계약과 가독성을 본다.
 - `pop_back()`은 마지막 원소를 파괴하며 값을 반환하지 않는다. 빈 벡터에서 호출하면 미정의 동작이다. 제거 원소를 가리키던 포인터·참조·반복자와 이전 past-the-end 반복자는 무효가 되고, 그보다 앞선 원소 관찰자와 capacity는 유지된다.
@@ -120,7 +122,7 @@ int main() {
 
 ## `std::string` — `<string>`의 소유 문자열
 
-- `char`를 연속 메모리에 소유하는 `basic_string<char>` 별칭이다.
+- `char`를 연속 메모리에 소유하는 `basic_string<char>` 별칭이다. 2026-09-25의 `MetricSample::service`와 `StockItem::sku`는 리터럴을 깊게 복사해 도메인 이름을 소유하고, 선택된 이름은 generator 참조 수명에서 분리되도록 별도 `vector<string>` 원소에 다시 복사된다.
 - `basic_string(const char* source)` 대표 생성자는 유효한 NUL 종료 문자 범위의 첫 NUL 전 문자를 새 문자열에 복사한다. 포인터는 값으로 전달되고 원본 배열을 빌려 읽을 뿐 소유하거나 수정하지 않는다. 생성자는 반환값이 없고 성공한 destination이 문자를 소유한다. 문자 수에 선형이며 길이가 `max_size()`를 넘으면 `length_error`, 저장 할당이 실패하면 `bad_alloc` 등이 가능하다. null 포인터 또는 NUL 전까지 유효하지 않은 범위는 전제조건 위반이다. 생성 실패 시 완성 destination은 없고 원본 배열·관찰자는 그대로다. 2026-09-21은 정적 수명 리터럴 `"standard"`와 `"A-42"`를 정책/주문 소유 문자열로 복사한다.
 - `basic_string(const basic_string& source)` 복사 생성자는 살아 있는 source의 문자 값을 새 저장소에 복사해 독립 수명을 만든다. source는 const lvalue 참조로 빌리고 생성자는 별도 반환값이 없다. 성공 뒤 destination 변경·파괴는 source에 영향을 주지 않는다. 시간·추가 공간은 문자 수에 선형이고 할당·길이·문자 복사 예외가 가능하며 실패 시 완성 destination이 남지 않는다. source의 포인터·참조·반복자는 이 생성만으로 무효화되지 않지만 destination의 관찰자와 서로 교환해 쓸 수 없다. 2026-09-21은 bind-back 정책 이름을 반환 `Quote`가 독립 소유하도록 복사한다.
 - `basic_string(basic_string&& source) noexcept`는 allocator 인자 없는 이동 생성자다. destination은 source의 이동 전 값을 갖고 source는 유효하지만 값이 미지정된 상태가 되며 복잡도는 상수다. 그러나 `basic_string`은 이동 전에 문자를 가리키던 포인터·참조·반복자가 계속 유효하거나 destination 문자를 가리킨다고 보장하지 않으므로 모두 다시 얻어야 한다. 작은 문자열 최적화 여부와 실제 버퍼 주소 이전도 표준 보장이 아니다. source 문자열 객체 자체를 가리키던 참조·포인터는 source에 남아 destination으로 재바인딩되지 않는다.
@@ -129,7 +131,7 @@ int main() {
   수신 문자열을 바꾸지 않고, 할당·참조 무효화·예외가 없다. `empty()`는 빈 여부,
   `data()/c_str()`는 null 종료 저장소 포인터를 제공한다.
 - C++23 `operator[](size_type pos)`는 non-const 수신에서 `char&`, const 수신에서 `const char&`를 상수 시간에 반환하고 문자열 상태·크기·capacity를 바꾸거나 할당하지 않는다. `pos < size()`이면 해당 문자, `pos == size()`이면 값이 `char{}`인 끝 sentinel 문자를 가리킨다. 그 sentinel을 `char{}` 이외 값으로 쓰면 미정의 동작이고 `pos > size()`도 C++23에서 미정의 동작이다. 반환 참조는 문자열 파괴나 참조를 무효화하는 변경 뒤 사용할 수 없다. 2026-09-21은 먼저 `position < size()`를 증명하고 문자를 즉시 값으로 읽으므로 끝 sentinel이나 댕글링 참조에 의존하지 않는다.
-- `append(text)`와 `operator+=`는 끝에 문자를 추가한다. 용량 부족 재할당 시 기존 포인터·참조·반복자가 무효화될 수 있다.
+- `append(text)`와 `operator+=`는 끝에 문자를 추가한다. C++23의 보수적 관찰자 계약에서는 재할당 여부와 무관하게 이 non-const 변경 호출 뒤 기존 원소 포인터·참조·반복자가 무효화될 수 있다고 보고 다시 얻는다.
 - `substr(pos,count)`는 새 소유 문자열을 만들어 복사한다. `string_view::substr`는 뷰만 조정한다는 차이가 있다.
 - `find(needle)`은 첫 위치를 반환하고 없으면 `std::string::npos`를 반환한다. 반환형이 부호 없는 `size_type`이므로 `-1`과 직접 섞지 않는다.
 - `std::to_string(number)`은 숫자를 새 `string`으로 변환하지만 형식 제어와 할당 비용이 있다.

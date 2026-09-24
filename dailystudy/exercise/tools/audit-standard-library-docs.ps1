@@ -360,7 +360,9 @@ $contractPatterns = @(
     [pscustomobject]@{ Name = 'std::move'; Pattern = '(?m)^(?!\s*//)\s*[^\r\n]*std::move\s*\('; Readme = 'std::move(' },
     [pscustomobject]@{ Name = 'std::apply'; Pattern = '(?m)^(?!\s*//)\s*[^\r\n]*std::apply\s*\('; Readme = 'std::apply(' },
     [pscustomobject]@{ Name = 'std::ranges::to'; Pattern = '(?m)^(?!\s*//)\s*[^\r\n]*std::ranges::to\s*<[^;\r\n()]+>\s*\('; Readme = 'std::ranges::to<' },
+    [pscustomobject]@{ Name = 'std::ranges::equal_range'; Pattern = '(?m)^(?!\s*//)\s*[^\r\n]*std::ranges::equal_range\s*\('; Readme = 'std::ranges::equal_range(' },
     [pscustomobject]@{ Name = 'std::views::zip'; Pattern = '(?m)^(?!\s*//)\s*[^\r\n]*std::views::zip\s*\('; Readme = 'std::views::zip(' },
+    [pscustomobject]@{ Name = 'generator promise yield_value'; Pattern = '(?m)^(?!\s*//)\s*[^\r\n]*\bco_yield\b'; Readme = 'promise_type::yield_value' },
     [pscustomobject]@{ Name = 'sync_with_stdio'; Pattern = '(?m)^(?!\s*//)\s*[^\r\n]*std::ios::sync_with_stdio\s*\('; Readme = 'sync_with_stdio(' },
     [pscustomobject]@{ Name = 'tie'; Pattern = '(?m)^(?!\s*//)\s*[^\r\n]*std::cin\.tie\s*\('; Readme = 'std::cin.tie(' },
     [pscustomobject]@{ Name = 'operator>>'; Pattern = '(?m)^(?!\s*//)\s*[^\r\n]*std::cin\s*>>'; Readme = 'std::cin >>' },
@@ -480,6 +482,14 @@ foreach ($file in Get-ChildItem -LiteralPath $latestDirectory.FullName -Filter '
     foreach ($candidate in $contractPatterns) {
         # vector 멤버·생성자 후보는 vector를 직접 사용하는 번역 단위에서만 표준 호출로 간주한다.
         if ($candidate.Name.StartsWith('vector') -and $contractSource -notmatch 'std::vector\s*<') {
+            continue
+        }
+        # co_yield 자체는 사용자 정의 promise에도 존재한다. <generator>/std::generator를 실제로 쓰는
+        # 번역 단위에서만 표준 generator의 숨은 promise_type::yield_value 계약을 요구한다.
+        if (
+            $candidate.Name -eq 'generator promise yield_value' -and
+            $contractSource -notmatch '(?:#\s*include\s*<generator>|std::generator\s*<)'
+        ) {
             continue
         }
         $candidatePattern = $candidate.Pattern
