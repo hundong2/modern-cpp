@@ -95,6 +95,10 @@
     - [57.InsertInterval](./57.InsertInterval.md). 
 - [Permutation - 수학적 원리를 이용한 순열 문제 풀이](./60.PermutationSequence.md)  
     - `vector erase` 활용 ( factorial 활용 문제 )
+- [Rotate List using Ring](./61.RotateList.md). 
+    - ListNode를 Ring형태로 먼저 묶은 뒤 문제를 푸는 방식 
+
+
 
 ## C++
 
