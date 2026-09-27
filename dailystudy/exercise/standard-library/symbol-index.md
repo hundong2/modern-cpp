@@ -21,6 +21,8 @@
 | `std::ranges::end` | 범위 끝 센티널 획득 | [알고리즘](algorithms-and-ranges.md) |
 | `std::ranges::find` | 범위에서 값 탐색 | [알고리즘](algorithms-and-ranges.md) |
 | `std::ranges::fold_left` | C++23 순서 보존 왼쪽 값 축약 | [알고리즘](algorithms-and-ranges.md) |
+| `std::ranges::range_difference_t`, `std::ranges::range_reference_t` | 범위 iterator 차이 타입과 역참조 결과 타입 alias | [알고리즘](algorithms-and-ranges.md) |
+| `std::ranges::ref_view`, `std::ranges::slide_view`, `std::views::slide` | lvalue 범위를 빌려 겹치는 고정 너비 창을 만드는 C++23 view | [알고리즘](algorithms-and-ranges.md) |
 | `std::ranges::sort` | 범위·프로젝션 기반 정렬 | [알고리즘](algorithms-and-ranges.md) |
 | `std::ranges::subrange` | iterator·sentinel로 만든 비소유 반열린 view | [알고리즘](algorithms-and-ranges.md) |
 | `std::ranges::to` | 입력 범위를 지정한 소유 컨테이너 값으로 materialize | [알고리즘](algorithms-and-ranges.md) |
@@ -36,6 +38,7 @@
 | `std::array` | 컴파일 시간 고정 크기 연속 배열 | [컨테이너](containers-and-views.md) |
 | `std::deque` | 양끝 상수 시간 삽입·삭제 시퀀스 | [컨테이너](containers-and-views.md) |
 | `std::map` | 정렬 키 연관 컨테이너 | [컨테이너](containers-and-views.md) |
+| `std::multiset` | 동등 키를 여러 개 소유하는 정렬 노드 연관 컨테이너 | [컨테이너](containers-and-views.md) |
 | `std::flat_map` | C++23 정렬·연속 키/값 저장소의 고유 키 테이블 | [컨테이너](containers-and-views.md) |
 | `std::unordered_map` | 해시 기반 연관 컨테이너 | [컨테이너](containers-and-views.md) |
 | `std::unordered_map::find`, `std::unordered_map::insert_or_assign`, `std::unordered_map::reserve` | 해시 key 조회, 삽입-or-대입, 예상 원소 수 기반 재해시 준비 | [컨테이너](containers-and-views.md) |
@@ -53,6 +56,7 @@
 | `std::pmr::memory_resource` | 실행 시간 할당 자원 인터페이스 | [컨테이너](containers-and-views.md) |
 | `std::pmr::monotonic_buffer_resource` | 일괄 해제형 증가 할당 자원 | [컨테이너](containers-and-views.md) |
 | `std::pmr::vector` | 다형적 할당자를 쓰는 vector 별칭 | [컨테이너](containers-and-views.md) |
+| `std::allocator`, `std::initializer_list` | 기본 저장소 할당 정책과 목록 생성자의 읽기 전용 원소 proxy | [컨테이너](containers-and-views.md) |
 
 ## 비트와 바이트 표현
 
@@ -100,6 +104,7 @@
 |---|---|---|
 | `std::is_same_v` | 두 타입의 정확한 동일성 | [소유권](ownership-and-vocabulary-types.md) |
 | `std::remove_cvref_t` | 최상위 cv와 참조 제거 | [소유권](ownership-and-vocabulary-types.md) |
+| `std::remove_reference_t` | 최상위 참조만 제거하는 alias template | [입출력·유틸리티](io-parsing-and-utilities.md) |
 | `std::decay_t` | 값 전달형 타입 변환 | [소유권](ownership-and-vocabulary-types.md) |
 | `std::same_as` | 같은 타입 concept | [소유권](ownership-and-vocabulary-types.md) |
 | `std::integral` | 정수 타입 concept | [소유권](ownership-and-vocabulary-types.md) |

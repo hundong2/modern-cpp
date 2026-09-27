@@ -6,6 +6,8 @@
 
 2026-09-25 코드는 `vector<MetricSample>`·`vector<StockItem>`로 coroutine frame에 이동할 도메인 배치를, `vector<string>`으로 generator 밖에 남길 깊은 복사 결과를, `vector<long long>`으로 입력과 두 절반의 부분집합 합을 소유한다. 기본/count 생성, 이동 생성, `reserve`, `push_back`, `size`, `operator[]`, `begin/end` 계약을 각각 아래 규칙에 맞춰 사용한다.
 
+2026-09-28 코드는 initializer-list로 지연 시간·진동 샘플 vector를 만들고 이를 owner 멤버로 이동한다. ICPC 풀이는 count 생성자로 입력 `vector<long long>`을 0 초기화하고 `operator[]`가 돌려준 원소 lvalue에 값을 읽어 들인다. 이날 코드에서 `.size()`를 호출하는 수신자는 vector가 아니라 두 `multiset`이다.
+
 - `T` 원소를 연속 메모리에 소유한다. 크기는 실행 중 변하며 인덱스 접근이 `O(1)`이다.
 - 복사하면 원소를 새 저장소에 복사하고, 이동하면 보통 내부 저장소 소유권을 넘긴다.
 - 끝 삽입은 상각 `O(1)`, 중간 삽입·삭제는 뒤 원소 이동 때문에 `O(N)`이다.
@@ -16,7 +18,7 @@
 - `vector()`의 C++23 대표 선언은 `constexpr vector() noexcept(noexcept(Allocator())) : vector(Allocator()) {}`다. 기존 수신 객체·데이터 인자·반환값 없이 allocator를 기본 생성해 빈 컨테이너를 만들고, 성공 후 `size()==0`이며 원소 수명은 아직 시작하지 않는다. 상수 시간이고 원소 저장소 할당을 요구하지 않지만 구현 내부 배치를 더 강하게 단정하지 않는다. 예외 명세는 allocator 기본 생성에 조건부이며, 오늘 쓰는 기본 `std::allocator<T>` 특수화에서는 `noexcept`다. 아직 원소 관찰자·무효화·공유 원소 수명은 없고 새 객체를 여러 스레드에 공개하기 전까지 동기화 대상도 없다.
 - `vector(count)`의 대표 형태는 `explicit vector(size_type count, const Allocator& alloc = Allocator());`다. `count`는 값으로 전달되며 `max_size()` 이하여야 하고, 생략된 allocator는 기본값을 쓴다. 성공하면 `count`개 원소를 기본 삽입해 소유한다. `vector<int>(5)`의 원소는 모두 0이다. 시간·공간은 `O(count)`이고 `length_error`, `bad_alloc`, 원소 생성 예외가 가능하다.
 - `vector(count, value)`의 대표 형태는 `vector(size_type count, const T& value, const Allocator& alloc = Allocator());`다. `count`와 빌린 `value`를 받아 같은 값을 `count`번 복사한다. 반환값은 없고 성공 후 `size()==count`이며 각 원소 수명은 vector와 함께 관리된다. 시간·공간은 `O(count)`이고 길이·할당·복사 예외가 가능하다.
-- `vector{a, b, c}`는 `initializer_list` 생성자를 선택해 세 원소를 만든다. 괄호와 중괄호의 의미가 다를 수 있다.
+- `vector{a, b, c}`의 대표 형태는 `vector(std::initializer_list<T> values, const Allocator& alloc = Allocator())`이며 목록 생성자를 선택해 세 원소를 복사한다. `std::initializer_list<T>`는 `<initializer_list>`의 읽기 전용 연속 임시 배열 proxy 타입이고, 값으로 전달해도 원소를 깊게 소유하지 않는다. vector는 호출 중 원소를 자기 저장소에 복사하므로 성공한 결과는 목록 backing array의 수명과 독립이다. 시간·추가 저장은 원소 수에 선형이고 길이·할당·원소 복사 예외가 가능하다. 괄호와 중괄호의 의미가 다를 수 있으며, 예를 들어 `vector<int>(3)`은 0 세 개지만 `vector<int>{3}`은 값 3 하나다.
 - `vector(vector&& source) noexcept`는 allocator 인자 없는 이동 생성자다. 새 vector는 `source`의 이동 전 값을 소유하고 `source`는 유효하지만 값이 미지정된 상태로 남으며, `std::vector`에서는 상수 시간이다. 이동 전에 원소를 가리키던 포인터·참조·반복자는 과거 past-the-end 반복자를 제외하면 계속 같은 원소를 가리키되 이제 그 원소는 destination에 속한다. 반면 `source` vector 객체 자체를 가리키던 참조·포인터는 여전히 source 객체를 가리키며 destination으로 재바인딩되지 않는다. 명시적 allocator를 받는 이동 생성자는 allocator가 다르면 원소별 이동과 새 할당이 필요할 수 있으므로 이 규칙과 비용을 그대로 적용하지 않는다.
 - `size()`의 대표 형태는 `size_type size() const noexcept`다. 살아 있는 vector를 const로 빌리고 데이터 인자 없이 현재 원소 수 값을 `O(1)`에 반환한다. 수신 객체·원소·capacity·관찰자를 바꾸지 않고 할당·예외·동기화를 추가하지 않는다.
 - `empty()`의 대표 형태는 `bool empty() const noexcept`다. 데이터 인자 없이 `size()==0` 여부를 `O(1)`에 반환하며 수신 vector를 바꾸지 않는다. `size() > 0`보다 의도가 직접적이고, 이 관찰 자체는 할당·무효화·예외가 없다.
@@ -73,6 +75,23 @@ int main() {
 - `at(key)`는 삽입하지 않고 찾으며 없으면 `std::out_of_range`를 던진다.
 - 삽입은 지운 원소를 제외한 기존 반복자·참조를 보통 무효화하지 않는다.
 - 비교자는 엄격 약순서를 만족해야 한다.
+
+## `std::multiset<Key, Compare, Allocator>` — `<set>`의 중복 허용 정렬 연관 컨테이너
+
+`multiset`은 동등한 키를 여러 개 소유하면서 `Compare`의 엄격 약순서로 유지하는 노드 기반 컨테이너다. 2026-09-28의 CSES 1077 풀이는 `(값, 원래 인덱스)`를 `Entry` 하나로 묶고, 작은 절반 `lower`와 큰 절반 `upper`를 유지한다. 인덱스까지 비교하므로 값이 같은 원소도 정확히 한 개를 찾아 지울 수 있다.
+
+- **헤더·종류·생성**: `<set>`의 class template이며 대표 선언은 `template<class Key, class Compare = less<Key>, class Allocator = allocator<Key>> class multiset;`이다. `multiset()`은 기본 비교자와 할당자로 빈 컨테이너를 만든다. 생성자는 반환값이 없고 성공 뒤 `size()==0`이다. 오늘의 `std::less<Entry>`와 `std::allocator<Entry>` 기본 생성은 비투척이지만 `multiset()` 자체에는 `noexcept` 명세가 없으므로 구현 내부 설정·할당 실패 가능성을 지우지 않는다. 일반 사용자 정의 비교자·할당자의 생성 예외도 그대로 전파될 수 있다.
+- **정렬·동등성 전제**: 두 키 `a`, `b`가 `!comp(a,b) && !comp(b,a)`이면 동등하다. `operator==`가 아니라 비교자가 동등 그룹을 정한다. 비교자는 같은 입력에 일관된 엄격 약순서를 제공해야 하며, 컨테이너에 들어간 키를 정렬 관계가 달라지도록 직접 수정하면 불변식을 깨뜨린다. 오늘의 `Entry`는 먼저 값, 같으면 인덱스를 비교하므로 모든 활성 위치가 서로 다른 키다.
+- **`insert(const value_type&)`**: 수신 multiset은 유효한 정렬 상태여야 하고 인자 const lvalue를 호출 동안 빌려 새 노드에 복사한다. 반환형 `iterator`는 새 원소를 가리키며 오늘 코드는 필요할 때 합 갱신과 분할 이동 뒤 즉시 버린다. 성공하면 크기가 1 늘고 기존 반복자·참조는 유지된다. 비교 `O(log N)`에 노드 할당·원소 복사 비용이 들며 `bad_alloc`, 비교자·복사 생성 예외가 전파될 수 있다. 실패 시 삽입 효과가 없다.
+- **`find(const key_type&)`**: non-const 수신에서는 `iterator`, const 수신에서는 `const_iterator`를 반환한다. 키는 읽기만 빌리고 컨테이너는 바뀌지 않는다. 동등한 키가 여러 개면 그중 한 반복자를 돌려주며 어떤 중복인지 구별하려면 오늘처럼 키에 인덱스를 포함하거나 `equal_range`를 써야 한다. 비교 `O(log N)`이고 비교자가 던질 수 있다. 실패 반환은 `end()`이며 역참조할 수 없다.
+- **`erase(const_iterator position)`**: `position`은 같은 컨테이너의 실제 원소를 가리키는 역참조 가능한 반복자여야 하고 `end()`이면 안 된다. 제거 원소를 파괴·해제하고 그 다음 원소를 가리키는 `iterator`를 반환한다. 오늘 코드는 반환 반복자를 쓰지 않는다. amortized `O(1)`이며 제거 원소의 반복자·참조·포인터만 무효화되고 다른 원소 관찰자는 유지된다. 잘못된 소속·끝·이미 지운 반복자를 넘기면 전제조건 위반이다. 원소 소멸자는 던지지 않아야 한다.
+- **`begin()`·`end()`·`size()`**: `begin()`은 첫 원소, `end()`는 마지막 다음 위치를 가리키는 반복자를, `size()`는 원소 수 값을 반환한다. 인자가 없고 수신 상태를 바꾸지 않으며 모두 상수 시간이다. 빈 컨테이너에서는 `begin()==end()`이고 둘 다 역참조할 수 없다. `--end()`는 비어 있지 않은 양방향 범위에서만 유효하고 최댓값 원소를 가리킨다.
+- **반복자·참조 수명**: 삽입은 기존 관찰자를 무효화하지 않는다. 삭제는 삭제된 원소의 관찰자만 무효화한다. 컨테이너 파괴·이동 대입과 allocator 조건이 관련된 교환은 별도 규칙을 확인한다. 반환 반복자와 원소 참조는 소유권이 아니며 owner보다 오래 저장하면 안 된다.
+- **복잡도·할당·오류**: 개별 검색·삽입은 `O(log N)`, 위치 삭제는 amortized `O(1)`이고 각 삽입은 보통 노드 하나를 동적 할당한다. 표준은 구체 트리 모양, 노드 크기, 캐시 locality를 보장하지 않는다. 실시간 경로에서는 allocation 정책과 최악 지연을 따로 측정한다.
+- **스레드 보장**: 서로 다른 컨테이너는 독립적으로 사용할 수 있다. 같은 multiset을 여러 실행 흐름이 읽기만 하는 것은 원소·비교자도 읽기 안전할 때 가능하지만, 한쪽이라도 삽입·삭제하면 외부 동기화가 필요하다.
+- **오늘 선택 이유**: 창이 한 칸 움직일 때 원소 하나를 추가하고 정확히 하나를 제거해야 한다. 정렬 vector는 중앙 삽입·삭제가 `O(K)`이고 `priority_queue` 두 개는 임의의 나가는 원소 삭제에 lazy-delete 보조 상태가 필요하다. multiset 두 개는 코드 불변식을 직접 표현하며 각 갱신을 `O(log K)`로 제한한다.
+
+기계 실행 관점에서 검색은 트리 노드의 키 load, 비교, 좌우 조건 분기와 포인터 추적을 반복할 수 있고 삽입·삭제는 균형 복구와 allocation/deallocation을 포함할 수 있다. 실제 트리 종류, 노드 배치, 분기 예측과 인라인 여부는 CPU, ABI, 표준 라이브러리, allocator, 컴파일러와 최적화 옵션에 따라 달라 특정 명령이나 회전 횟수로 단정하지 않는다.
 
 ## `std::unordered_map<Key, T>` — `<unordered_map>`의 해시 테이블
 

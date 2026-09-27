@@ -108,11 +108,14 @@ $vectorReceiverDeclarationPattern =
 $priorityQueueReceiverDeclarationPattern =
     '(?m)^[ \t]*' + $declarationQualifierPattern +
     'std::priority_queue\s*<[^;\r\n]+>\s*(?:[&*]\s*)?(?<Receiver>[A-Za-z_][A-Za-z0-9_]*)\b'
+$multisetReceiverDeclarationPattern =
+    '(?m)^[ \t]*' + $declarationQualifierPattern +
+    'std::multiset\s*<[^;\r\n]+>\s*(?:[&*]\s*)?(?<Receiver>[A-Za-z_][A-Za-z0-9_]*)\b'
 
 # std::가 이름에 드러나지 않는 표준 멤버 중 현재 학습 코드에서 자주 쓰는 항목만 검사한다.
 $knownStandardMembers = [Collections.Generic.HashSet[string]]::new(
     [string[]]@(
-        'acquire', 'append', 'arrive_and_wait', 'assign', 'at', 'back', 'begin', 'c_str', 'clear', 'contains', 'count_down', 'data', 'empty', 'emplace', 'emplace_back', 'end',
+        'acquire', 'append', 'arrive_and_wait', 'assign', 'at', 'back', 'begin', 'c_str', 'clear', 'contains', 'count_down', 'data', 'empty', 'emplace', 'emplace_back', 'end', 'erase',
         'error', 'expired', 'extent', 'extract', 'fetch_add', 'file_size', 'find', 'front', 'get',
         'has_value', 'is_absolute', 'is_regular_file', 'join', 'joinable', 'lexically_normal', 'load',
         'insert', 'key', 'lock', 'mapped', 'message', 'pop', 'pop_back', 'pop_front', 'push', 'push_back', 'push_front', 'release',
@@ -124,6 +127,9 @@ $knownStandardMembers = [Collections.Generic.HashSet[string]]::new(
 foreach ($file in $cppFiles) {
     $source = Get-Content -LiteralPath $file.FullName -Encoding UTF8 -Raw
 
+    # 학습 주석에 적은 숨은 기본 template 인자·정확한 overload 타입도 오늘 설명해야 할 지식으로 취급하므로
+    # 심볼 카탈로그는 의도적으로 주석을 포함한 원문에서 추출한다. 실제 호출 계약 검사는 아래에서 주석을
+    # marker로 제거한 contractSource만 사용해 설명 속 식을 실행 코드로 오인하지 않는다.
     # 중첩 namespace 형태를 포함한 std:: 심볼을 추출한다.
     foreach ($match in [regex]::Matches(
         $source,
@@ -362,6 +368,7 @@ $contractPatterns = @(
     [pscustomobject]@{ Name = 'std::ranges::to'; Pattern = '(?m)^(?!\s*//)\s*[^\r\n]*std::ranges::to\s*<[^;\r\n()]+>\s*\('; Readme = 'std::ranges::to<' },
     [pscustomobject]@{ Name = 'std::ranges::equal_range'; Pattern = '(?m)^(?!\s*//)\s*[^\r\n]*std::ranges::equal_range\s*\('; Readme = 'std::ranges::equal_range(' },
     [pscustomobject]@{ Name = 'std::views::zip'; Pattern = '(?m)^(?!\s*//)\s*[^\r\n]*std::views::zip\s*\('; Readme = 'std::views::zip(' },
+    [pscustomobject]@{ Name = 'std::views::slide'; Pattern = '(?m)^(?!\s*//)\s*[^\r\n]*std::views::slide\s*\('; Readme = 'std::views::slide(' },
     [pscustomobject]@{ Name = 'generator promise yield_value'; Pattern = '(?m)^(?!\s*//)\s*[^\r\n]*\bco_yield\b'; Readme = 'promise_type::yield_value' },
     [pscustomobject]@{ Name = 'sync_with_stdio'; Pattern = '(?m)^(?!\s*//)\s*[^\r\n]*std::ios::sync_with_stdio\s*\('; Readme = 'sync_with_stdio(' },
     [pscustomobject]@{ Name = 'tie'; Pattern = '(?m)^(?!\s*//)\s*[^\r\n]*std::cin\.tie\s*\('; Readme = 'std::cin.tie(' },
@@ -369,17 +376,25 @@ $contractPatterns = @(
     [pscustomobject]@{ Name = 'operator<<'; Pattern = '(?m)^(?!\s*//)\s*[^\r\n]*std::cout\s*<<'; Readme = 'std::cout <<' },
     [pscustomobject]@{ Name = 'operator<<(ostream&, char)'; Pattern = "(?m)^(?!\s*//)\s*[^\r\n]*std::cout[^\r\n]*<<\s*'(?:\\.|[^'])'"; Readme = 'operator<<(std::ostream&, char)' },
     [pscustomobject]@{ Name = 'std::min'; Pattern = '(?m)^(?!\s*//)\s*[^\r\n]*std::min\s*\('; Readme = 'std::min(' },
-    [pscustomobject]@{ Name = 'vector default constructor'; Pattern = '(?m)^\s*std::vector<.*>\s+\w+\s*;'; Readme = '기본 생성자' },
+    [pscustomobject]@{ Name = 'vector default constructor'; VectorDefaultConstruction = $true; Readme = '기본 생성자' },
+    [pscustomobject]@{ Name = 'vector initializer-list constructor'; Pattern = '(?m)^\s*std::vector<[^;\r\n]+>\s+\w+\s*\{[^;\r\n]+\}\s*;'; Readme = 'initializer-list 생성자' },
     [pscustomobject]@{ Name = 'vector count constructor'; Pattern = '(?m)^\s*std::vector<.*>\s+\w+\s*\([^,;\r\n]+\);'; Readme = 'count 생성자' },
     [pscustomobject]@{ Name = 'vector fill constructor'; Pattern = '(?m)^\s*std::vector<.*>\s+\w+\s*\([^;\r\n]*,[^;\r\n]*\);'; Readme = 'fill 생성자' },
     [pscustomobject]@{ Name = 'vector::operator[]'; Pattern = '(?m)^(?!\s*//)\s*[^\r\n]*\b\w+\s*\[[^\]\r\n]+\]'; Readme = 'vector::operator[]' },
-    [pscustomobject]@{ Name = 'vector::reserve'; Pattern = '(?m)^(?!\s*//)\s*[^\r\n]*\.reserve\s*\('; Readme = 'vector::reserve' },
-    [pscustomobject]@{ Name = 'vector::push_back'; Pattern = '(?m)^(?!\s*//)\s*[^\r\n]*\.push_back\s*\('; Readme = 'vector::push_back' },
-    [pscustomobject]@{ Name = 'vector::size'; Pattern = '(?m)^(?!\s*//)\s*[^\r\n]*\.size\s*\('; Readme = 'vector::size' },
+    [pscustomobject]@{ Name = 'vector::reserve'; VectorMember = 'reserve'; Readme = 'vector::reserve' },
+    [pscustomobject]@{ Name = 'vector::push_back'; VectorMember = 'push_back'; Readme = 'vector::push_back' },
+    [pscustomobject]@{ Name = 'vector::size'; VectorMember = 'size'; Readme = 'vector::size' },
     [pscustomobject]@{ Name = 'vector::empty'; VectorMember = 'empty'; Readme = 'vector::empty' },
     [pscustomobject]@{ Name = 'priority_queue::empty'; PriorityQueueMember = 'empty'; Readme = 'priority_queue::empty' },
-    [pscustomobject]@{ Name = 'vector::back'; Pattern = '(?m)^(?!\s*//)\s*[^\r\n]*\.back\s*\('; Readme = 'vector::back' },
-    [pscustomobject]@{ Name = 'vector::pop_back'; Pattern = '(?m)^(?!\s*//)\s*[^\r\n]*\.pop_back\s*\('; Readme = 'vector::pop_back' }
+    [pscustomobject]@{ Name = 'vector::back'; VectorMember = 'back'; Readme = 'vector::back' },
+    [pscustomobject]@{ Name = 'vector::pop_back'; VectorMember = 'pop_back'; Readme = 'vector::pop_back' },
+    [pscustomobject]@{ Name = 'multiset default constructor'; MultisetDefaultConstruction = $true; Readme = 'multiset 기본 생성자' },
+    [pscustomobject]@{ Name = 'multiset::size'; MultisetMember = 'size'; Readme = 'multiset::size' },
+    [pscustomobject]@{ Name = 'multiset::insert'; MultisetMember = 'insert'; Readme = 'multiset::insert' },
+    [pscustomobject]@{ Name = 'multiset::begin'; MultisetMember = 'begin'; Readme = 'multiset::begin' },
+    [pscustomobject]@{ Name = 'multiset::end'; MultisetMember = 'end'; Readme = 'multiset::end' },
+    [pscustomobject]@{ Name = 'multiset::find'; MultisetMember = 'find'; Readme = 'multiset::find' },
+    [pscustomobject]@{ Name = 'multiset::erase'; MultisetMember = 'erase'; Readme = 'multiset::erase' }
 )
 
 foreach ($file in Get-ChildItem -LiteralPath $latestDirectory.FullName -Filter '*.cpp' -File) {
@@ -478,6 +493,29 @@ foreach ($file in Get-ChildItem -LiteralPath $latestDirectory.FullName -Filter '
     ) | Sort-Object -Unique
     $priorityQueueReceiverAlternation =
         ($priorityQueueReceiverNames | ForEach-Object { [regex]::Escape($_) }) -join '|'
+    $multisetAliasNames = @(
+        [regex]::Matches(
+            $contractSource,
+            '(?m)^[ \t]*using\s+(?<Alias>[A-Za-z_][A-Za-z0-9_]*)\s*=\s*std::multiset\s*<[^;\r\n]+>\s*;'
+        ) |
+            ForEach-Object { $_.Groups['Alias'].Value } |
+            Sort-Object -Unique
+    )
+    $multisetReceiverNames = @(
+        [regex]::Matches($contractSource, $multisetReceiverDeclarationPattern) |
+            ForEach-Object { $_.Groups['Receiver'].Value }
+        if ($multisetAliasNames.Count -gt 0) {
+            $multisetAliasAlternation =
+                ($multisetAliasNames | ForEach-Object { [regex]::Escape($_) }) -join '|'
+            [regex]::Matches(
+                $contractSource,
+                '(?m)^[ \t]*' + $declarationQualifierPattern + '(?:' + $multisetAliasAlternation +
+                ')\s*(?:[&*]\s*)?(?<Receiver>[A-Za-z_][A-Za-z0-9_]*)\b'
+            ) | ForEach-Object { $_.Groups['Receiver'].Value }
+        }
+    ) | Sort-Object -Unique
+    $multisetReceiverAlternation =
+        ($multisetReceiverNames | ForEach-Object { [regex]::Escape($_) }) -join '|'
 
     foreach ($candidate in $contractPatterns) {
         # vector 멤버·생성자 후보는 vector를 직접 사용하는 번역 단위에서만 표준 호출로 간주한다.
@@ -493,6 +531,32 @@ foreach ($file in Get-ChildItem -LiteralPath $latestDirectory.FullName -Filter '
             continue
         }
         $candidatePattern = $candidate.Pattern
+        $selectedMatch = $null
+        if ($null -ne $candidate.PSObject.Properties['VectorDefaultConstruction']) {
+            # `vector<T> local;`은 실제 기본 생성이지만, `vector<T> member_;`가 생성자의 멤버 초기화 목록에서
+            # move/fill 등 다른 생성자로 완성되는 경우는 기본 생성이 아니다. 빈 {}, ={}와 plain 선언을 모두
+            # 후보로 모은 뒤, plain 선언에 동일 이름의 비어 있지 않은 멤버 초기화가 있으면 그 후보만 제외한다.
+            $defaultVectorPattern =
+                '(?m)^[ \t]*' + $declarationQualifierPattern +
+                'std::vector\s*<[^;\r\n]+>\s*(?<Receiver>[A-Za-z_][A-Za-z0-9_]*)\s*' +
+                '(?<Initializer>\{\s*\}|=\s*\{\s*\})?\s*;'
+            foreach ($possibleMatch in [regex]::Matches($contractSource, $defaultVectorPattern)) {
+                $initializer = $possibleMatch.Groups['Initializer'].Value
+                if ([string]::IsNullOrWhiteSpace($initializer)) {
+                    $receiver = [regex]::Escape($possibleMatch.Groups['Receiver'].Value)
+                    $nonDefaultMemberInitializer =
+                        '\b' + $receiver + '\s*(?:\{\s*[^}\s]|\(\s*[^)\s])'
+                    if ($contractSource -match $nonDefaultMemberInitializer) {
+                        continue
+                    }
+                }
+                $selectedMatch = $possibleMatch
+                break
+            }
+            if ($null -eq $selectedMatch) {
+                continue
+            }
+        }
         $optionalMemberProperty = $candidate.PSObject.Properties['OptionalMember']
         if ($null -ne $optionalMemberProperty) {
             if ($optionalReceiverNames.Count -eq 0) {
@@ -559,8 +623,28 @@ foreach ($file in Get-ChildItem -LiteralPath $latestDirectory.FullName -Filter '
                 '(?m)^(?!\s*//)\s*[^\r\n]*\b(?:' + $priorityQueueReceiverAlternation +
                 ')\s*(?:\.|->)\s*' + [regex]::Escape($candidate.PriorityQueueMember) + '\s*\('
         }
+        if ($null -ne $candidate.PSObject.Properties['MultisetDefaultConstruction']) {
+            if ($multisetReceiverNames.Count -eq 0) {
+                continue
+            }
+            $candidatePattern =
+                '(?m)^(?!\s*//)\s*[^\r\n]*\b(?:' + $multisetReceiverAlternation + ')\s*\{\s*\}'
+        }
+        $multisetMemberProperty = $candidate.PSObject.Properties['MultisetMember']
+        if ($null -ne $multisetMemberProperty) {
+            if ($multisetReceiverNames.Count -eq 0) {
+                continue
+            }
+            $candidatePattern =
+                '(?m)^(?!\s*//)\s*[^\r\n]*\b(?:' + $multisetReceiverAlternation +
+                ')\s*(?:\.|->)\s*' + [regex]::Escape($candidate.MultisetMember) + '\s*\('
+        }
 
-        $match = [regex]::Match($contractSource, $candidatePattern)
+        $match = if ($null -ne $selectedMatch) {
+            $selectedMatch
+        } else {
+            [regex]::Match($contractSource, $candidatePattern)
+        }
         if (-not $match.Success) {
             continue
         }

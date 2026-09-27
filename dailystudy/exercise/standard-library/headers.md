@@ -43,6 +43,7 @@
 | `<queue>` | FIFO `queue`, 힙 `priority_queue` |
 | `<ranges>` | range 개념, views, customization point |
 | `<semaphore>` | C++20 계수형·이진 permit 동기화 객체 `counting_semaphore`, `binary_semaphore` |
+| `<set>` | 정렬된 중복 허용 노드 컨테이너 `std::multiset`과 iterator 기반 삽입·탐색·삭제 |
 | `<shared_mutex>` | 읽기-쓰기 잠금과 `shared_lock` |
 | `<source_location>` | 호출 위치 값 `source_location` |
 | `<span>` | 비소유 연속 범위 `span` |

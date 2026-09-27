@@ -123,7 +123,8 @@
 ### `std::move`
 
 - 2026-09-25 코드는 `samples/items` vector를 도메인 owner로, 이어 `batch/snapshot` owner를 coroutine 값 매개변수로 넘길 때 이 함수로 이동 후보임을 표시한다.
-- 대표 템플릿은 `template<class T> remove_reference_t<T>&& move(T&& value) noexcept;`다. 수신 객체는 없고 전달 참조 인자 하나만 받는다. 실제 객체 타입을 `U`라 할 때 lvalue `x`를 넘기면 템플릿 인자 `T=U&`로 추론되고, 참조를 제거한 반환형은 `U&&` xvalue가 된다.
+- 2026-09-28 코드는 `latency_samples/measurements` lvalue를 각 owner 생성자에 넘길 때 `T=std::vector<int>&`로 추론한다. `remove_reference_t<T>`가 `std::vector<int>`를 얻어 반환형을 `std::vector<int>&&`로 만들고, 이어 선택된 vector 이동 생성자가 저장소 소유권을 owner 멤버로 이전한다.
+- 대표 템플릿은 `template<class T> std::remove_reference_t<T>&& move(T&& value) noexcept;`다. `std::remove_reference_t<T>`는 `<type_traits>`의 alias template로 `T`의 최상위 참조만 제거하며 객체를 만들거나 실행 시간 연산을 하지 않는다. 수신 객체는 없고 전달 참조 인자 하나만 받는다. 실제 객체 타입을 `U`라 할 때 lvalue `x`를 넘기면 템플릿 인자 `T=U&`로 추론되고, 참조를 제거한 반환형은 `U&&` xvalue가 된다.
 - 실제 이동을 수행하는 함수가 아니라 같은 객체를 가리키는 xvalue 참조로 캐스팅한다. 호출 자체는 인자 상태를 바꾸지 않고 상수 시간·무할당·예외 없음이며, 반환 참조를 받는 뒤 생성자나 대입 연산이 실제 복사·이동과 소유권 변화를 결정한다.
 - 이후 선택된 이동 생성자·이동 대입이 자원을 옮길 수 있다. 타입에 이동 연산이 없으면 복사가 선택될 수도 있다.
 - 이동된 표준 라이브러리 객체는 유효하지만 값은 보통 미지정 상태다. 파괴·대입처럼 계약이 허용한 연산만 한다.

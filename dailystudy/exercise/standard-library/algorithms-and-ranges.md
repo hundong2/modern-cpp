@@ -236,6 +236,51 @@ int main() {
 6. 기반 범위 하나가 input range이고 다른 하나가 random-access range일 때 zip 결과가 제공할 수 있는 iterator 능력을 설명한다.
 7. `zip_view::size()`가 equal-length 검증 함수가 아닌 이유와 오늘 생성 경계에서 별도 검사가 필요한 이유를 말한다.
 
+## `std::views::slide`와 `std::ranges::slide_view` — `<ranges>`의 C++23 겹치는 창 view
+
+`slide`는 기반 범위의 연속한 `N`개 원소를 빌리는 창을 한 칸씩 겹쳐 노출한다. 길이 `M`인 범위와 창 너비 `N`에서 `M >= N`이면 창은 `M-N+1`개, `M < N`이면 0개다. 2026-09-28의 `ServiceLatencyHistory`와 `VibrationTrace`는 vector를 직접 소유하고 const lvalue에서만 view를 반환해, 복사 없는 분석과 owner 수명 규칙을 한 API에 묶는다.
+
+- **헤더·항목 종류**: `<ranges>`가 range adaptor object `std::views::slide`와 class template `std::ranges::slide_view<V>`를 선언한다. 표준 초안의 대표 형태는 `template<forward_range V> requires view<V> class slide_view;`이며 `views::slide(E, N)`은 `slide_view(views::all(E), N)`과 같은 의미의 호출이다.
+- **관련 alias와 기반 view**: `std::ranges::ref_view<R>`는 lvalue `R`을 포인터와 같은 비소유 상태로 감싸는 view다. `std::ranges::range_difference_t<R>`는 iterator 차이·창 너비에 쓰는 signed 정수형, `std::ranges::range_reference_t<R>`는 `*ranges::begin(r)`의 결과 타입을 나타내는 alias template다. 셋은 새 원소 저장소를 만들지 않는다. 오늘 별칭은 각각 `const vector<int>` owner를 빌리는 기반, 양수 너비 타입, 한 창 iterator 역참조 결과 타입을 정확히 표현한다. ref_view와 그 파생 iterator/reference는 원본 수명을 연장하지 않는다.
+- **수신 객체·선택 호출**: 일반 자유 함수처럼 보이지만 `views::slide`라는 adaptor 객체의 함수 호출 연산자다. 오늘 첫 인자는 살아 있는 owner의 `const std::vector<T>` lvalue라 `views::all_t`가 대개 `ref_view<const vector<T>>`가 되고, 두 번째 인자는 양수 창 너비다. 반환 공개 타입은 해당 `ref_view`를 템플릿 인자로 가진 `slide_view` 값이다.
+- **매개변수·값 범주·소유권**: 기반 vector lvalue는 빌려 전달되며 원소나 저장소를 복사·이동하지 않는다. 너비는 기반 범위의 `range_difference_t`로 변환돼 view 안에 값으로 저장된다. 생성 전제조건은 `N > 0`이다. 0 또는 음수는 빈 결과 요청이 아니라 전제조건 위반이므로 오늘 owner API가 먼저 양수를 요구한다.
+- **반환값·사후 상태**: 호출은 작은 view prvalue를 반환하고 호출부의 range-for가 즉시 소비한다. owner의 크기·용량·원소는 바뀌지 않고 관찰자도 무효화되지 않는다. 각 바깥 iterator 역참조 결과는 현재 위치부터 `N`개를 나타내는 `views::counted` 계열의 작은 내부 view 값이며 원소를 소유하지 않는다.
+- **`begin`·`end`·역참조·증가**: `begin()`/`end()`는 첫/끝 창 위치를 표현한다. 바깥 iterator `operator*()`는 길이 `N`인 내부 view를 만들고, `operator++()`는 창 시작과 구현이 보관하는 끝 위치를 한 칸 전진시킨다. 내부 range-for는 그 창 view의 `begin`/`end`, 역참조·증가·비교로 기반 원소를 읽는다. 기반이 vector처럼 random-access+sized이면 view는 별도 iterator cache 없이 시작 위치와 너비 산술로 구현될 수 있지만 이는 관찰 가능한 저장소 복사를 뜻하지 않는다.
+- **`size()`**: 기반과 const 기반이 `sized_range`이면 `size()`가 제공된다. 인자 없이 `max(M-N+1,0)`에 해당하는 unsigned-like 값을 반환하고 상태를 바꾸지 않는다. vector 기반에서는 상수 시간·무할당이다. 창이 없다는 사실은 오류가 아니지만 너비 0 전제조건 위반과 구분한다.
+- **범위 능력·복잡도**: 기반은 적어도 `forward_range`여야 한다. 결과 iterator 능력은 기반에 따라 forward/bidirectional/random-access까지 보존될 수 있다. view 생성은 원소 수와 무관한 상수 작업이고, vector 기반의 창 이동·역참조도 상수 시간이다. 모든 `W`개 창에서 `N`개 원소를 각각 합산하면 겹침에도 불구하고 전체 분석은 `O(WN)`이며 slide 자체가 누적합을 계산해 주지 않는다. 별도 동적 할당은 요구하지 않는다.
+- **수명·무효화**: lvalue vector로 만든 오늘 view는 owner를 소유하거나 수명을 연장하지 않는다. owner 파괴 뒤 view·바깥/안쪽 iterator·원소 참조는 모두 댕글링한다. vector 재할당은 얻어 둔 iterator와 창 view가 가리키는 원소 관찰자를 무효화하며, 순회 중 `push_back`·`erase` 같은 구조 변경을 섞지 않는다. rvalue owner의 멤버에서 비소유 view가 새어나오지 않도록 오늘 `windows() const &&`와 `frames() const &&`를 삭제한다.
+- **오류·예외·UB**: forward/viewable-range 제약을 만족하지 않으면 컴파일에 실패한다. 너비가 양수가 아니면 생성자 전제조건 위반이다. 끝 iterator나 빈 내부 창을 잘못 역참조하거나, owner 파괴·무효화 뒤 접근하거나, 같은 저장소와 데이터 경쟁하면 미정의 동작으로 이어질 수 있다. 기반 view/iterator 연산이 던지는 예외는 전파될 수 있지만 vector lvalue wrapper 생성 자체는 원소를 복사·할당하지 않는다.
+- **스레드 보장**: slide_view는 snapshot, 잠금, 원자성을 만들지 않는다. 같은 불변 owner를 여러 실행 흐름이 읽는 것은 원소 타입의 동시 const-read 조건을 따르지만, 한 실행 흐름이 owner 구조나 같은 원소를 수정하는 동안 다른 흐름이 순회하려면 외부 동기화가 필요하다.
+
+기계 실행 관점에서 vector 기반 창 순회는 시작·끝 iterator load, 인덱스/포인터 증가, 원소 load, 합산과 조건 비교·분기를 만들 수 있다. 겹친 원소를 다시 읽는 코드를 컴파일러가 자동 누적합으로 바꾼다고 보장할 수 없고, bounds 증명·인라인·벡터화·load 재사용은 CPU, ABI, 표준 라이브러리, 컴파일러와 최적화 옵션에 따라 달라진다.
+
+### 최소 실행 예제
+
+```cpp
+#include <iostream>
+#include <ranges>
+#include <vector>
+
+int main() {
+    std::vector<int> values{2, 4, 3, 5};
+    for (const auto window : std::views::slide(values, 3)) {
+        int sum{};
+        for (const int value : window) {
+            sum += value;
+        }
+        std::cout << sum << ' ';
+    }
+}
+```
+
+### 흔한 실수와 점검 질문
+
+1. 너비 0을 “빈 창”으로 생각한다. 생성 전제조건과 `M < N`의 정상 빈 결과를 구분한다.
+2. 반환 view가 원소를 복사해 소유한다고 생각한다. owner 파괴·vector 재할당 뒤 어떤 객체가 댕글링하는지 적는다.
+3. 임시 owner의 멤버에서 반환한 view를 저장한다. ref-qualified accessor가 이 호출을 어떻게 막는지 설명한다.
+4. 모든 창 합이 자동 `O(M)`이라고 생각한다. 단순 중첩 순회 `O((M-N+1)N)`와 rolling-sum 대안을 비교한다.
+5. 순회 중 기반 vector를 변경한다. 바깥 iterator, 내부 창 view, 원소 참조의 무효화를 각각 판단한다.
+
 ## `std::ranges::to` — `<ranges>`의 C++23 범위 변환 함수 템플릿·adaptor closure
 
 `std::ranges::to`는 입력 범위를 지정한 컨테이너 값으로 materialize한다. 오늘 코드는 지연 `filter`/`transform` 파이프라인을 서비스 경계에서 `std::vector` 소유 스냅숏으로 고정해, 반환 결과가 원본 컨테이너와 중간 view 객체의 수명에 매이지 않게 한다.
@@ -300,9 +345,10 @@ int main() {
 
 ## 비교 함수 객체 `std::less`, `std::greater` — `<functional>`
 
-- 두 값을 비교하는 함수 객체다. `less<T>{}(a,b)`는 보통 `a<b`, `greater<T>{}(a,b)`는 `a>b` 의미다.
-- `std::priority_queue<T,Container,std::greater<T>>`는 작은 값이 `top`이 되는 최소 힙을 만든다.
-- 투명 비교자인 `std::less<>`는 서로 비교 가능한 다른 타입을 받아 불필요한 키 임시 생성을 줄일 수 있다.
+- `<functional>`이 선언하는 비교 함수 객체 class template다. `less<T>{}(a,b)`는 `a<b`, `greater<T>{}(a,b)`는 `a>b` 의미이며 기본 객체는 비교 대상을 소유하지 않는 무상태 값이다.
+- 대표 호출은 `constexpr bool std::less<T>::operator()(const T& lhs, const T& rhs) const`다. 두 const lvalue를 빌려 bool을 반환하고 객체·피연산자·반복자를 바꾸거나 저장소를 할당하지 않는다. 시간·예외 명세는 선택된 `<` 식을 따르며, 오늘 `Entry::operator<`는 값과 인덱스의 정수 비교만 해 `O(1)`·`noexcept`다.
+- 2026-09-28의 `std::multiset<Entry>`는 기본 `std::less<Entry>`를 보관해 `(value,index)` 엄격 약순서를 정한다. 비교자 기본 생성·소멸은 `O(1)`·무할당·비투척이고 컨테이너 원소 수명을 소유하지 않는다. multiset이 살아 있는 동안 비교자가 유효해야 하며, 같은 원소들에 일관된 엄격 약순서를 제공하지 않으면 연관 컨테이너의 의미 요구를 깨뜨린다.
+- `std::priority_queue<T,Container,std::greater<T>>`는 작은 값이 `top`이 되는 최소 힙을 만든다. 투명 비교자인 `std::less<>`는 서로 비교 가능한 다른 타입을 받아 불필요한 키 임시 생성을 줄일 수 있다.
 
 ## 최소 예제
 
