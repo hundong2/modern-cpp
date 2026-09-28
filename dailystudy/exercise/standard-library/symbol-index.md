@@ -46,6 +46,7 @@
 | `std::priority_queue`, `std::priority_queue::empty`, `std::priority_queue::top`, `std::priority_queue::pop` | 힙 기반 우선순위 어댑터와 상태·최우선 원소·제거 연산 | [컨테이너](containers-and-views.md) |
 | `std::vector` | 동적 연속 배열 | [컨테이너](containers-and-views.md) |
 | `std::string` | 소유 문자 시퀀스 | [컨테이너](containers-and-views.md) |
+| `std::string::resize_and_overwrite` | C++23 문자열 소유 저장소에 callback으로 직접 쓰고 실제 길이를 commit | [컨테이너](containers-and-views.md) |
 | `std::string::npos` | string 검색 실패 위치 상수 | [컨테이너](containers-and-views.md) |
 | `std::char_traits` | 문자 비교·길이 계산 정책 | [컨테이너](containers-and-views.md) |
 | `std::string_view` | 비소유 문자 범위 | [컨테이너](containers-and-views.md) |

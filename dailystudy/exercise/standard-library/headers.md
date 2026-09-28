@@ -50,7 +50,7 @@
 | `<spanstream>` | C++23 비소유 고정 문자 버퍼 출력 스트림 `ospanstream` |
 | `<sstream>` | 문자열 버퍼를 소유하는 입력·출력 스트림과 `ostringstream` |
 | `<stop_token>` | 협력적 취소 상태 `stop_token` |
-| `<string>` | 소유 문자열 `string`, 변환 보조 함수 |
+| `<string>` | 소유 문자열 `string`, C++23 직접 버퍼 작성 `resize_and_overwrite`, 변환 보조 함수 |
 | `<string_view>` | 비소유 문자 뷰 `string_view`와 `empty/data/size` 범위 관찰 |
 | `<syncstream>` | 레코드 단위 동시 출력 `osyncstream`과 동기 버퍼 |
 | `<system_error>` | `error_code`, `errc` 오류 값 |

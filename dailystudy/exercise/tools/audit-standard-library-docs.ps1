@@ -105,6 +105,18 @@ $ospanstreamReceiverDeclarationPattern =
 $vectorReceiverDeclarationPattern =
     '(?m)^[ \t]*' + $declarationQualifierPattern +
     'std::vector\s*<[^;\r\n]+>\s*(?:[&*]\s*)?(?<Receiver>[A-Za-z_][A-Za-z0-9_]*)\b'
+$stringReceiverDeclarationPattern =
+    '(?m)^[ \t]*' + $declarationQualifierPattern +
+    'std::string\s*(?:[&*]\s*)?(?<Receiver>[A-Za-z_][A-Za-z0-9_]*)\b'
+$stringDefaultConstructionPattern =
+    '(?m)^[ \t]*' + $declarationQualifierPattern +
+    'std::string\s+[A-Za-z_][A-Za-z0-9_]*\s*(?:\{\s*\}|=\s*\{\s*\})\s*;'
+$stringLiteralConstructionPattern =
+    '(?m)^(?!\s*//)[^\r\n]*std::string(?:\s+[A-Za-z_][A-Za-z0-9_]*)?\s*' +
+    '\{\s*"(?:\\.|[^"\r\n])*"\s*\}'
+$stringCopyConstructionPattern =
+    '(?m)^[ \t]*' + $declarationQualifierPattern +
+    'std::string\s+[A-Za-z_][A-Za-z0-9_]*\s*\{\s*[A-Za-z_][A-Za-z0-9_]*\s*\}\s*;'
 $priorityQueueReceiverDeclarationPattern =
     '(?m)^[ \t]*' + $declarationQualifierPattern +
     'std::priority_queue\s*<[^;\r\n]+>\s*(?:[&*]\s*)?(?<Receiver>[A-Za-z_][A-Za-z0-9_]*)\b'
@@ -119,7 +131,7 @@ $knownStandardMembers = [Collections.Generic.HashSet[string]]::new(
         'error', 'expired', 'extent', 'extract', 'fetch_add', 'file_size', 'find', 'front', 'get',
         'has_value', 'is_absolute', 'is_regular_file', 'join', 'joinable', 'lexically_normal', 'load',
         'insert', 'key', 'lock', 'mapped', 'message', 'pop', 'pop_back', 'pop_front', 'push', 'push_back', 'push_front', 'release',
-        'notify_all', 'notify_one', 'reserve', 'reset', 'resize', 'size', 'span', 'store', 'str', 'substr', 'swap', 'tie', 'top', 'value', 'wait',
+        'notify_all', 'notify_one', 'reserve', 'reset', 'resize', 'resize_and_overwrite', 'size', 'span', 'store', 'str', 'substr', 'swap', 'tie', 'top', 'value', 'wait',
         'value_or'
     )
 )
@@ -375,7 +387,16 @@ $contractPatterns = @(
     [pscustomobject]@{ Name = 'operator>>'; Pattern = '(?m)^(?!\s*//)\s*[^\r\n]*std::cin\s*>>'; Readme = 'std::cin >>' },
     [pscustomobject]@{ Name = 'operator<<'; Pattern = '(?m)^(?!\s*//)\s*[^\r\n]*std::cout\s*<<'; Readme = 'std::cout <<' },
     [pscustomobject]@{ Name = 'operator<<(ostream&, char)'; Pattern = "(?m)^(?!\s*//)\s*[^\r\n]*std::cout[^\r\n]*<<\s*'(?:\\.|[^'])'"; Readme = 'operator<<(std::ostream&, char)' },
+    [pscustomobject]@{ Name = 'basic_ios::operator!'; Pattern = '(?m)^(?!\s*//)\s*[^\r\n]*!\s*\(\s*std::cin\s*>>'; Readme = 'basic_ios::operator!' },
     [pscustomobject]@{ Name = 'std::min'; Pattern = '(?m)^(?!\s*//)\s*[^\r\n]*std::min\s*\('; Readme = 'std::min(' },
+    [pscustomobject]@{ Name = 'string default constructor'; Pattern = $stringDefaultConstructionPattern; Readme = '기본/리터럴' },
+    [pscustomobject]@{ Name = 'string literal constructor'; Pattern = $stringLiteralConstructionPattern; Readme = '리터럴/복사' },
+    [pscustomobject]@{ Name = 'string copy constructor'; Pattern = $stringCopyConstructionPattern; Readme = '복사/이동 생성자' },
+    [pscustomobject]@{ Name = 'string::size'; StringMember = 'size'; Readme = 'std::string::size' },
+    [pscustomobject]@{ Name = 'string::operator[]'; StringIndex = $true; Readme = 'std::string::operator[]' },
+    [pscustomobject]@{ Name = 'string::operator+='; StringAppend = $true; Readme = 'std::string::operator+=' },
+    [pscustomobject]@{ Name = 'string::substr'; StringMember = 'substr'; Readme = 'std::string::substr' },
+    [pscustomobject]@{ Name = 'string::resize_and_overwrite'; StringMember = 'resize_and_overwrite'; Readme = 'std::string::resize_and_overwrite(' },
     [pscustomobject]@{ Name = 'vector default constructor'; VectorDefaultConstruction = $true; Readme = '기본 생성자' },
     [pscustomobject]@{ Name = 'vector initializer-list constructor'; Pattern = '(?m)^\s*std::vector<[^;\r\n]+>\s+\w+\s*\{[^;\r\n]+\}\s*;'; Readme = 'initializer-list 생성자' },
     [pscustomobject]@{ Name = 'vector count constructor'; Pattern = '(?m)^\s*std::vector<.*>\s+\w+\s*\([^,;\r\n]+\);'; Readme = 'count 생성자' },
@@ -470,6 +491,13 @@ foreach ($file in Get-ChildItem -LiteralPath $latestDirectory.FullName -Filter '
         }
     ) | Sort-Object -Unique
     $vectorReceiverAlternation = ($vectorReceiverNames | ForEach-Object { [regex]::Escape($_) }) -join '|'
+    $stringReceiverNames = @(
+        [regex]::Matches($contractSource, $stringReceiverDeclarationPattern) |
+            ForEach-Object { $_.Groups['Receiver'].Value } |
+            Sort-Object -Unique
+    )
+    $stringReceiverAlternation =
+        ($stringReceiverNames | ForEach-Object { [regex]::Escape($_) }) -join '|'
     $priorityQueueAliasNames = @(
         [regex]::Matches(
             $contractSource,
@@ -614,6 +642,30 @@ foreach ($file in Get-ChildItem -LiteralPath $latestDirectory.FullName -Filter '
                 '(?m)^(?!\s*//)\s*[^\r\n]*\b(?:' + $vectorReceiverAlternation +
                 ')\s*(?:\.|->)\s*' + [regex]::Escape($candidate.VectorMember) + '\s*\('
         }
+        $stringMemberProperty = $candidate.PSObject.Properties['StringMember']
+        if ($null -ne $stringMemberProperty) {
+            if ($stringReceiverNames.Count -eq 0) {
+                continue
+            }
+            $candidatePattern =
+                '(?m)^(?!\s*//)\s*[^\r\n]*\b(?:' + $stringReceiverAlternation +
+                ')\s*(?:\.|->)\s*' + [regex]::Escape($candidate.StringMember) + '\s*\('
+        }
+        if ($null -ne $candidate.PSObject.Properties['StringIndex']) {
+            if ($stringReceiverNames.Count -eq 0) {
+                continue
+            }
+            $candidatePattern =
+                '(?m)^(?!\s*//)\s*[^\r\n]*\b(?:' + $stringReceiverAlternation +
+                ')\s*\[[^\]\r\n]+\]'
+        }
+        if ($null -ne $candidate.PSObject.Properties['StringAppend']) {
+            if ($stringReceiverNames.Count -eq 0) {
+                continue
+            }
+            $candidatePattern =
+                '(?m)^(?!\s*//)\s*[^\r\n]*\b(?:' + $stringReceiverAlternation + ')\s*\+='
+        }
         $priorityQueueMemberProperty = $candidate.PSObject.Properties['PriorityQueueMember']
         if ($null -ne $priorityQueueMemberProperty) {
             if ($priorityQueueReceiverNames.Count -eq 0) {
@@ -662,6 +714,12 @@ foreach ($file in Get-ChildItem -LiteralPath $latestDirectory.FullName -Filter '
         }
         $context = ($lines[$contextStart..($lineNumber - 1)] -join "`n")
         $missingParts = @()
+        foreach ($partNumber in 1..6) {
+            if ($context -notmatch ('\(' + $partNumber + '\)')) {
+                $missingParts += "part-$partNumber"
+            }
+        }
+        if ($context -notmatch '시그니처|signature|overload|오버로드|선택') { $missingParts += 'signature/overload' }
         if ($context -notmatch '인자|피연산자|수신|입력|받아|생성자에는') { $missingParts += 'inputs/receiver' }
         if ($context -notmatch '반환|\bvoid\b') { $missingParts += 'return' }
         if ($context -notmatch 'O\(|복잡도|선형|상수 시간|문자 수|소비 문자') { $missingParts += 'complexity' }

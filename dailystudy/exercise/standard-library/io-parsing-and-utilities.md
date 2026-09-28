@@ -36,7 +36,7 @@
 - 형식 추출·삽입 연산 전체에 공통으로 적용할 별도 점근 복잡도 상한은 표준에 없다. 실제 비용은 소비·생성 문자 수뿐 아니라 선택된 locale facet, stream buffer, 장치와 구현에 달리므로 단순히 항상 선형이라고 단정하지 않는다.
 - C stdio와 동기화된 표준 iostream 객체의 형식/비형식 입출력 함수는 여러 스레드가 동시에 호출해도 data race를 만들지 않는다. 다만 문자 단위로 섞일 수 있어 여러 `<<` 호출로 만든 한 레코드의 원자성은 보장하지 않는다. `sync_with_stdio(false)` 뒤에는 이 특별 보장을 적용할 수 없으므로 같은 stream 동시 접근을 외부에서 막는다.
 - `cerr`는 진단용이며 표준 출력 정답과 섞지 않는다. 버퍼링 정책만 믿기보다 필요한 시점에 명시적으로 flush한다.
-- `std::basic_ios<CharT, Traits>::operator bool() const`는 데이터 인자 없이 수신 stream의 상태를 읽고 `!fail()`과 같은 `bool` 값을 반환한다. `if (!stream)`은 이 명시적 변환 결과를 논리 부정해 `failbit` 또는 `badbit`가 있는 경로를 고른다. 상태·버퍼·소유권을 바꾸지 않는 관찰이지만 표준은 별도 점근 복잡도 상한을 명시하지 않으므로 단순히 `O(1)` 보장이라고 쓰지 않는다. 다른 실행 흐름이 같은 stream을 동시에 변경하지 않아야 한다. `eofbit`만 설정된 상태는 `fail()`이 아닐 수 있으므로 “모든 상태 비트가 0인가”를 묻는 `good()`과 구분한다.
+- `std::basic_ios<CharT, Traits>::operator bool() const`는 데이터 인자 없이 `!fail()`을 반환하고, `operator!() const`는 `fail()`을 반환한다. 따라서 `if (stream)` 같은 문맥 변환은 전자를 쓰지만 `if (!stream)`은 후자의 멤버 overload를 직접 선택하며 “명시적 bool 변환 뒤 built-in `!`”으로 설명하면 틀린다. 둘 다 상태·버퍼·소유권을 바꾸지 않는 관찰이고 표준은 별도 점근 복잡도 상한을 명시하지 않는다. 다른 실행 흐름이 같은 stream을 동시에 변경하지 않아야 한다. `fail()`은 `failbit` 또는 `badbit`를 보고, `eofbit`만 설정된 상태는 실패가 아닐 수 있으므로 모든 상태 비트가 0인지 묻는 `good()`과 구분한다.
 
 ### 고정 버퍼 출력 `std::ospanstream`과 `span()` — `<spanstream>`
 
