@@ -8,6 +8,8 @@
 
 2026-09-28 코드는 initializer-list로 지연 시간·진동 샘플 vector를 만들고 이를 owner 멤버로 이동한다. ICPC 풀이는 count 생성자로 입력 `vector<long long>`을 0 초기화하고 `operator[]`가 돌려준 원소 lvalue에 값을 읽어 들인다. 이날 코드에서 `.size()`를 호출하는 수신자는 vector가 아니라 두 `multiset`이다.
 
+2026-09-30 코드는 `vector<Employee>` owner를 이동하고, 요약 `vector<DepartmentSummary>`를 복사해 독립 저장소라는 사실을 드러낸다. CSES 1144 풀이는 급여 좌표를 정렬한 뒤 `unique`의 논리 끝부터 기존 끝까지 범위 `erase`해 실제 크기를 줄인다.
+
 - `T` 원소를 연속 메모리에 소유한다. 크기는 실행 중 변하며 인덱스 접근이 `O(1)`이다.
 - 복사하면 원소를 새 저장소에 복사하고, 이동하면 보통 내부 저장소 소유권을 넘긴다.
 - 끝 삽입은 상각 `O(1)`, 중간 삽입·삭제는 뒤 원소 이동 때문에 `O(N)`이다.
@@ -19,6 +21,7 @@
 - `vector(count)`의 대표 형태는 `explicit vector(size_type count, const Allocator& alloc = Allocator());`다. `count`는 값으로 전달되며 `max_size()` 이하여야 하고, 생략된 allocator는 기본값을 쓴다. 성공하면 `count`개 원소를 기본 삽입해 소유한다. `vector<int>(5)`의 원소는 모두 0이다. 시간·공간은 `O(count)`이고 `length_error`, `bad_alloc`, 원소 생성 예외가 가능하다.
 - `vector(count, value)`의 대표 형태는 `vector(size_type count, const T& value, const Allocator& alloc = Allocator());`다. `count`와 빌린 `value`를 받아 같은 값을 `count`번 복사한다. 반환값은 없고 성공 후 `size()==count`이며 각 원소 수명은 vector와 함께 관리된다. 시간·공간은 `O(count)`이고 길이·할당·복사 예외가 가능하다.
 - `vector{a, b, c}`의 대표 형태는 `vector(std::initializer_list<T> values, const Allocator& alloc = Allocator())`이며 목록 생성자를 선택해 세 원소를 복사한다. `std::initializer_list<T>`는 `<initializer_list>`의 읽기 전용 연속 임시 배열 proxy 타입이고, 값으로 전달해도 원소를 깊게 소유하지 않는다. vector는 호출 중 원소를 자기 저장소에 복사하므로 성공한 결과는 목록 backing array의 수명과 독립이다. 시간·추가 저장은 원소 수에 선형이고 길이·할당·원소 복사 예외가 가능하다. 괄호와 중괄호의 의미가 다를 수 있으며, 예를 들어 `vector<int>(3)`은 0 세 개지만 `vector<int>{3}`은 값 3 하나다.
+- `vector(const vector& source)`는 살아 있는 같은 특수화의 const lvalue를 빌려 각 원소를 새 저장소에 복사한다. allocator 인자 없는 overload는 `select_on_container_copy_construction(source.get_allocator())`로 destination allocator를 정한다. 생성자는 반환값이 없고, 성공하면 source와 같은 값·크기를 독립 소유하므로 어느 한쪽의 이후 구조 변경이 다른 쪽 반복자를 무효화하지 않는다. 시간·추가 공간은 원소 수에 선형이고 `length_error`, `bad_alloc`, allocator·원소 복사 생성 예외가 전파될 수 있으며, 실패하면 완성된 destination은 남지 않고 source와 그 관찰자는 유지된다. 서로 다른 두 vector는 각자 수정할 수 있지만 같은 source를 다른 실행 흐름이 수정하는 중 복사하면 안 된다.
 - `vector(vector&& source) noexcept`는 allocator 인자 없는 이동 생성자다. 새 vector는 `source`의 이동 전 값을 소유하고 `source`는 유효하지만 값이 미지정된 상태로 남으며, `std::vector`에서는 상수 시간이다. 이동 전에 원소를 가리키던 포인터·참조·반복자는 과거 past-the-end 반복자를 제외하면 계속 같은 원소를 가리키되 이제 그 원소는 destination에 속한다. 반면 `source` vector 객체 자체를 가리키던 참조·포인터는 여전히 source 객체를 가리키며 destination으로 재바인딩되지 않는다. 명시적 allocator를 받는 이동 생성자는 allocator가 다르면 원소별 이동과 새 할당이 필요할 수 있으므로 이 규칙과 비용을 그대로 적용하지 않는다.
 - `size()`의 대표 형태는 `size_type size() const noexcept`다. 살아 있는 vector를 const로 빌리고 데이터 인자 없이 현재 원소 수 값을 `O(1)`에 반환한다. 수신 객체·원소·capacity·관찰자를 바꾸지 않고 할당·예외·동기화를 추가하지 않는다.
 - `empty()`의 대표 형태는 `bool empty() const noexcept`다. 데이터 인자 없이 `size()==0` 여부를 `O(1)`에 반환하며 수신 vector를 바꾸지 않는다. `size() > 0`보다 의도가 직접적이고, 이 관찰 자체는 할당·무효화·예외가 없다.
@@ -31,6 +34,7 @@
 - `assign(count, value)`는 기존 원소를 모두 파괴하고 `count`개의 `value` 복사본으로 내용을 교체한다. 반환형은 `void`, 시간·공간은 새 원소 수에 선형이며 기존 포인터·참조·반복자는 모두 무효화된다. 원소 복사나 할당 실패는 예외가 될 수 있다.
 - `emplace_back(args...)`는 전달받은 인자로 끝 원소를 직접 생성한다. 임시 객체를 항상 없앤다고 단정하지 말고 생성 계약과 가독성을 본다.
 - `pop_back()`은 마지막 원소를 파괴하며 값을 반환하지 않는다. 빈 벡터에서 호출하면 미정의 동작이다. 제거 원소를 가리키던 포인터·참조·반복자와 이전 past-the-end 반복자는 무효가 되고, 그보다 앞선 원소 관찰자와 capacity는 유지된다.
+- `erase(first,last)`의 대표 형태는 `iterator erase(const_iterator first, const_iterator last)`다. 두 인자는 같은 vector의 유효하고 순서가 맞는 반열린 범위를 비소유로 가리켜야 하며, 빈 범위 `[end(),end())`도 허용된다. 성공하면 그 범위 원소의 수명을 끝내고 뒤 원소를 앞으로 이동 대입해 `size()`를 줄이며, 삭제 뒤의 새 위치(없으면 새 `end()`) iterator를 반환한다. 소멸 호출 수는 지운 원소 수, 이동/복사 대입 수는 뒤에 남은 원소 수와 같아 최악 `O(N)`이고 capacity는 줄지 않으며 별도 재할당을 요구하지 않는다. 삭제 시작 위치 `first` 및 그 이후의 모든 참조·포인터·반복자와 과거 `end()`가 무효화된다. `T`가 MoveAssignable 의미 요구를 지켜야 하고 이동 대입이 던지면 예외가 전파되어 이미 이동된 값의 원래 배치를 복구한다고 보장하지 않으며, 던지는 소멸자는 허용되는 안전한 사용이 아니다. 같은 vector의 동시 접근은 외부 동기화가 필요하다.
 - `clear()`의 대표 형태는 `void clear() noexcept`다. 데이터 인자와 반환값 없이 모든 원소 수명을 끝내 `size()==0`으로 만들지만 capacity는 줄이지 않는다. 원소 수에 선형이며 별도 할당을 하지 않고, 모든 원소 관찰자와 과거 past-the-end 반복자를 무효화한다. `noexcept` 함수 안에서 계약을 어기고 던지는 원소 소멸자가 있다면 정상 복구가 아니라 종료로 이어질 수 있다. 다른 실행 흐름이 같은 vector를 읽거나 쓰는 동안 외부 동기화 없이 호출하면 안 된다.
 - `reserve(n)`의 대표 형태는 `void reserve(size_type new_cap)`다. `new_cap<=capacity()`면 상태를 유지하고, 더 크면 용량을 최소 `new_cap`으로 늘리되 크기는 바꾸지 않는다. 시간은 현재 `size()`에 선형이며 실제 재할당이 일어나면 모든 원소 관찰자가 무효화된다. `new_cap>max_size()`는 `length_error`, 할당 실패는 `bad_alloc`이 될 수 있다. 일반 원소 타입은 던지는 이동 생성자 조건에 따라 예외 보장이 약해질 수 있지만, 복사 가능하거나 nothrow 이동 가능한 타입에서는 실패 시 기존 vector가 유지된다.
 - `resize(n)`은 크기를 바꾼다. 커지면 새 원소를 생성하고 작아지면 뒤 원소를 파괴한다.

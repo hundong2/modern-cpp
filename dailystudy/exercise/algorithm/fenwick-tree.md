@@ -81,9 +81,12 @@ range_sum(left, right):
 class FenwickTree final {
 public:
     // explicit 생성자는 정수가 객체로 암시 변환되는 것을 막고, 반환형은 없다.
+    // 전제: size+1이 std::size_t로 표현 가능해야 한다. 아니면 덧셈이 먼저 wrap되어 잘못된 크기가 된다.
     explicit FenwickTree(std::size_t size) : tree_(size + 1, 0) {}
 
     // index 위치에 delta를 더하는 점 갱신 함수다.
+    // 전제: 1 <= index <= size이고 갱신 뒤 모든 담당 구간 합이 long long으로 표현 가능해야 한다.
+    // index==0이면 lowbit(0)==0이라 진행하지 않고, size보다 크면 요청한 원소를 갱신하지 못한다.
     void add(std::size_t index, long long delta) {
         while (index < tree_.size()) { // 상위 담당 구간이 존재하는 동안 반복한다.
             tree_[index] += delta;      // 현재 담당 구간 합을 갱신한다.
@@ -92,6 +95,8 @@ public:
     }
 
     // const는 트리 값을 바꾸지 않는 조회임을 나타낸다.
+    // 전제: 0 <= index <= size이고 누적 과정과 결과가 long long으로 표현 가능해야 한다.
+    // index가 size보다 크면 tree_[index] 접근이 범위를 벗어나 미정의 동작이다.
     [[nodiscard]] long long prefix_sum(std::size_t index) const {
         long long result{}; // 기본 정수를 0으로 중괄호 초기화한다.
         while (index > 0) { // 1 기반 인덱스를 0까지 줄인다.
@@ -101,6 +106,9 @@ public:
         return result; // 값 복사로 누적 합을 반환한다.
     }
 
+    // 전제: 1 <= left <= right <= size이고 두 접두 합의 뺄셈 결과도 long long으로 표현 가능해야 한다.
+    // left==0이면 unsigned left-1이 SIZE_MAX로 wrap해 prefix_sum의 범위를 벗어나므로 일반 API에서는
+    // 검사하거나 0-based 별도 인터페이스를 제공한다. 표현 범위를 넘는 signed 뺄셈은 UB다.
     [[nodiscard]] long long range_sum(std::size_t left, std::size_t right) const {
         return prefix_sum(right) - prefix_sum(left - 1); // 두 접두 합의 차다.
     }
@@ -169,6 +177,30 @@ int main() {
 ## 오늘 문제와의 연결
 
 2026-08-15의 [BOJ 2042 구간 합 구하기](../2026-08-15/icpc_problem.cpp)는 값 대입과 구간 합이 섞여 있다. `values[b]`로 이전 값을 기억하고 `delta=c-values[b]`를 펜윅 트리에 더한다. 질의는 `prefix_sum(c)-prefix_sum(b-1)`로 답한다. N이 최대 백만이므로 매 질의마다 구간을 순회하는 `O(N)` 방식보다 이 `O(log N)` 구조가 대회에서 필수적이다.
+
+### 2026-09-30 — CSES 1144 Salary Queries
+
+[오늘 풀이](../2026-09-30/icpc_problem.cpp)는 합 배열이 아니라 **급여 값별 직원 수**를 펜윅 트리에 저장한다. 급여는 최대 `10^9`라 원래 값을 인덱스로 쓸 수 없으므로, 모든 초기 급여와 `! k x`에 등장할 새 급여를 먼저 모아 정렬·중복 제거한다. 서로 다른 값의 오름차순 순위를 1-based Fenwick 인덱스로 삼으면 값의 대소 관계가 보존된다.
+
+명령을 실행하는 동안 다음 불변식을 유지한다.
+
+- `salary[k]`는 k번째 직원의 현재 급여다.
+- 압축 순위 `r`의 원래 값이 `v`라면 그 점 빈도는 현재 급여가 정확히 `v`인 직원 수다.
+- 따라서 `prefix_sum(p)`는 압축 순위 `p` 이하인 급여를 받는 직원 수다.
+
+갱신 `! k x`는 이전 급여 순위에 `-1`, 새 급여 순위에 `+1`을 더하고 현재 급여 배열도 `x`로 바꾼다. 같은 값으로 거듭 갱신하더라도 두 변화가 상쇄되어 불변식이 그대로 유지된다.
+
+범위 질의 `? a b`에서 `a`와 `b` 자체는 압축 목록에 없을 수 있다. 다음 두 삽입 위치를 쓰면 질의 경계까지 따로 압축할 필요가 없다.
+
+```text
+less_a     = lower_bound(values, a)의 0-based 위치 = a보다 작은 압축 값 개수
+at_most_b  = upper_bound(values, b)의 0-based 위치 = b 이하 압축 값 개수
+answer     = prefix_sum(at_most_b) - prefix_sum(less_a)
+```
+
+첫 접두 합은 `salary <= b`, 둘째 접두 합은 `salary < a`인 직원을 센다. 둘의 차가 정확히 `a <= salary <= b`인 직원 수다. 중복 급여는 한 좌표의 빈도로 합쳐지고, 압축 값 사이의 빈 구간·최솟값·최댓값도 삽입 위치 정의 덕분에 별도 예외 처리 없이 동작한다.
+
+압축 후보 수를 `M <= n+q`라 하면 정렬은 `O(M log M)`, 초기 빈도 구성은 `O(n log M)`, 각 갱신/질의는 `O(log M)`이다. 전체 시간은 `O((n+q) log(n+q))`, 급여·명령·압축 좌표·트리를 합친 추가 공간은 `O(n+q)`다. 온라인으로 처음 보는 급여가 계속 들어오는 문제라면 미리 압축할 수 없으므로 균형 이진 탐색 트리나 동적 세그먼트 트리를 고려해야 한다.
 
 ## 직접 해보기와 초보자 검증
 

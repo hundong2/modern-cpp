@@ -4,16 +4,49 @@
 
 ## `std::sort`와 `std::ranges::sort` — `<algorithm>`
 
-- **항목 종류·현재 역할**: `<algorithm>`의 `std::sort`는 반복자 기반 함수 템플릿이고 `std::ranges::sort`는 C++20 ranges 알고리즘 함수 객체(niebloid)다. 2026-09-25 풀이는 오른쪽 절반 부분집합 합을 소유한 `std::vector<long long>`을 오름차순으로 재배치해 뒤의 `equal_range`가 이진 탐색 전제조건을 만족하게 한다.
-- **C++23 range overload와 템플릿 인자**: 대표 형태는 `template<random_access_range R, class Comp = ranges::less, class Proj = identity> requires sortable<iterator_t<R>, Comp, Proj> constexpr borrowed_iterator_t<R> sort(R&& range, Comp comp = {}, Proj projection = {});`다. 오늘 호출에서는 `R=std::vector<long long>&`, `Comp=std::ranges::less`, `Proj=std::identity`이며 `iterator_t<R>`는 vector의 mutable random-access iterator다. 고전 `std::sort(first, last, comp)`는 임의 접근 반복자 쌍을 받는 별도 overload다.
-- **수신 객체·호출 전 상태**: 함수 객체 호출이라 사용자 데이터 수신 객체는 없다. `right_sums`는 유효한 non-const lvalue vector이고, 모든 원소는 살아 있으며 이동·교환 가능하다. 정렬 전 순서는 임의여도 된다.
-- **매개변수·값 범주·소유권**: `R&&`는 forwarding reference이고 lvalue `right_sums`에 바인딩되므로 저장소를 복사하거나 이동하지 않고 호출 동안 빌린다. 생략한 `comp`와 `projection`은 값으로 생성되는 `ranges::less{}`와 `identity{}`다. 사용자 비교자·projection을 넘기면 알고리즘 실행 동안 유효해야 하며 원소의 정렬 관계를 깨는 부작용을 내면 안 된다.
-- **반환형·사용 여부**: lvalue vector는 borrowed range이므로 반환형은 `std::vector<long long>::iterator`이고 정렬된 범위의 끝 위치를 가리킨다. 오늘 코드는 반환 iterator를 의도적으로 버린다. 임시 non-borrowed range라면 `borrowed_iterator_t<R>`가 `std::ranges::dangling`일 수 있다.
+- **항목 종류·현재 역할**: `<algorithm>`의 `std::sort`는 반복자 기반 함수 템플릿이고 `std::ranges::sort`는 C++20 ranges 알고리즘 함수 객체(niebloid)다. 2026-09-25 풀이는 ranges overload로 오른쪽 절반 부분집합 합을 정렬하고, 2026-09-30 CSES 1144 풀이는 고전 두-반복자 overload로 `vector<int>` 급여 좌표를 정렬해 뒤의 `unique`와 이진 탐색 전제조건을 만든다.
+- **C++23 overload와 템플릿 인자**: 고전 형태는 `template<class RandomIt> constexpr void sort(RandomIt first, RandomIt last);`와 `template<class RandomIt, class Compare> constexpr void sort(RandomIt first, RandomIt last, Compare comp);`다. 2026-09-30의 `sort(sort_first,sort_last)`는 `RandomIt=std::vector<int>::iterator`인 첫 형태이고, C++20 이후 생략된 비교는 `std::less{}` 의미를 쓴다. ranges 형태는 `template<random_access_range R, class Comp = ranges::less, class Proj = identity> requires sortable<iterator_t<R>, Comp, Proj> constexpr borrowed_iterator_t<R> sort(R&& range, Comp comp = {}, Proj projection = {});`다. 2026-09-25 호출에서는 `R=std::vector<long long>&`, `Comp=std::ranges::less`, `Proj=std::identity`다.
+- **수신 객체·호출 전 상태**: 고전 자유 함수와 ranges 함수 객체 모두 사용자 데이터 수신 객체는 없다. 오늘의 `[sort_first,sort_last)`는 같은 살아 있는 mutable `vector<int>`의 유효한 random-access 범위이고, ranges 예제의 `right_sums`도 유효한 non-const lvalue vector다. 원소는 살아 있고 이동·교환 가능하며 정렬 전 순서는 임의여도 된다.
+- **매개변수·값 범주·소유권**: 고전 호출의 두 iterator lvalue는 값 복사되어 같은 저장소의 반열린 범위를 비소유로 가리킨다. ranges 호출의 `R&&`는 forwarding reference로 lvalue `right_sums`에 바인딩된다. 어느 쪽도 vector 저장소를 복사·이동하지 않는다. 생략된 비교는 각각 `std::less{}`와 `std::ranges::less{}`이고 ranges projection은 `identity{}`다. 사용자 비교자·projection은 실행 동안 유효해야 하며 정렬 관계를 깨는 부작용을 내면 안 된다.
+- **반환형·사용 여부**: 고전 `std::sort`의 반환형은 `void`라 2026-09-30 코드는 재배치 효과만 쓴다. ranges 호출은 lvalue vector가 borrowed range이므로 `std::vector<long long>::iterator`를 반환하고 2026-09-25 코드는 그 끝 iterator를 버린다. 임시 non-borrowed range라면 `borrowed_iterator_t<R>`가 `std::ranges::dangling`일 수 있다.
 - **사후 상태·안정성**: 성공하면 projected 원소가 비교자 기준 비내림차순이고 원소들은 입력의 permutation이다. 크기·capacity·저장소 소유권은 유지되지만 위치별 값은 바뀐다. 같은 키의 상대 순서는 보존되지 않으므로 필요하면 `std::stable_sort`를 검토한다.
 - **복잡도**: 원소 수를 `N`이라 할 때 `O(N log N)`회의 비교와 projection을 요구한다. 원소 이동·교환 비용은 타입에 따르고, ranges overload의 끝 iterator 계산 비용도 sentinel 성질에 따른다.
 - **할당·무효화·수명**: 표준 계약만으로 구현의 보조 저장소 사용이 없다고 단정하지 않는다. vector 자체의 구조 변경이나 재할당은 하지 않으므로 기존 iterator·포인터·참조는 계속 유효하지만, 같은 위치가 정렬 전과 같은 논리 원소를 뜻하지는 않는다. range와 원소는 호출이 끝날 때까지 살아 있어야 한다.
 - **전제조건·오류·예외·미정의 동작**: 범위는 random-access range이고 iterator는 permutable해야 하며 `comp(proj(a), proj(b))`가 전체 실행 동안 엄격 약순서를 이뤄야 한다. `<=`처럼 엄격하지 않은 비교자, 댕글링 iterator/range, 이동·교환 요구사항 위반은 전제조건 위반이며 미정의 동작이다. 비교·projection·원소 이동/교환 또는 구현의 자원 확보가 던지면 예외가 전파될 수 있고, 그때 범위는 유효하더라도 원래 순서나 완전 정렬을 보장하지 않는다. 오늘의 `long long` 기본 비교·이동은 던지지 않지만 함수 선언 자체를 `noexcept`로 가정하지 않는다.
 - **스레드·기계 실행 관점**: 자체 동기화가 없으므로 같은 vector를 다른 실행 흐름이 동시에 읽거나 쓰는 동안 정렬하면 안 된다. 구현은 비교, load/store, 원소 교환과 조건 분기를 조합할 수 있으나 구체적 정렬 전략·SIMD·명령열·보조 메모리는 CPU, 표준 라이브러리, 컴파일러와 최적화 옵션에 따라 달라진다.
+
+## `std::unique`와 `std::ranges::unique` — `<algorithm>`의 인접 중복 압축
+
+- **항목 종류·현재 역할**: `<algorithm>`의 `std::unique`는 제자리 변경 함수 템플릿이고 `std::ranges::unique`는 C++20 ranges 알고리즘 함수 객체(niebloid)다. 둘 다 **연속해서 인접한** 동등 원소만 한 대표 원소로 압축한다. 2026-09-30 CSES 1144 풀이는 먼저 급여 좌표를 정렬해 같은 값이 인접한다는 불변식을 만든 뒤 고전 `std::unique`가 돌려준 논리 끝을 `vector::erase`에 넘겨 실제 크기까지 줄인다.
+- **C++23 고전 overload의 정확한 형태**: 순차 형태는 `template<class ForwardIt> constexpr ForwardIt unique(ForwardIt first, ForwardIt last);`와 `template<class ForwardIt, class BinaryPredicate> constexpr ForwardIt unique(ForwardIt first, ForwardIt last, BinaryPredicate pred);`다. 실행 정책 형태는 앞에 `template<class ExecutionPolicy, class ForwardIt>` 또는 `template<class ExecutionPolicy, class ForwardIt, class BinaryPredicate>`가 붙고 첫 함수 인자로 `ExecutionPolicy&& policy`를 받으며, `remove_cvref_t<ExecutionPolicy>`가 표준 실행 정책으로 인식될 때만 overload 후보가 된다. 오늘 호출은 정책·술어가 없는 순차 형태에서 `ForwardIt=std::vector<int>::iterator`이고, 생략한 술어 의미는 C++20 이후 `std::equal_to{}`다.
+- **C++23 ranges overload와 제약**: iterator/sentinel 형태는 `template<permutable I, sentinel_for<I> S, class Proj = identity, indirect_equivalence_relation<projected<I, Proj>> C = ranges::equal_to> constexpr subrange<I> ranges::unique(I first, S last, C comp = {}, Proj proj = {});`다. range 형태는 `template<forward_range R, class Proj = identity, indirect_equivalence_relation<projected<iterator_t<R>, Proj>> C = ranges::equal_to> requires permutable<iterator_t<R>> constexpr borrowed_subrange_t<R> ranges::unique(R&& range, C comp = {}, Proj proj = {});`다. C++23 ranges에는 실행 정책 overload가 없으며, `permutable`은 forward iterator·간접 이동 저장·교환 요구를 묶는다.
+- **수신 객체·호출 전 상태**: 자유 함수 또는 함수 객체 호출이므로 사용자 데이터 수신 객체는 없다. 오늘 `[sort_first,sort_last)`는 같은 살아 있는 mutable `std::vector<int>`의 유효한 random-access 범위이며 직전 `sort`로 오름차순이다. `unique` 자체는 정렬을 요구하지 않지만, 정렬되지 않은 `1,2,1`에서는 세 값 모두 서로 인접한 중복이 아니므로 그대로 남는다. 빈 범위도 유효하다.
+- **매개변수·값 범주·소유권**: 두 iterator는 lvalue에서 값 복사되어 범위를 비소유로 가리킨다. 사용자 `pred`와 ranges의 `comp`·`proj`는 값으로 전달되어 알고리즘이 복사할 수 있다. 알고리즘은 살아남을 원소를 앞쪽 원소 슬롯에 이동 대입할 수 있지만 vector 버퍼나 컨테이너 소유권을 옮기지는 않는다. 오늘 `int` 이동 대입은 값 복사와 같은 효과이고 별도 자원을 소유하지 않는다.
+- **동등 관계·안정성 불변식**: 술어는 반사성·대칭성·추이성을 갖는 동등 관계여야 하며 ranges overload는 projection 결과에 대한 `indirect_equivalence_relation`을 요구한다. 각 인접 run에서 첫 원소가 대표로 남고 살아남은 대표들의 상대 순서는 보존된다. `<=`, “차이가 10 이하”처럼 동등 관계가 아닌 술어를 쓰거나 술어가 비교 중 원소를 변경하면 계약을 깨뜨릴 수 있다. 전역 중복 제거가 목적이면 오늘처럼 먼저 같은 기준으로 정렬하거나 별도 집합 자료구조를 사용한다.
+- **반환형·반환값 사용**: 고전 overload는 결과 논리 범위 `[first,j)`의 끝 `ForwardIt j`를 반환한다. ranges overload는 제거 대상 꼬리 `[j,last)`를 나타내는 `subrange<I>{j,last}` 또는 range 값 범주에 따른 `borrowed_subrange_t<R>`를 반환한다. 오늘 코드는 고전 반환값을 `unique_end`에 저장해 `coordinates.erase(unique_end,sort_last)`의 시작으로 사용한다. 빈 범위면 `j==last`, 중복이 없으면 역시 원래 `last`다.
+- **사후 상태와 erase-remove 계열 관용구**: 성공하면 `[first,j)`에는 각 연속 동등 run의 첫 대표만 원래 순서대로 있고, `[j,last)` 원소는 여전히 살아 있어 파괴·대입할 수 있지만 값은 **유효하지만 미지정 상태**다. vector의 물리적 `size()`와 `capacity()`는 `unique`만으로 바뀌지 않는다. 오늘 뒤이은 범위 `erase`가 꼬리 객체를 파괴하고서야 실제 크기가 줄어든다. 따라서 반환 iterator를 버리고 원래 `end()`까지 출력하면 논리적으로 제거한 꼬리까지 관찰하는 버그다.
+- **복잡도**: `N=distance(first,last)`일 때 빈 범위는 술어 호출이 없고, 비어 있지 않으면 정확히 `N-1`회 동등 비교한다. ranges에서는 projection 호출이 그 두 배 이하다. 원소 이동 대입과 iterator 진행도 선형이므로 전체 시간은 `O(N)`이다. 오늘 정렬 단계 `O(N log N)` 뒤의 압축 자체는 선형이다.
+- **할당·반복자 무효화·수명**: 별도 결과 컨테이너를 만들지 않고 같은 원소 저장소 안에서 압축하므로 오늘의 vector/int 순차 호출에는 동적 할당이 필요 없다. 사용자 술어·projection 내부 동작까지 무할당이라고 일반화하지 않는다. `unique` 자체는 vector 구조를 변경하지 않아 iterator·포인터·참조의 주소 유효성을 없애지 않지만, 가리키는 위치의 **값**은 이동 대입으로 달라질 수 있다. 뒤이은 `erase`는 지운 첫 위치 이후의 iterator·참조와 기존 `end()`를 무효화한다. 범위와 호출 객체가 참조하는 외부 상태는 호출 완료까지 살아 있어야 한다.
+- **오류·예외 보장**: 순차 overload에서 술어·projection, iterator 연산 또는 원소 이동 대입이 던지면 예외가 호출자에게 전파되고 이미 앞쪽으로 옮긴 원소를 원래 배열로 rollback하지 않는다. 오늘 `int`의 기본 동등 비교와 대입은 던지지 않지만 템플릿 전체를 모든 타입에 대해 `noexcept`로 간주하지 않는다. 표준 실행 정책 overload에서 사용자 함수가 던질 때의 종료/전파 규칙은 해당 실행 정책 계약을 따르며, 오늘은 실행 정책을 쓰지 않는다.
+- **미정의 동작·컴파일 실패**: `[first,last)`가 유효하지 않거나 반복자가 writable/MoveAssignable·permutable 요구를 충족하지 않거나, 고전 술어가 동등 관계가 아니거나, 이동 대입과 비교의 의미 요구를 위반하면 전제조건 위반 또는 미정의 동작으로 이어질 수 있다. ranges의 문법적 concept를 만족하지 않으면 적합한 overload가 없어 컴파일되지 않는다. `unique_end` 이후의 유효하지만 미지정 값을 읽는 것 자체와 곧바로 `erase`로 파괴하는 것은 구분해야 하며, 미지정 값을 애플리케이션 의미에 의존해 사용하는 것이 잘못이다.
+- **스레드·기계 실행 관점**: 원소를 제자리 이동 대입하므로 같은 범위에 대한 동시 읽기나 쓰기를 자체적으로 동기화하지 않는다. 독립 범위는 별도로 처리할 수 있지만 같은 vector 원소를 다른 실행 흐름이 동기화 없이 접근하면 데이터 경쟁이다. 순차 구현은 인접 원소 load·동등 비교·조건 분기와 살아남은 원소의 앞쪽 store로 나타날 수 있다. 실행 정책이 병렬 작업을 허용하더라도 결과 의미와 사용자 술어의 무경쟁 요구는 유지되며, 실제 병렬화·벡터화·명령열은 구현, CPU와 최적화 옵션에 따라 달라진다.
+
+### 최소 실행 예제
+
+```cpp
+#include <algorithm>
+#include <iostream>
+#include <vector>
+
+int main() {
+    std::vector<int> values{1, 1, 2, 2, 2, 4};
+    const auto logical_end{std::unique(values.begin(), values.end())};
+    values.erase(logical_end, values.end());
+    for (const int value : values) {
+        std::cout << value << ' '; // 1 2 4
+    }
+}
+```
 
 ## `std::ranges::equal_range` — `<algorithm>`의 비교 동등 구간 이진 탐색
 
@@ -42,6 +75,35 @@ int main() {
     const std::vector<int> sorted{1, 2, 2, 2, 5};
     const auto matches{std::ranges::equal_range(sorted, 2)};
     std::cout << matches.size() << '\n'; // 3
+}
+```
+
+## `std::lower_bound`와 `std::upper_bound` — `<algorithm>`의 이진 탐색 경계
+
+- **항목 종류·현재 역할**: 둘 다 `<algorithm>`의 비수정 함수 템플릿이다. `std::lower_bound`는 검색값보다 작지 않은 첫 위치, `std::upper_bound`는 검색값보다 큰 첫 위치를 돌려준다. 2026-09-30 CSES 1144 풀이는 정렬·중복 제거한 `std::vector<int>` 좌표에서 전자로 `value` 미만 좌표 수와 정확한 급여 순위를, 후자로 `value` 이하 좌표 수를 얻어 Fenwick tree의 닫힌 구간 질의를 구성한다. 중복 제거는 이 풀이의 좌표 압축 불변식일 뿐 두 알고리즘 자체의 요구사항은 아니다.
+- **C++23 고전 overload의 정확한 형태**: `lower_bound`는 `template<class ForwardIt, class T> constexpr ForwardIt lower_bound(ForwardIt first, ForwardIt last, const T& value);`와 `template<class ForwardIt, class T, class Compare> constexpr ForwardIt lower_bound(ForwardIt first, ForwardIt last, const T& value, Compare comp);`를, `upper_bound`도 같은 template 매개변수의 두 형태를 제공한다. C++23에서는 `T`에 반복자 값 타입 기본 인자가 없으며 그것은 C++26 변경이다. 반복자는 LegacyForwardIterator 요구를 만족해야 한다. 비교자 없는 overload의 `comp` 의미는 `std::less{}`다. 오늘 두 호출은 `ForwardIt=std::vector<int>::const_iterator`, `T=int`인 3인자 overload다.
+- **C++23 ranges overload와 제약**: iterator/sentinel 형태는 각각 `template<forward_iterator I, sentinel_for<I> S, class T, class Proj = identity, indirect_strict_weak_order<const T*, projected<I, Proj>> Comp = ranges::less> constexpr I ranges::lower_bound(I first, S last, const T& value, Comp comp = {}, Proj proj = {});`이며 `upper_bound`도 같은 형태다. range 형태는 `template<forward_range R, class T, class Proj = identity, indirect_strict_weak_order<const T*, projected<iterator_t<R>, Proj>> Comp = ranges::less> constexpr borrowed_iterator_t<R> ranges::lower_bound(R&& range, const T& value, Comp comp = {}, Proj proj = {});`이고 `upper_bound`도 동일한 제약과 반환 틀을 쓴다. 오늘 코드는 projection 없는 고전 overload이므로 ranges의 `borrowed_iterator_t`와 임시 non-borrowed range의 `dangling` 규칙을 직접 사용하지 않는다.
+- **수신 객체·호출 전 상태**: 자유 함수라 수신 객체는 없다. 오늘 `[first,last)`는 같은, 살아 있는 `const std::vector<int>`에서 얻은 유효한 반열린 random-access iterator 범위이고 오름차순 정렬돼 있다. 빈 범위도 유효하며 곧바로 `last`를 반환한다. 검색 중 기반 vector의 구조와 비교에 쓰이는 원소 값을 바꾸지 않는다.
+- **매개변수·값 범주·소유권**: `first`와 `last`는 `const_iterator` lvalue에서 값 복사되어 위치만 비소유 관찰하고, `value`는 살아 있는 `const int` lvalue에 `const T&`로 바인딩된다. 인자나 vector 저장소의 소유권은 이동하지 않는다. 비교자 overload의 `comp`는 값으로 받아 알고리즘이 복사할 수 있고, ranges의 `proj`도 값 매개변수다. 그 내부에 포인터·참조가 있으면 호출이 끝날 때까지 대상이 살아 있어야 한다.
+- **두 partition 전제와 경계 의미**: `lower_bound`는 모든 원소 `e`가 `bool(invoke(comp, e, value))`인 앞부분과 거짓인 뒷부분으로 partition돼 있어야 하고, 그 참인 앞부분의 바로 다음 위치를 반환한다. `upper_bound`는 모든 `e`가 `!bool(invoke(comp, value, e))`인 앞부분과 거짓인 뒷부분으로 partition돼 있어야 하며 역시 앞부분 다음을 반환한다. ranges에서는 `e` 대신 `invoke(proj,e)`를 비교한다. 기본 정수 오름차순에서는 각각 첫 `e >= value`, 첫 `e > value`이고, 전역 정렬은 이 전제를 세우는 흔한 충분조건이지만 특정 검색값에 대한 partition만으로도 계약은 충족된다.
+- **반환형·사용·사후 상태**: 고전 overload는 입력과 같은 `ForwardIt` 값을 반환한다. 경계가 범위 밖 오른쪽이면 `last`이며 이는 정상 결과라 역참조하지 않는다. 오늘 코드는 `found-first`를 `Index`로 바꿔 `lower_bound` 결과를 `value` 미만 좌표 개수, `upper_bound` 결과를 `value` 이하 좌표 개수로 사용한다. 호출 뒤 vector, 원소, 검색값, 크기와 capacity는 그대로이고 반복자도 이 호출 때문에 무효화되지 않는다.
+- **복잡도**: 길이를 `N`이라 하면 각 호출의 비교 횟수는 최대 `log2(N)+O(1)`이고 ranges overload는 projection도 같은 횟수 이하다. 다만 forward iterator에서는 iterator 증가가 `O(N)`일 수 있다. 오늘 vector의 random-access iterator는 중간 위치로 상수 시간 이동하므로 비교와 위치 이동을 합쳐 `O(log N)`이다.
+- **할당·무효화·수명**: 알고리즘은 결과 컨테이너나 원소 저장소를 만들지 않으며 오늘의 정수·vector 반복자 호출에는 동적 할당이 없다. 일반 사용자 비교자·projection의 복사나 호출 내부 동작까지 allocation-free라고 보장하지는 않는다. 반환 iterator는 owner 파괴, vector 재할당과 해당 위치를 포함하는 `erase` 등에 의해 무효화될 수 있다. 호출 뒤 원소 값을 바꿔 partition을 깨면 기존 iterator 주소가 살아 있어도 다음 이진 탐색의 전제는 사라진다.
+- **오류·예외·미정의 동작**: 별도 오류값이나 예외 변환은 없다. 사용자 비교자·projection 또는 사용자 반복자 연산이 던지면 그대로 전파될 수 있다. 오늘의 `int` 기본 비교와 정상 vector iterator 연산은 던지지 않지만 함수 템플릿 자체를 무조건 `noexcept`로 보지 않는다. `[first,last)`가 유효하지 않거나 두 반복자가 다른 범위에서 왔거나 해당 검색 식에 대해 partition돼 있지 않거나 비교 관계의 의미 요구를 깨면 라이브러리 전제조건 위반으로 동작이 정의되지 않는다. 반환값이 `last`인지 검사하지 않고 역참조하는 것도 미정의 동작이다.
+- **스레드·기계 실행 관점**: 자체 동기화가 없다. 같은 불변 범위를 여러 실행 흐름이 읽는 것은 원소 타입의 동시 읽기 규칙을 따르지만, 검색 중 다른 실행 흐름이 같은 vector의 구조나 비교 대상 원소를 동기화 없이 쓰면 데이터 경쟁 또는 iterator 무효화가 생긴다. vector에서는 반복적으로 중간 iterator를 계산하고 원소를 load해 비교한 뒤 왼쪽/오른쪽 반으로 조건 분기할 수 있으나 실제 분기 제거·명령열·prefetch는 CPU, 표준 라이브러리, 컴파일러와 최적화 옵션에 따라 달라진다.
+
+### 최소 실행 예제
+
+```cpp
+#include <algorithm>
+#include <iostream>
+#include <vector>
+
+int main() {
+    const std::vector<int> sorted{1, 2, 2, 5};
+    const auto lower{std::lower_bound(sorted.begin(), sorted.end(), 2)};
+    const auto upper{std::upper_bound(sorted.begin(), sorted.end(), 2)};
+    std::cout << (lower - sorted.begin()) << ' ' << (upper - sorted.begin()) << '\n'; // 1 3
 }
 ```
 
@@ -175,6 +237,57 @@ int main() {
 - 실제 함수 호출은 순회할 때 발생하므로 뷰를 만들기만 해서는 부수 효과가 실행되지 않을 수 있다.
 - 같은 뷰를 여러 번 순회할 수 있는지는 기반 범위와 뷰 종류의 범주에 따라 다르다.
 - `forward_range` 위 `filter_view`는 첫 통과 반복자를 cache할 수 있다. 이미 순회를 시작한 view는 술어가 보는 원소를 바꾸거나 기반 `vector`를 재할당한 뒤 재사용하지 말고 새로 만든다. 원본 객체 파괴는 view를 dangling으로 만들며, 재할당은 이미 얻었거나 cache한 반복자를 무효화한다.
+
+## `std::views::chunk_by`와 `std::ranges::chunk_by_view` — `<ranges>`의 C++23 인접 구간 view
+
+`chunk_by`는 기반 범위의 **서로 인접한 두 원소**에 술어를 적용하고 거짓이 되는 경계에서 범위를 나눈다. 같은 키를 전역으로 모으거나 정렬하지 않는다. 예를 들어 키가 `A, B, A`이고 “키가 같다”가 술어면 세 구간이며, 떨어진 두 `A`는 합쳐지지 않는다.
+
+- **항목 종류·헤더·오늘 역할**: `<ranges>`가 C++23 range adaptor object `std::views::chunk_by`와 view class template `std::ranges::chunk_by_view<V, Pred>`를 선언한다. 2026-09-30 `PayrollSnapshot`은 이미 부서 키 순서로 놓인 급여 레코드의 연속 부서 run을, `HealthTimeline`은 연속한 동일 건강 상태 run을 중간 컨테이너 없이 묶는다. 이 view는 입력 정렬이나 그룹 키 불변식을 검사하지 않으므로 owner의 생성·갱신 경계가 순서 불변식을 책임진다.
+- **C++23 class template의 정확한 제약**: 공개 형태는 `template<ranges::forward_range V, indirect_binary_predicate<ranges::iterator_t<V>, ranges::iterator_t<V>> Pred> requires ranges::view<V> && is_object_v<Pred> class ranges::chunk_by_view;`다. 기반 `V`는 단일 통과 `input_range`가 아니라 적어도 `forward_range`인 view여야 하고, `Pred`는 참조나 함수 타입이 아닌 객체 타입이며 두 간접 원소 조합에 대해 `indirect_binary_predicate`를 만족해야 한다. 생성자는 `constexpr explicit chunk_by_view(V base, Pred pred);`, deduction guide는 `template<class R, class Pred> chunk_by_view(R&&, Pred) -> chunk_by_view<views::all_t<R>, Pred>;`다.
+- **adaptor 호출의 정확한 규정**: `views::chunk_by`의 공개 타입과 `operator()` 함수 템플릿 시그니처는 표준이 지정하지 않는 구현 세부사항이다. 표준 계약은 두 식 `E`, `F`에 대해 `views::chunk_by(E, F)`가 `chunk_by_view(E, F)`와 expression-equivalent라고 정한다. 따라서 존재하지 않는 표준화된 `views::chunk_by(R&&, Pred&&)` 선언을 API 선언처럼 의존하지 않는다. `E | views::chunk_by(F)`는 range adaptor closure 규칙으로 같은 두 인자 적용을 표현하며, 결과 class의 위 제약과 `views::all_t<R>` 구성이 유효할 때만 호출이 성립한다.
+- **수신 객체·인자 값 범주·소유권**: adaptor 객체가 함수처럼 호출되므로 사용자 데이터 수신 객체는 없다. 오늘 `E`는 살아 있는 `const std::vector<T>` 멤버 lvalue이고 `views::all_t<const vector<T>&>`는 이를 비소유로 가리키는 `ref_view<const vector<T>>`가 된다. `F`는 캡처 없는 lambda의 const lvalue지만 deduction guide의 값 매개변수 `Pred`가 cv/ref를 제거한 lambda 객체 타입을 추론하고 view가 그 사본을 값으로 보관한다. 기반 원소나 vector 저장소는 복사·이동되지 않는다. 일반 rvalue viewable range는 `views::all` 결과가 소유할 수도 있으므로 모든 `chunk_by_view`가 비소유라고 일반화하지 않는다.
+- **반환형·lazy 상태 변화**: 오늘 직접 호출은 개념상 `chunk_by_view<ref_view<const Records>, Lambda>` 같은 작은 prvalue를 반환한다. 생성자는 `base_`와 `pred_`를 각각 이동해 보관하지만 원소를 순회하거나 술어를 호출하거나 구간을 materialize하지 않는다. 이름 있는 view를 처음 순회할 때 경계 검색이 실행된다. owner의 vector 크기·capacity·원소는 생성과 읽기 전용 순회로 바뀌지 않는다.
+- **인접 술어 의미와 불변식**: 각 인접 쌍 `(previous,current)`에서 `bool(invoke(pred, previous, current))`가 참인 동안 같은 subrange가 계속되고, 처음 거짓인 쌍의 `current`부터 다음 subrange가 시작한다. 비어 있지 않은 입력의 각 결과 subrange는 비어 있지 않으며 모든 subrange를 이어 붙이면 원래 순서와 원소를 정확히 한 번씩 얻는다. 술어가 대칭·추이적인 동치 관계일 필요는 없으므로 `less_equal`은 비감소 run을 만들 수 있다. 반대로 “모든 같은 값을 모은다”는 전역 group-by 의미는 제공하지 않는다.
+- **`begin`/`end`의 const 제한과 첫 경계 cache**: 공개 순회 함수는 `constexpr iterator begin();`와 `constexpr auto end();`뿐이고 const overload가 없다. 내부 경계 cache와 술어를 사용하므로 `const chunk_by_view` 자체는 range가 아니며, 기반이 const 원소 범위인 것과 view 객체의 const 여부를 구분해야 한다. 첫 `begin()`은 기반 시작과 첫 거짓 인접 쌍 뒤 위치를 찾고 그 첫 경계를 view 내부에 cache한다. 이후 `begin()`은 range 개념의 amortized constant-time 요구를 위해 cached 결과를 재사용한다. `common_range<V>`이면 `end()`는 끝/끝 iterator를, 아니면 `default_sentinel`을 반환한다.
+- **바깥 iterator와 안쪽 subrange**: 바깥 iterator의 `value_type`은 `ranges::subrange<ranges::iterator_t<V>>`이고 역참조는 현재 구간의 `[current,next)` iterator 쌍을 값으로 반환한다. 기반 `V`가 `bidirectional_range`면 `iterator_concept`가 `bidirectional_iterator_tag`이고 `operator--`가 제공되며, 그 밖에는 `forward_iterator_tag`다. legacy `iterator_category`는 어느 경우에도 `input_iterator_tag`다. vector가 random-access여도 바깥 chunk iterator는 random-access가 되지 않는다. 안쪽 subrange의 능력과 원소 참조의 const 여부는 기반 iterator를 따른다.
+- **복잡도**: `ref_view`와 작은 술어를 보관하는 오늘의 view 생성은 원소 수에 무관한 `O(1)`이다. 첫 `begin()`은 첫 구간 길이에 선형일 수 있고 이후 같은 view의 `begin()`은 cached 경계 덕분에 amortized `O(1)`이다. 바깥 `operator++`는 다음 경계까지 인접 쌍을 조사하므로 한 번의 비용은 다음 구간 길이에 선형일 수 있지만, 처음부터 끝까지 한 번 전진 순회하면 각 인접 경계를 한 번씩 검사해 전체 `O(N)`이다. 양방향 `operator--`도 이전 경계를 찾는 구간 길이에 비례한다. 반복해서 전체 순회하면 첫 경계 외의 경계는 다시 계산될 수 있다.
+- **할당·materialization**: `chunk_by_view`와 각 `subrange`는 별도 원소 배열을 만들지 않으며, 오늘의 vector lvalue·캡처 없는 lambda 조합은 view/순회 자체에 동적 할당이 필요 없다. 다만 사용자 정의 기반 view나 술어의 복사·이동·호출이 자체적으로 할당할 가능성까지 표준이 없애 주지는 않는다. 결과 구간을 `vector` 등으로 materialize하는 후속 코드는 그 컨테이너 계약에 따라 별도 할당한다.
+- **무효화·cache·수명**: 오늘 결과는 `ref_view`라 `PayrollSnapshot`/`HealthTimeline` owner의 수명을 연장하지 않는다. owner 파괴 뒤 view·바깥 iterator·subrange·원소 참조는 사용할 수 없다. vector 재할당, 관련 `erase`·`insert`는 이미 얻은 iterator뿐 아니라 view가 cache한 첫 경계도 무효화할 수 있으므로 구조 변경 뒤 같은 view를 재사용하지 않고 새로 만든다. iterator가 물리적으로 유효한 채 predicate가 보는 원소 값만 바뀌어도 cached 첫 경계와 이후 그룹 의미가 낡을 수 있다. 바깥 iterator는 부모 view의 주소와 술어에 의존하므로 view 파괴 뒤에는 기반 owner가 살아 있어도 댕글링이다. `chunk_by_view`에는 기반의 borrowed 성질을 그대로 전달하는 `enable_borrowed_range` 특수화가 없다.
+- **전제조건·후조건**: 기반과 술어는 view 생성 및 모든 순회 동안 template concept의 문법뿐 아니라 의미 요구사항도 지켜야 한다. `begin()`과 경계 탐색에는 술어 보관함이 값을 가진다는 전제조건이 있으므로 그러한 보장이 없는 이동 후 view를 무턱대고 순회하지 않는다. 성공한 완전 순회 뒤 입력 범위는 그대로이고, 각 반환 subrange의 내부 인접 쌍에는 술어가 참이며 두 연속 subrange 사이 경계 쌍에는 거짓이다.
+- **오류·예외·미정의 동작**: 런타임 오류값은 없다. 기반 view와 술어의 복사·이동, `begin`/`end`, 반복자 연산과 술어 호출이 던지는 예외는 전파될 수 있고 이미 실행된 사용자 부수 효과를 view가 rollback하지 않는다. 오늘 술어는 `noexcept`이고 읽기만 하지만 adaptor 전체를 모든 타입에 대해 무조건 `noexcept`라고 가정하지 않는다. 끝 바깥 iterator 역참조, 댕글링/무효 iterator 사용, 비어 있는 술어 상태에서 전제조건을 어긴 `begin`, concept의 의미 요구를 거짓으로 만족시킨 타입, 술어가 관찰 중인 같은 객체의 데이터 경쟁은 미정의 동작으로 이어질 수 있다.
+- **스레드 보장**: 자체 동기화를 제공하지 않으며 첫 `begin()`은 논리적으로 읽기처럼 보여도 view 내부 cache를 갱신할 수 있다. 따라서 같은 view 객체를 여러 실행 흐름이 동기화 없이 처음 순회하지 않는다. 살아 있는 같은 불변 owner에서 실행 흐름마다 별도 view를 만들어 읽는 것은 원소와 술어 타입의 동시 읽기 규칙을 따르지만, owner 구조나 같은 원소에 동시 쓰기가 있으면 외부 동기화가 필요하다.
+
+기계 실행 관점에서는 경계 검색이 인접 원소 load, 술어 비교, 조건 분기와 iterator 증가로 나타날 수 있다. view·subrange 층과 캡처 없는 lambda는 구체 타입이 보여 인라인될 가능성이 높고 가상 간접 호출을 요구하지 않지만, 실제 분기 예측·벡터화·명령열·cache 접근은 CPU, ABI, 표준 라이브러리, 컴파일러와 최적화 옵션에 따라 달라진다.
+
+### 최소 실행 예제
+
+```cpp
+#include <iostream>
+#include <ranges>
+#include <vector>
+
+int main() {
+    std::vector<int> values{1, 1, 2, 3, 3, 1};
+    for (auto run : std::views::chunk_by(values, [](int left, int right) {
+             return left == right;
+         })) {
+        std::cout << '[';
+        for (const int value : run) {
+            std::cout << value << ' ';
+        }
+        std::cout << ']';
+    }
+    // [1 1 ][2 ][3 3 ][1 ]: 떨어진 두 값 1은 합쳐지지 않는다.
+}
+```
+
+### 흔한 실수와 점검 질문
+
+1. `A, B, A`를 같은 키 두 그룹으로 만들 것이라 기대한다. 인접 쌍별 술어 결과와 실제 세 subrange를 적는다.
+2. `const auto groups = views::chunk_by(...)`를 range-for에 넣는다. 왜 기반 원소의 const와 view 객체의 const가 다르고 `begin() const`가 없는지 설명한다.
+3. 첫 `begin()` 뒤 기반 vector를 재할당하거나 키 값을 바꾼다. 바깥 iterator와 cached 첫 경계가 각각 왜 재사용 불가능한지 판단한다.
+4. vector 기반이므로 바깥 iterator도 random-access라고 생각한다. 표준의 `iterator_concept`와 legacy `iterator_category`를 각각 말한다.
+5. owner보다 view를 오래 보관한다. `ref_view`, 부모 포인터를 가진 바깥 iterator, 안쪽 subrange의 수명 의존성을 나눠 추적한다.
 
 ## `std::views::zip`과 `std::ranges::zip_view` — `<ranges>`의 C++23 lockstep view
 
@@ -343,11 +456,12 @@ int main() {
 }
 ```
 
-## 비교 함수 객체 `std::less`, `std::greater` — `<functional>`
+## 비교 함수 객체 `std::less`, `std::greater`, `std::equal_to` — `<functional>`
 
-- `<functional>`이 선언하는 비교 함수 객체 class template다. `less<T>{}(a,b)`는 `a<b`, `greater<T>{}(a,b)`는 `a>b` 의미이며 기본 객체는 비교 대상을 소유하지 않는 무상태 값이다.
-- 대표 호출은 `constexpr bool std::less<T>::operator()(const T& lhs, const T& rhs) const`다. 두 const lvalue를 빌려 bool을 반환하고 객체·피연산자·반복자를 바꾸거나 저장소를 할당하지 않는다. 시간·예외 명세는 선택된 `<` 식을 따르며, 오늘 `Entry::operator<`는 값과 인덱스의 정수 비교만 해 `O(1)`·`noexcept`다.
+- `<functional>`이 선언하는 비교 함수 객체 class template다. `less<T>{}(a,b)`는 `a<b`, `greater<T>{}(a,b)`는 `a>b`, `equal_to<T>{}(a,b)`는 `a==b` 의미이며 기본 객체는 비교 대상을 소유하지 않는 무상태 값이다.
+- 대표 호출은 `constexpr bool std::less<T>::operator()(const T& lhs, const T& rhs) const`와 `constexpr bool std::equal_to<T>::operator()(const T& lhs, const T& rhs) const`다. 두 const lvalue를 빌려 bool을 반환하고 객체·피연산자·반복자를 바꾸거나 저장소를 할당하지 않는다. 시간·예외 명세는 각각 선택된 `<`와 `==` 식을 따른다. 오늘의 int 비교는 `O(1)`이고 던지지 않으며, `Entry::operator<`도 값과 인덱스의 정수 비교만 해 `O(1)`·`noexcept`다.
 - 2026-09-28의 `std::multiset<Entry>`는 기본 `std::less<Entry>`를 보관해 `(value,index)` 엄격 약순서를 정한다. 비교자 기본 생성·소멸은 `O(1)`·무할당·비투척이고 컨테이너 원소 수명을 소유하지 않는다. multiset이 살아 있는 동안 비교자가 유효해야 하며, 같은 원소들에 일관된 엄격 약순서를 제공하지 않으면 연관 컨테이너의 의미 요구를 깨뜨린다.
+- 2026-09-30의 두-반복자 `std::sort`는 C++20 이후 생략된 순서 비교에 `std::less{}` 의미를, `std::unique`는 생략된 동등 비교에 `std::equal_to{}` 의미를 쓴다. 전자는 엄격 약순서를, 후자는 동등 관계를 이뤄야 한다. 비교 객체와 피연산자의 수명은 호출까지 유지되어야 하고 같은 원소에 대한 동시 쓰기는 데이터 경쟁이며, 사용자 정의 비교가 던지면 알고리즘으로 전파될 수 있다.
 - `std::priority_queue<T,Container,std::greater<T>>`는 작은 값이 `top`이 되는 최소 힙을 만든다. 투명 비교자인 `std::less<>`는 서로 비교 가능한 다른 타입을 받아 불필요한 키 임시 생성을 줄일 수 있다.
 
 ## 최소 예제

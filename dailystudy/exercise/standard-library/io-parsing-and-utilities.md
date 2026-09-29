@@ -80,7 +80,7 @@
 
 `std::ios`는 `std::basic_ios<char>`의 표준 별칭으로, 문자 스트림의 상태 비트·예외 mask·tie 포인터 같은 공통 상태 인터페이스를 나타낸다. 오늘 코드는 이 타입 이름을 통해 상속된 정적 `sync_with_stdio` 설정을 표기한다. 별칭 자체는 객체를 생성하거나 호출하지 않고, 실제 상태·오류·동시성 계약은 아래 함수와 각 stream 객체의 연산이 정한다.
 
-- `std::ios_base::sync_with_stdio`는 `static bool ios_base::sync_with_stdio(bool sync = true)`로 선언되며 인스턴스 수신자 없이 bool 값 하나를 받고 이전 설정을 반환한다. `std::ios::sync_with_stdio(false)`는 상속된 같은 정적 함수를 별칭을 통해 부른다. `false`는 C stdio와 C++ iostream의 동기화를 끈다. 표준 stream에서 I/O가 한 번이라도 일어난 뒤 호출한 효과는 implementation-defined이므로 오늘 코드는 어떤 입출력보다 먼저 한 번 호출하고, 이후 C와 C++ 스트림을 같은 파일에서 임의로 섞지 않는다.
+- `std::ios_base`는 문자 타입과 독립적인 stream 형식 flag, 상태 관련 기반 기능과 동기화 설정을 제공하는 class다. `std::ios_base::sync_with_stdio`는 `static bool ios_base::sync_with_stdio(bool sync = true)`로 선언되며 인스턴스 수신자 없이 bool 값 하나를 받고 이전 설정을 반환한다. `std::ios::sync_with_stdio(false)`는 상속된 같은 정적 함수를 별칭을 통해 부른다. `false`는 C stdio와 C++ iostream의 동기화를 끈다. 표준 stream에서 I/O가 한 번이라도 일어난 뒤 호출한 효과는 implementation-defined이므로 오늘 코드는 어떤 입출력보다 먼저 한 번 호출하고, 이후 C와 C++ 스트림을 같은 파일에서 임의로 섞지 않는다.
 - `false`로 바꾼 뒤에는 synchronized 표준 stream에만 주어진 동시 formatted/unformatted 입출력의 data-race 예외 보장을 쓸 수 없다. 이 ICPC 설정은 단일 스레드 입출력을 전제로 한다.
 - setter `std::ostream* basic_ios::tie(std::ostream* tied)`는 `cin` 수신 객체와 비소유 포인터 인자 하나를 받고 이전 연결 포인터를 반환한다. non-null `tied`를 주려면 `tied->tie()`에서 tie 포인터 사슬을 따라가도 `tied` 자신에 도달하지 않아야 하며, 이 순환 방지 전제조건을 깨면 미정의 동작이다. 오늘의 `nullptr`는 전제를 자명하게 만족하고 입력 전 `cout` 자동 flush 연결을 해제하며 두 스트림 객체나 버퍼의 소유권은 바뀌지 않는다.
 - 두 설정 함수에는 표준이 별도 복잡도 상한을 명시하지 않는다. `tie`는 스트림 연결 포인터 관계만 바꾸며 소유권을 이전하거나 문자 버퍼를 할당하지 않는다. 두 선언 모두 `noexcept`가 아니므로 호출자 코드는 무예외를 타입 계약으로 가정하지 않는다. 별도 오류값은 없고, 같은 전역 stream 설정을 여러 실행 흐름이 경쟁 변경하지 않는다.
