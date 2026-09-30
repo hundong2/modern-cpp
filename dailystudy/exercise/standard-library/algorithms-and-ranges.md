@@ -228,6 +228,45 @@ int main() {
 }
 ```
 
+## `std::views::enumerate`와 `std::ranges::enumerate_view` — `<ranges>`의 C++23 위치 결합 view
+
+- **항목 종류·헤더·현재 역할**: `<ranges>`가 C++23 range adaptor 객체 `std::views::enumerate`와 class template `std::ranges::enumerate_view<V>`를 선언한다. 2026-10-01 `ReleasePlan`과 `ReviewChecklist`는 살아 있는 const owner의 vector에 0-based 위치를 붙여 순회한 뒤, 외부 경계에는 1-based 번호와 문자열을 소유하는 별도 vector를 만든다.
+- **공개 class 제약**: 형태는 `template<ranges::view V> requires range-with-movable-references<V> class ranges::enumerate_view;`다. 여기서 표준의 설명 전용 `range-with-movable-references<R>`는 `input_range<R>`이면서 `range_reference_t<R>`와 `range_rvalue_reference_t<R>`가 각각 `move_constructible`일 것을 요구한다. 이 설명 전용 이름을 사용자 코드에서 공개 concept처럼 직접 사용할 수는 없다. 생성자는 `constexpr explicit enumerate_view(V base);`이고 deduction guide는 `template<class R> enumerate_view(R&&) -> enumerate_view<views::all_t<R>>;` 형태다.
+- **adaptor 호출의 선택 규정**: `views::enumerate`의 공개 객체 타입과 구체 `operator()` 선언은 구현 세부다. 표준 계약은 식 `E`에 대해 `views::enumerate(E)`가 `enumerate_view<views::all_t<decltype((E))>>(E)`와 expression-equivalent라고 정한다. 오늘의 `E`는 `const std::vector<T>` lvalue이므로 `views::all_t<decltype((E))>`는 보통 `ranges::ref_view<const std::vector<T>>`이고 결과는 owner를 빌린다.
+- **수신 객체·매개변수·값 범주·소유권**: 함수처럼 호출되는 adaptor 객체 외에 사용자 데이터 수신 객체는 없다. 유일한 range 식은 살아 있는 const lvalue이며 저장소·원소 소유권을 넘기지 않는다. 일반 rvalue viewable range는 `views::all`이 `owning_view`로 소유할 수 있으므로 모든 enumerate 결과가 비소유라고 일반화하지 않는다. 오늘처럼 lvalue 컨테이너를 넘긴 결과는 owner 수명과 iterator 유효성에 종속된다.
+- **반환과 index 타입**: 호출은 작은 지연 view prvalue를 반환하며 구성만으로 원소를 순회하지 않는다. iterator 역참조의 첫 성분은 0에서 시작해 증가하는 `range_difference_t<V>` 값이고, 둘째 성분은 `range_reference_t<V>`다. 첫 성분은 일반적으로 signed 차이 타입이지 `size_t`라고 단정할 수 없다. 오늘은 비음수 index임을 근거로 명시 변환한 뒤 표시용 1을 더한다.
+- **tuple-like 역참조·구조적 바인딩**: 역참조 결과는 index 값과 기반 원소 참조를 tuple-like하게 보이는 prvalue다. `for (auto&& [index, element] : view)`의 바깥 참조는 그 반복의 tuple-like 결과를 붙잡고, `element`는 기반 원소를 계속 빌린다. 결과를 저장한다고 원소가 복사되거나 수명이 연장되지 않는다. 기반이 proxy reference를 내는 범위라면 둘째 성분도 실제 `T&`가 아닐 수 있다.
+- **순서·파이프 조합**: enumerate는 자신이 받은 범위의 순서에 번호를 붙인다. `source | views::filter(pred) | views::enumerate`는 필터를 통과한 원소를 0부터 다시 번호 매기고, `source | views::enumerate | views::filter(...)`는 원본 위치를 보존한 index를 필터와 함께 관찰한다. 어느 의미가 도메인 요구인지 먼저 정해야 한다.
+- **사후 상태·복잡도·할당**: lvalue vector 기반 view 구성은 O(1), 원소 복사·이동·동적 할당 없음이다. iterator 증가·역참조·비교는 기반 iterator의 해당 연산에 상수 작업을 더하고, 전체 한 번 순회는 O(n)이다. `size()`가 제공되는 기반에서는 enumerate view도 같은 원소 수를 상수 시간에 보고할 수 있다. 구성과 순회는 기반 원소·size·capacity를 바꾸지 않는다.
+- **무효화·수명**: ref-view 기반 enumerate, iterator, tuple-like 결과의 원소 참조는 owner 파괴 뒤 댕글링한다. vector 재할당은 모든 iterator/reference를 무효화하고, erase/insert는 위치에 따른 vector 무효화 규칙을 그대로 적용한다. view 객체의 const 여부만으로 mutable 기반 원소가 const가 되지 않으므로 읽기 전용 관찰이 필요하면 오늘처럼 const owner lvalue를 넘긴다.
+- **오류·예외·미정의 동작·스레드**: 필요한 view/input-range 및 차이 타입 요구를 만족하지 않으면 적합한 호출이 없어 컴파일 실패한다. `views::all` 변환, 기반 `begin/end`, iterator 연산과 원소 접근이 던지는 예외는 전파될 수 있어 모든 일반 호출을 무조건 `noexcept`라고 단정하지 않는다. end iterator 역참조, owner 파괴나 무효화 뒤 접근, 의미 요구를 깨는 사용자 range는 UB로 이어질 수 있다. 같은 기반을 읽기만 하는 별도 순회는 가능하지만 한 스레드의 구조 변경·원소 쓰기와 다른 스레드의 읽기는 자동 동기화되지 않는다.
+
+### 최소 실행 예제
+
+```cpp
+#include <iostream>
+#include <ranges>
+#include <string>
+#include <vector>
+
+int main() {
+    const std::vector<std::string> names{"compile", "test", "deploy"};
+    for (auto&& [index, name] : std::views::enumerate(names)) {
+        std::cout << (index + 1) << ':' << name << '\n';
+    }
+}
+```
+
+### 흔한 실수와 오늘의 연결
+
+1. index를 언제나 `size_t`라고 가정해 signed/unsigned 변환 경고와 음수 sentinel 확장을 놓친다.
+2. 구조적 바인딩의 element가 소유 사본이라고 생각해 owner보다 오래 보관한다.
+3. `filter | enumerate`가 원본 위치를 보존한다고 오해한다.
+4. 임시 domain owner의 lvalue 멤버를 enumerate한 view를 반환해 owner 파괴 직후 댕글링시킨다.
+5. 순회 중 기반 vector에 push/erase해 현재 iterator와 element 참조를 무효화한다.
+
+[`../2026-10-01/main.cpp`](../2026-10-01/main.cpp)는 `indexed_steps() const &`와 삭제한 `const &&` overload로 owner 수명 의도를 API에 드러내고, `make_snapshot()`에서만 문자열을 깊게 복사한다. [`../2026-10-01/problem.cpp`](../2026-10-01/problem.cpp)는 validation 결과에 원래 1-based 위치를 붙이는 같은 패턴을 연습한다.
+
 ## `std::views::filter`와 `std::views::transform` — `<ranges>`
 
 - `filter(predicate)`는 술어가 참인 원소만 지연 노출한다.

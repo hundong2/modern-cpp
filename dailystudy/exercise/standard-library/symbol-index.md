@@ -28,8 +28,9 @@
 | `std::ranges::sort` | 범위·프로젝션 기반 정렬 | [알고리즘](algorithms-and-ranges.md) |
 | `std::ranges::subrange` | iterator·sentinel로 만든 비소유 반열린 view | [알고리즘](algorithms-and-ranges.md) |
 | `std::ranges::to` | 입력 범위를 지정한 소유 컨테이너 값으로 materialize | [알고리즘](algorithms-and-ranges.md) |
-| `std::views::filter` | 조건을 만족하는 원소의 지연 뷰 | [알고리즘](algorithms-and-ranges.md) |
 | `std::views::chunk_by` | 인접 원소 술어가 참인 최대 구간을 지연 노출하는 C++23 view adaptor | [알고리즘](algorithms-and-ranges.md) |
+| `std::views::enumerate` | C++23 범위 원소에 0-based 차이 타입 index를 지연 결합 | [알고리즘](algorithms-and-ranges.md) |
+| `std::views::filter` | 조건을 만족하는 원소의 지연 뷰 | [알고리즘](algorithms-and-ranges.md) |
 | `std::views::transform` | 변환 결과의 지연 뷰 | [알고리즘](algorithms-and-ranges.md) |
 | `std::views::zip` | C++23 여러 범위의 같은 위치를 참조 tuple 행으로 결합 | [알고리즘](algorithms-and-ranges.md) |
 | `std::less`, `std::greater`, `std::equal_to` | 엄격 순서·동등 비교 함수 객체 | [알고리즘](algorithms-and-ranges.md) |

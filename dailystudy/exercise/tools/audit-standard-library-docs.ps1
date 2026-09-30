@@ -383,6 +383,8 @@ $contractPatterns = @(
     [pscustomobject]@{ Name = 'std::upper_bound'; Pattern = '(?m)^(?!\s*//)\s*[^\r\n]*std::upper_bound\s*\('; Readme = 'std::upper_bound(' },
     [pscustomobject]@{ Name = 'std::ranges::equal_range'; Pattern = '(?m)^(?!\s*//)\s*[^\r\n]*std::ranges::equal_range\s*\('; Readme = 'std::ranges::equal_range(' },
     [pscustomobject]@{ Name = 'std::views::chunk_by'; Pattern = '(?m)^(?!\s*//)\s*[^\r\n]*std::views::chunk_by\s*\('; Readme = 'std::views::chunk_by(' },
+    [pscustomobject]@{ Name = 'std::views::enumerate'; Pattern = '(?m)^(?!\s*//)\s*[^\r\n]*std::views::enumerate\s*\('; Readme = 'std::views::enumerate(' },
+    [pscustomobject]@{ Name = 'enumerate range-for hidden operations'; Pattern = '(?m)^(?!\s*//)\s*for\s*\(\s*auto\s*&&\s*\[[^\]\r\n]+\]\s*:\s*[^\r\n]+\)'; RequiresEnumerate = $true; Readme = 'enumerate range-' },
     [pscustomobject]@{ Name = 'std::views::zip'; Pattern = '(?m)^(?!\s*//)\s*[^\r\n]*std::views::zip\s*\('; Readme = 'std::views::zip(' },
     [pscustomobject]@{ Name = 'std::views::slide'; Pattern = '(?m)^(?!\s*//)\s*[^\r\n]*std::views::slide\s*\('; Readme = 'std::views::slide(' },
     [pscustomobject]@{ Name = 'generator promise yield_value'; Pattern = '(?m)^(?!\s*//)\s*[^\r\n]*\bco_yield\b'; Readme = 'promise_type::yield_value' },
@@ -550,6 +552,14 @@ foreach ($file in Get-ChildItem -LiteralPath $latestDirectory.FullName -Filter '
         ($multisetReceiverNames | ForEach-Object { [regex]::Escape($_) }) -join '|'
 
     foreach ($candidate in $contractPatterns) {
+        # enumerate 구조적 바인딩에는 소스에 직접 보이지 않는 begin/end/*/++와 ADL std::get 호출이 있다.
+        # enumerate를 쓰는 번역 단위에서만 해당 range-for를 계약 후보로 검사한다.
+        if (
+            $null -ne $candidate.PSObject.Properties['RequiresEnumerate'] -and
+            $contractSource -notmatch 'std::views::enumerate\s*\('
+        ) {
+            continue
+        }
         # vector 멤버·생성자 후보는 vector를 직접 사용하는 번역 단위에서만 표준 호출로 간주한다.
         if ($candidate.Name.StartsWith('vector') -and $contractSource -notmatch 'std::vector\s*<') {
             continue
@@ -711,7 +721,7 @@ foreach ($file in Get-ChildItem -LiteralPath $latestDirectory.FullName -Filter '
         $contextStart = [Math]::Max(0, $lineNumber - 9)
         $contractSearchStart = [Math]::Max(0, $lineNumber - 25)
         for ($index = $lineNumber - 2; $index -ge $contractSearchStart; $index--) {
-            if ($lines[$index] -match '^\s*//\s*\[(?:첫\s*)?(?:호출|생성) 계약:') {
+            if ($lines[$index] -match '^\s*//\s*\[(?:첫\s*)?(?:숨은\s*)?(?:호출|생성) 계약:') {
                 $contextStart = $index
                 break
             }
