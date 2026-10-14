@@ -77,6 +77,20 @@ $optionalReceiverDeclarationPattern =
     'std::optional\s*<[^;\r\n]+>\s*(?:(?:const|volatile)\s+)*' +
     '(?:[&*]\s*)?(?<Receiver>[A-Za-z_][A-Za-z0-9_]*)\b(?=[^;\r\n]*;)'
 
+# atomic_ref는 원본 저장소를 소유하지 않는다. 직접 template 인자를 쓴 선언과 CTAD 선언을 모두
+# 인식하고, 생성된 정확한 수신자만 load/store/fetch_add 계약 후보로 좁힌다.
+$atomicRefConstructionPattern =
+    '(?m)^[ \t]*' + $declarationQualifierPattern +
+    'std::atomic_ref(?:\s*<[^;\r\n]+>)?\s*(?:(?:const|volatile)\s+)*' +
+    '(?<Receiver>[A-Za-z_][A-Za-z0-9_]*)\s*(?:\{|\((?!\s*\)))'
+$atomicRefReceiverDeclarationPattern =
+    '(?m)^[ \t]*' + $declarationQualifierPattern +
+    'std::atomic_ref(?:\s*<[^;\r\n]+>)?\s*(?:(?:const|volatile)\s+)*' +
+    '(?:[&*]\s*)?(?<Receiver>[A-Za-z_][A-Za-z0-9_]*)\b'
+$atomicRefAliasDeclarationPattern =
+    '(?m)^[ \t]*using\s+(?<Alias>[A-Za-z_][A-Za-z0-9_]*)\s*=\s*' +
+    'std::atomic_ref\s*<[^;\r\n]+>\s*;'
+
 # direct-list/direct-initialization 모두와 개행된 initializer를 인식한다. 빈 ()는 함수 선언이므로 제외한다.
 $jthreadConstructionPattern =
     '(?m)^[ \t]*' + $declarationQualifierPattern +
@@ -364,6 +378,10 @@ $contractPatterns = @(
     [pscustomobject]@{ Name = 'std::optional default constructor'; Pattern = $optionalDefaultConstructionPattern; Readme = 'std::optional()' },
     [pscustomobject]@{ Name = 'optional::emplace'; OptionalMember = 'emplace'; Readme = 'optional::emplace(' },
     [pscustomobject]@{ Name = 'optional::value'; OptionalMember = 'value'; Readme = 'optional::value(' },
+    [pscustomobject]@{ Name = 'std::atomic_ref constructor'; AtomicRefConstruction = $true; Readme = 'std::atomic_ref<' },
+    [pscustomobject]@{ Name = 'atomic_ref::load'; AtomicRefMember = 'load'; Readme = 'atomic_ref::load(' },
+    [pscustomobject]@{ Name = 'atomic_ref::store'; AtomicRefMember = 'store'; Readme = 'atomic_ref::store(' },
+    [pscustomobject]@{ Name = 'atomic_ref::fetch_add'; AtomicRefMember = 'fetch_add'; Readme = 'atomic_ref::fetch_add(' },
     [pscustomobject]@{ Name = 'std::jthread constructor'; Pattern = $jthreadConstructionPattern; Readme = 'std::jthread' },
     [pscustomobject]@{ Name = 'std::span constructor'; Pattern = $spanConstructionPattern; Readme = 'std::span<char>' },
     [pscustomobject]@{ Name = 'std::ospanstream constructor'; Pattern = $ospanstreamConstructionPattern; Readme = 'std::ospanstream' },
@@ -448,6 +466,29 @@ foreach ($file in Get-ChildItem -LiteralPath $latestDirectory.FullName -Filter '
     )
     $optionalReceiverAlternation = (
         $optionalReceiverNames |
+            ForEach-Object { [regex]::Escape($_) }
+    ) -join '|'
+    $atomicRefAliasNames = @(
+        [regex]::Matches($contractSource, $atomicRefAliasDeclarationPattern) |
+            ForEach-Object { $_.Groups['Alias'].Value } |
+            Sort-Object -Unique
+    )
+    $atomicRefReceiverNames = @(
+        [regex]::Matches($contractSource, $atomicRefReceiverDeclarationPattern) |
+            ForEach-Object { $_.Groups['Receiver'].Value }
+        if ($atomicRefAliasNames.Count -gt 0) {
+            $atomicRefAliasAlternation =
+                ($atomicRefAliasNames | ForEach-Object { [regex]::Escape($_) }) -join '|'
+            [regex]::Matches(
+                $contractSource,
+                '(?m)^[ \t]*' + $declarationQualifierPattern + '(?:' +
+                $atomicRefAliasAlternation + ')\s*(?:(?:const|volatile)\s+)*' +
+                '(?:[&*]\s*)?(?<Receiver>[A-Za-z_][A-Za-z0-9_]*)\b'
+            ) | ForEach-Object { $_.Groups['Receiver'].Value }
+        }
+    ) | Sort-Object -Unique
+    $atomicRefReceiverAlternation = (
+        $atomicRefReceiverNames |
             ForEach-Object { [regex]::Escape($_) }
     ) -join '|'
     $spanReceiverNames = @(
@@ -575,6 +616,32 @@ foreach ($file in Get-ChildItem -LiteralPath $latestDirectory.FullName -Filter '
         }
         $candidatePattern = $candidate.Pattern
         $selectedMatch = $null
+        if ($null -ne $candidate.PSObject.Properties['AtomicRefConstruction']) {
+            # 직접 `std::atomic_ref<T> ref{target}`뿐 아니라 using 별칭으로 선언한 지역 객체와
+            # `Reference member_;`를 생성자의 `: member_{target}`에서 완성하는 형태도 찾는다.
+            $atomicRefConstructionMatches = @(
+                [regex]::Matches($contractSource, $atomicRefConstructionPattern)
+                if ($atomicRefAliasNames.Count -gt 0) {
+                    [regex]::Matches(
+                        $contractSource,
+                        '(?m)^[ \t]*' + $declarationQualifierPattern + '(?:' +
+                        $atomicRefAliasAlternation + ')\s*(?:(?:const|volatile)\s+)*' +
+                        '[A-Za-z_][A-Za-z0-9_]*\s*(?:\{|\((?!\s*\)))'
+                    )
+                }
+                if ($atomicRefReceiverNames.Count -gt 0) {
+                    [regex]::Matches(
+                        $contractSource,
+                        '(?m)^[ \t]*(?::|,)\s*(?:' + $atomicRefReceiverAlternation +
+                        ')\s*(?:\{|\((?!\s*\)))'
+                    )
+                }
+            )
+            $selectedMatch = $atomicRefConstructionMatches | Sort-Object Index | Select-Object -First 1
+            if ($null -eq $selectedMatch) {
+                continue
+            }
+        }
         if ($null -ne $candidate.PSObject.Properties['VectorDefaultConstruction']) {
             # `vector<T> local;`은 실제 기본 생성이지만, `vector<T> member_;`가 생성자의 멤버 초기화 목록에서
             # move/fill 등 다른 생성자로 완성되는 경우는 기본 생성이 아니다. 빈 {}, ={}와 plain 선언을 모두
@@ -608,6 +675,15 @@ foreach ($file in Get-ChildItem -LiteralPath $latestDirectory.FullName -Filter '
             $candidatePattern =
                 '(?m)^(?!\s*//)\s*[^\r\n]*\b(?:' + $optionalReceiverAlternation +
                 ')\s*(?:\.|->)\s*' + [regex]::Escape($candidate.OptionalMember) + '\s*\('
+        }
+        $atomicRefMemberProperty = $candidate.PSObject.Properties['AtomicRefMember']
+        if ($null -ne $atomicRefMemberProperty) {
+            if ($atomicRefReceiverNames.Count -eq 0) {
+                continue
+            }
+            $candidatePattern =
+                '(?m)^(?!\s*//)\s*[^\r\n]*\b(?:' + $atomicRefReceiverAlternation +
+                ')\s*(?:\.|->)\s*' + [regex]::Escape($candidate.AtomicRefMember) + '\s*\('
         }
         $spanMemberProperty = $candidate.PSObject.Properties['SpanMember']
         if ($null -ne $spanMemberProperty) {

@@ -120,6 +120,7 @@
 | 심볼 | 짧은 역할 | 상세 문서 |
 |---|---|---|
 | `std::atomic` | 원자 load/store/RMW 상태 | [동시성](concurrency-time-filesystem.md) |
+| `std::atomic_ref` | 기존 객체 저장소에 원자 연산을 적용하는 비소유 C++20 참조 | [동시성](concurrency-time-filesystem.md) |
 | `std::memory_order_relaxed` | 원자성만 필요한 약한 순서 | [동시성](concurrency-time-filesystem.md) |
 | `std::memory_order_release` | 게시 저장 순서 | [동시성](concurrency-time-filesystem.md) |
 | `std::memory_order_acquire` | 게시 값 관찰 로드 순서 | [동시성](concurrency-time-filesystem.md) |

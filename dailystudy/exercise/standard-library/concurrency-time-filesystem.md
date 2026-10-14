@@ -62,6 +62,34 @@
 - 새 값을 원하면 `fetch_add(1)+1`처럼 계산한다. 이 `+1`은 지역 반환값 계산이지 두 번째 원자 갱신이 아니다.
 - 정수 원자에서 유용하며 메모리 순서를 명시할 수 있다.
 
+## `std::atomic_ref<T>` — `<atomic>`의 비소유 원자 참조
+
+`std::atomic_ref<T>`는 이미 존재하는 `T` 객체를 새로 소유하거나 복사하지 않고, 그 저장소에 원자 연산을 적용하는 C++20 class template이다. 객체 배치를 바꿀 수 없는 공유 메모리, 기존 구조체의 계수 필드, C ABI가 제공한 저장소처럼 원본 타입을 `std::atomic<T>`로 교체하기 어려운 경계에 쓴다. 원자 참조 자체가 대상의 수명을 연장하거나 주변 필드를 보호하지는 않는다.
+
+### 타입·생성 계약
+
+- 대표 생성 형태는 `explicit atomic_ref(T& object)`다. 표준은 이 생성자에 `Throws: Nothing`을 규정하지만 선언 자체에는 `noexcept` 지정이 없다. `T`는 trivially copyable이어야 하며, rvalue 임시 객체에는 바인딩하지 않는다. 생성자는 반환값 없이 `object`를 비소유로 가리키는 원자 참조를 완성하고 `object`의 값은 바꾸지 않는다.
+- `object`의 주소는 `std::atomic_ref<T>::required_alignment`를 만족해야 한다. layout을 처음부터 설계할 수 있을 때는 원본 저장소 선언에 `alignas(std::atomic_ref<T>::required_alignment)`를 사용할 수 있다. 이미 동결된 외부 ABI에 이를 나중에 추가하면 구조체 크기·멤버 offset이 바뀔 수 있으므로, 기존 주소 정렬을 먼저 검증하고 부족하면 atomic_ref를 사용하지 않는다. 정렬 전제조건 위반은 미정의 동작이며 생성자가 런타임 오류값으로 보고하지 않는다.
+- 원본 `object`의 수명은 이를 가리키는 모든 atomic_ref보다 길어야 한다. owner 파괴, 원소 제거, `std::vector` 재할당처럼 원본 주소나 수명이 끝나는 연산 뒤에는 참조가 dangling이다. atomic_ref 파괴는 원본을 파괴하거나 값을 되돌리지 않는다.
+- atomic_ref가 하나라도 원본을 가리키는 동안 그 원본에 대한 접근은 그 원본을 가리키는 atomic_ref를 통해서만 해야 한다. 직접 비원자 읽기·쓰기와 섞거나, 한 atomic_ref가 가리키는 객체의 겹치는 subobject를 다른 atomic_ref로 동시에 다루면 전제조건을 깨뜨린다.
+- 복사 생성한 atomic_ref도 같은 원본을 가리키며 그 원본에 대한 원자 연산들은 하나의 modification order에 참여한다. atomic_ref는 CopyConstructible이지만 copy assignment는 삭제되어 있어 다른 저장소로 재바인딩하는 handle이 아니다.
+
+### 오늘 사용하는 멤버 호출 계약
+
+| 대표 멤버 형태 | 수신 객체와 입력 매개변수 | 반환값 | 호출 뒤 상태 |
+|---|---|---|---|
+| `T load(memory_order order = seq_cst) const noexcept` | 살아 있고 올바르게 정렬된 원본을 가리키는 `atomic_ref<T>`가 수신 객체다. `order`는 값이 아니라 읽기 순서이며 `relaxed`, `consume`, `acquire`, `seq_cst`만 허용한다. | 호출이 관찰한 원본 `T`의 값 복사본. 호출부가 저장·비교·반환하는지 따로 확인한다. | 원본 값과 수신 참조는 바뀌지 않는다. |
+| `void store(T desired, memory_order order = seq_cst) const noexcept` | `desired`는 저장할 값이고 `order`는 쓰기 순서다. `relaxed`, `release`, `seq_cst`만 허용한다. atomic_ref가 `const` lvalue여도 handle 자체가 아니라 non-const 원본을 수정할 수 있다. | `void`; 이전 값은 반환하지 않는다. | 원본 값이 `desired`로 교체되고 같은 원본의 modification order에 기록된다. |
+| `value_type fetch_add(value_type difference, memory_order order = seq_cst) const noexcept` (정수·부동소수점), `value_type fetch_add(difference_type difference, memory_order order = seq_cst) const noexcept` (포인터) | 정수·부동소수점 특수화는 더할 `value_type`, 포인터 특수화는 원소 단위 `difference_type`과 읽기-수정-쓰기 순서를 받는다. 오늘의 정수 호출은 `uint64_t` 차이와 `relaxed` 순서를 값으로 전달하고 소유권을 옮기지 않는다. | 연산 **전**의 `value_type` 값. 반환값을 버리면 갱신만 사용하고, 새 값이 필요하면 지역 계산으로 차이를 더한다. | 한 원자 read-modify-write로 원본 값이 증가한다. 오늘의 `relaxed` 호출은 주변 비원자 데이터를 게시하지 않지만, release/acquire 계열 순서를 고른 다른 호출은 해당 메모리 순서 규칙에 따라 동기화에 참여할 수 있다. |
+
+### 복잡도·할당·오류·스레드 보장
+
+- 생성과 위 원자 연산은 대상 크기나 컨테이너 길이에 비례하지 않지만 표준은 공통 점근 시간이나 wait-free 보장을 두지 않는다. `is_lock_free()`와 `is_always_lock_free`를 확인하지 않고 단일 CPU 명령이라고 단정하지 않는다.
+- atomic_ref는 별도의 `T` 값 저장소를 소유하거나 사용자의 원본·참조를 무효화하지 않는다. 그러나 표준은 생성 또는 원자 연산이 대상에 연결된 잠금 같은 내부 공유 자원을 얻을 수 있음을 명시하므로 무할당을 보장하지 않는다. 생성자는 표준상 예외를 던지지 않지만 선언에는 `noexcept`가 없고, 위 `load`/`store`/`fetch_add` 멤버는 `noexcept`다. 이 연산들은 사용자에게 복구 가능한 오류 코드를 반환하지 않으며, 구현은 lock-free가 아닐 때 내부 잠금 전략을 사용할 수 있다.
+- 잘못된 정렬, 끝난 수명, 허용되지 않은 `memory_order`, 직접 비원자 접근과의 혼용, 또는 겹치는 참조 규칙 위반은 예외가 아니라 미정의 동작으로 이어질 수 있다. `memory_order_relaxed`도 같은 원본 값의 원자성과 modification order는 보장하지만 주변 객체의 쓰기를 게시하지 않는다.
+- 같은 원본을 가리키는 atomic_ref 연산끼리는 원자적이지만, 원본을 포함한 구조체의 다른 필드와 여러 atomic_ref 호출을 합친 복합 불변식까지 한 번에 원자화하지 않는다. 그런 불변식에는 mutex, 더 넓은 원자 상태, 또는 검증된 프로토콜이 필요하다.
+- 기계 관점에서는 정렬된 load/store/read-modify-write, fence 또는 라이브러리 잠금으로 구현될 수 있다. 실제 명령, 캐시 일관성 비용, lock-free 여부와 지연은 CPU·ABI·표준 라이브러리·최적화 옵션과 경쟁 정도에 따라 달라진다.
+
 ## `std::mutex`, `std::scoped_lock`, `std::unique_lock`
 
 - `mutex`는 한 번에 한 스레드만 임계 구역에 들어가게 한다. 직접 `lock` 후 예외가 나면 `unlock` 누락 위험이 있어 RAII 잠금 객체를 사용한다.
