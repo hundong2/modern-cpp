@@ -155,6 +155,38 @@
 - `old = std::move(object)`에 해당하는 옛 값을 반환하고 `object = new_value`로 바꾼다.
 - 핸들 이동, 상태 전이, 카운터 교체를 한 식으로 표현한다.
 
+## `std::to_underlying` — `<utility>`의 C++23 enum 경계 변환
+
+`std::to_underlying`은 강한 `enum class` 값을 그 열거형의 기저 정수 값으로 바꾸는 C++23 자유 함수 template이다. 도메인 내부에서 enum의 타입 안전성을 유지하고 DB column, wire protocol, logging adapter 같은 외부 경계에서만 숫자로 낮출 때 쓴다. 오늘 자료 [`../2026-10-14/main.cpp`](../2026-10-14/main.cpp)는 배송 상태를 16비트 wire code로 직렬화한다.
+
+- **항목 종류·헤더·대표 형태:** `<utility>`의 함수 template이며 대표 형태는 `template<class T> constexpr std::underlying_type_t<T> to_underlying(T value) noexcept;`다. `T`는 열거형이어야 하고 반환형은 그 열거형의 기저 정수 타입이다. enum이 아닌 타입을 넘기면 유효한 특수화가 되지 않아 컴파일 진단 대상이다.
+- **수신 객체와 인자:** 자유 함수라 멤버 수신 객체가 없다. 인자 `value`는 `Enum` 값으로 복사되며 모든 표현 가능한 enum 값을 받을 수 있다. 호출자의 참조·포인터·저장소를 보관하지 않고 객체 소유권이나 수명을 이전하지 않는다.
+- **반환값:** 반환값은 `value`에 해당하는 기저 정수 타입 prvalue다. 새 컨테이너나 참조가 아니라 독립된 기본 타입 값이므로 원본 enum보다 오래 보관할 수 있다. 오늘 `DeliveryState`의 명시 기저 타입이 `uint16_t`라 반환도 같은 타입이며, wire DTO의 `state_code` 초기화에 사용한다.
+- **상태 변화와 후조건:** 효과는 enum 값을 기저 타입으로 명시 변환한 것과 같다. 원본 enum과 다른 프로그램 객체는 바뀌지 않고, 포인터·참조·반복자도 무효화되지 않는다. 열거자 선언 순서와 무관한 안정된 외부 값을 원하면 각 열거자에 protocol 값을 명시해야 한다.
+- **복잡도·할당·예외:** 상수 시간, 상수 공간, 무할당이며 `constexpr`와 `noexcept`다. 런타임 실패 값이나 예외를 반환하지 않는다. 공유 전역 상태를 사용하지 않아 독립 enum 값에 대한 병행 호출은 별도 동기화가 필요 없다.
+- **수명·오류·UB:** 반환값은 참조가 아니므로 dangling 수명 문제가 없다. 유효한 enum 객체를 읽는 정상 호출 자체에 별도 UB 조건은 없다. 다만 임의의 외부 정수를 enum으로 역변환하는 작업은 이 함수의 역할이 아니다. 숫자가 알려진 열거자 집합에 속하는지 먼저 검증하지 않으면 도메인 불변식이 깨질 수 있다.
+- **현재 코드의 선택 이유:** `static_cast<uint16_t>(state)`도 같은 값 변환을 표현할 수 있지만, `to_underlying`은 반환 타입을 enum 선언의 기저 타입과 자동으로 맞춘다. enum의 기저 타입을 바꿀 때 호출부 cast 타입이 낡는 위험을 줄이고 “이 위치가 enum-to-wire 경계”라는 의도를 드러낸다.
+- **흔한 실수:** 기저 값을 곧 안정된 직렬화 ID라고 가정하고 열거자 명시 값을 생략하는 것, 결과를 더 좁은 정수 타입에 검증 없이 저장하는 것, 외부 숫자의 역변환까지 안전하게 검증해 준다고 오해하는 것, 비트 flag enum에서 정의하지 않은 비트 조합을 무조건 유효하다고 취급하는 것이다.
+
+최소 예제:
+
+```cpp
+#include <cstdint>
+#include <utility>
+
+enum class Status : std::uint16_t {
+    queued = 10U,
+    done = 20U,
+};
+
+static_assert(std::to_underlying(Status::queued) == 10U);
+
+int main() {
+    const std::uint16_t wire{std::to_underlying(Status::done)};
+    return wire == 20U ? 0 : 1;
+}
+```
+
 ## 수치 도구
 
 ### `std::numeric_limits<T>` — `<limits>`

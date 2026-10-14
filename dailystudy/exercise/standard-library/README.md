@@ -7,7 +7,7 @@
 1. 날짜별 README의 `오늘 사용한 표준 라이브러리` 표에서 심볼과 헤더를 확인한다.
 2. 코드 바로 위 주석에서 현재 인자와 반환값이 프로그램 상태를 어떻게 바꾸는지 읽는다.
 3. 이 폴더의 대표 문서에서 복잡도, 수명, 무효화, 오류 조건까지 확인한다.
-4. [`by-date.md`](by-date.md)에서 기존 188개 C++ 파일이 사용하는 심볼을 날짜별로 다시 찾는다.
+4. [`by-date.md`](by-date.md)에서 기존 191개 C++ 파일이 사용하는 심볼을 날짜별로 다시 찾는다.
 5. [`../tools/audit-standard-library-docs.ps1`](../tools/audit-standard-library-docs.ps1)로 문서에 등록되지 않은 심볼이 있는지 검사한다.
 
 ## 문서 구성
@@ -19,7 +19,7 @@
 - [`algorithms-and-ranges.md`](algorithms-and-ranges.md): 정렬·`unique`, `lower_bound`/`upper_bound`·`equal_range` 이진 탐색, C++23 `generator` 지연 input range·`fold_left` 값 축약·`views::enumerate` 위치 투영·`views::zip` 행 투영·`views::slide` 겹치는 창·`views::chunk_by` 인접 그룹, ranges/views 파이프라인과 `ranges::to` 소유 컨테이너 materialization
 - [`ownership-and-vocabulary-types.md`](ownership-and-vocabulary-types.md): 스마트 포인터, `any`, `optional`, `expected`, `variant`, `pair`, `tuple`, `apply`, C++23 `bind_back`, 참조 래퍼와 타입 특성
 - [`concurrency-time-filesystem.md`](concurrency-time-filesystem.md): 원자 연산, 메모리 순서, 잠금, 일회 초기화, latch/barrier/semaphore 동기화, 스레드 취소, 시간, 파일 시스템, 오류 코드, 코루틴
-- [`io-parsing-and-utilities.md`](io-parsing-and-utilities.md): 표준·고정 버퍼·동기 스트림, 파싱, 이동/전달, 교환, 수치 유틸리티, 종료 함수와 표준 상수
+- [`io-parsing-and-utilities.md`](io-parsing-and-utilities.md): 표준·고정 버퍼·동기 스트림, 파싱, 이동/전달, 교환, C++23 `to_underlying` enum 경계, 수치 유틸리티, 종료 함수와 표준 상수
 - [`symbol-index.md`](symbol-index.md): 현재 코드에서 찾은 표준 라이브러리 심볼의 가나다/알파벳 탐색표
 - [`by-date.md`](by-date.md): 날짜별 헤더·심볼 목록과 해당 코드 링크
 

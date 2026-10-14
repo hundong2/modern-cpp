@@ -376,6 +376,7 @@ $contractPatterns = @(
     [pscustomobject]@{ Name = 'std::bind_back'; Pattern = '(?m)^(?![ \t]*//)[ \t]*[^\r\n]*\bstd::bind_back\s*\('; Readme = 'std::bind_back(' },
     [pscustomobject]@{ Name = 'bind_back result operator()'; BindBackInvocation = $true; Readme = 'bind_back-result::operator()' },
     [pscustomobject]@{ Name = 'std::move'; Pattern = '(?m)^(?!\s*//)\s*[^\r\n]*std::move\s*\('; Readme = 'std::move(' },
+    [pscustomobject]@{ Name = 'std::to_underlying'; Pattern = '(?m)^(?!\s*//)\s*[^\r\n]*std::to_underlying\s*\('; Readme = 'std::to_underlying(' },
     [pscustomobject]@{ Name = 'std::apply'; Pattern = '(?m)^(?!\s*//)\s*[^\r\n]*std::apply\s*\('; Readme = 'std::apply(' },
     [pscustomobject]@{ Name = 'std::ranges::to'; Pattern = '(?m)^(?!\s*//)\s*[^\r\n]*std::ranges::to\s*<[^;\r\n()]+>\s*\('; Readme = 'std::ranges::to<' },
     [pscustomobject]@{ Name = 'std::unique'; Pattern = '(?m)^(?!\s*//)\s*[^\r\n]*std::unique\s*\('; Readme = 'std::unique(' },

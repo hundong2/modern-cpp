@@ -30,6 +30,7 @@
 - `front()`와 `back()`은 첫/마지막 원소 참조를 반환한다. 빈 컨테이너에서 호출하면 안 된다.
 - `data()`는 연속 저장소 첫 원소 포인터를 반환한다. 빈 컨테이너에서는 역참조하면 안 된다.
 - `begin()/end()`는 시작과 마지막 다음 반복자를 값으로 반환하고, const 수신 overload와 `cbegin()/cend()`는 읽기 전용 `const_iterator`를 반환한다. 모두 데이터 인자 없이 `O(1)`·무할당·`noexcept`이고 vector를 바꾸지 않지만, 반환 관찰자는 vector 파괴·재할당·해당 erase 규칙에 따라 무효화된다. `end()`/`cend()`는 역참조하면 안 된다. random-access iterator의 `operator+(difference_type n)`은 같은 저장소의 `[begin,end]` 안 위치만 만들어야 하며 O(1)에 새 iterator를 반환한다. 범위를 벗어나게 계산하거나 서로 다른 배열 iterator를 빼는 것은 전제조건을 깨고 미정의 동작이 될 수 있다.
+- **vector range-for의 숨은 호출 계약:** const vector lvalue를 범위 식으로 쓰면 `begin() const`와 `end() const`가 `const_iterator` 값을 만들고, 매 반복에서 현재/끝 iterator lvalue 두 개를 `!=` 비교에 전달한다. C++20 이후에는 구현된 nonmember `operator==`에서 비교가 rewrite될 수 있으므로 특정 멤버 `operator!=` 호출로 단정하지 않는다. 현재 iterator lvalue의 역참조는 `const T&`, 전위 증가는 iterator 참조를 반환하며 range-for는 비교 `bool`과 역참조 결과를 쓰고 증가 반환은 버린다. 각 연산은 random-access iterator에서 `O(1)`이고 전체 순회는 `O(N)`·무할당이다. `begin/end`는 `noexcept`지만 iterator 비교·역참조·증가의 대표 요구가 일괄 `noexcept`를 약속한다고 가정하지 않는다. 순회 중 vector 파괴·재할당·해당 원소 삭제 또는 동일 원소 동시 쓰기는 iterator 수명/데이터 경쟁 계약을 깨며, 끝 iterator 역참조는 미정의 동작이다.
 - `push_back(value)`의 대표 overload는 `void push_back(const T& value)`와 `void push_back(T&& value)`다. 살아 있는 vector가 수신자이고 `value`는 각각 복사해 읽는 const lvalue 또는 소유권 이전 후보인 xvalue/prvalue다. `T`는 선택 overload에 맞게 CopyInsertable 또는 MoveInsertable이어야 하며, 성공하면 반환값 없이 새 마지막 원소의 수명을 시작하고 `size()`가 1 증가한다. 상각 `O(1)`, 재할당 시 기존 원소 수에 선형이고 할당·원소 생성/이동 예외가 가능하다. 재할당되면 모든 포인터·참조·반복자가 무효화된다. 재할당되지 않으면 기존 원소의 포인터·참조·반복자는 유지되지만 **과거 past-the-end 반복자**는 언제나 무효화된다. 일반적으로 실패 시 효과가 없지만 non-CopyInsertable `T`의 던지는 이동 생성자에서 난 예외에는 효과가 미지정일 수 있다. 같은 vector의 동시 읽기·쓰기를 자체 동기화하지 않는다.
 - `assign(count, value)`는 기존 원소를 모두 파괴하고 `count`개의 `value` 복사본으로 내용을 교체한다. 반환형은 `void`, 시간·공간은 새 원소 수에 선형이며 기존 포인터·참조·반복자는 모두 무효화된다. 원소 복사나 할당 실패는 예외가 될 수 있다.
 - `emplace_back(args...)`는 전달받은 인자로 끝 원소를 직접 생성한다. 임시 객체를 항상 없앤다고 단정하지 말고 생성 계약과 가독성을 본다.
@@ -53,11 +54,12 @@ int main() {
 
 ## `std::array<T, N>` — `<array>`의 고정 크기 배열
 
-- `N`이 컴파일 시간 템플릿 인자이며 객체 내부에 정확히 `N`개 원소를 소유한다.
-- 동적 할당이 없고 크기가 바뀌지 않는다. 복사하면 모든 원소를 값으로 복사한다.
-- C 배열과 달리 `size`, `begin/end`, `at`, 비교 같은 컨테이너 API를 제공한다.
-- `std::array<int, 4> values{};`는 네 `int`를 모두 0으로 값 초기화한다.
-- 원소 참조와 반복자는 배열 객체 수명 동안 안정적이지만 배열 자체를 이동해도 원소별 이동이 수행된다.
+- **항목 종류·헤더:** `<array>`의 aggregate class template이며 `T`와 컴파일 시간 크기 `N`을 template 인자로 받아 객체 안에 정확히 `N`개 원소를 소유한다. 동적 할당이나 런타임 크기 변경은 없다.
+- **값 초기화:** `std::array<int, 4> values{};`는 생성자 호출이 아니라 aggregate 초기화이며, 생략된 네 `int` 원소를 값 초기화해 모두 0으로 만든다. 데이터 인자나 함수 반환값은 없고 외부 저장소를 빌리지 않는다. 시간은 `O(N)`, 별도 할당은 없으며 원소 초기화의 예외 명세를 따른다. `int` 특수화는 무예외이고 완성된 원소 수명은 array 수명에 포함된다.
+- **복사 대입:** `array& operator=(const array& source)`는 살아 있는 같은 특수화의 source lvalue를 `const&`로 읽어 각 원소를 같은 위치에 복사 대입하고 갱신된 수신 array lvalue 참조를 반환한다. 성공 뒤 크기와 원소 주소는 그대로이고 값만 source와 같아지므로 기존 포인터·참조·반복자는 무효화되지 않지만 새 값을 관찰한다. 시간은 `O(N)`, 무할당이며 예외/noexcept 보장은 `T`의 복사 대입에 따른다. 오늘의 `array<int,26>`은 `O(26)=O(1)`이고 무예외다. 원소 대입이 중간에 던지는 일반 `T`라면 앞에서 대입된 값까지 자동 롤백된다고 보장하지 않는다.
+- **인덱싱:** 대표 오버로드는 `reference operator[](size_type pos)`와 `const_reference operator[](size_type pos) const`다. 정확히 하나의 값 인자 `pos`를 받고 수신 const 여부에 따라 `T&` 또는 `const T&`를 `O(1)`에 반환해 읽기·대입에 쓴다. 크기·주소·소유권은 바뀌지 않고 할당도 없으며 반환 참조는 array 파괴까지 유효하다. 표준 시그니처에는 일률적인 `noexcept`가 명시되지 않고 범위 검사도 없으므로 `pos>=N`이면 미정의 동작이다.
+- **다른 API와 수명:** C 배열과 달리 `size`, `begin/end`, `at`, 비교를 제공한다. 원소 참조와 반복자는 array 객체 수명 동안 주소가 안정적이지만 배열 자체를 이동해도 원소별 이동이므로 source 원소 관찰자를 destination 관찰자로 바꿔 생각하면 안 된다.
+- **스레드 계약:** 서로 다른 원소는 컨테이너 데이터 경쟁 규칙이 허용하는 범위에서 독립 접근할 수 있지만, 같은 원소를 한 실행 흐름이 쓰는 동안 다른 흐름이 무동기 읽기/쓰기를 하면 안 된다. 전체 array 복사 대입은 모든 원소에 쓰므로 동시 관찰과 겹치지 않게 한다.
 
 ## `std::deque<T>` — `<deque>`의 양끝 큐
 

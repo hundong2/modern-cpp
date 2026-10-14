@@ -72,7 +72,7 @@
 | `std::endian` | 구현의 바이트 순서를 표현하는 열거형 | [비트·바이트](bit-and-byte-utilities.md) |
 | `std::endian::native` | 구현의 스칼라 바이트 순서 | [비트·바이트](bit-and-byte-utilities.md) |
 | `std::endian::little`, `std::endian::big` | 알려진 작은/큰 바이트 순서 값 | [비트·바이트](bit-and-byte-utilities.md) |
-| `std::int64_t`, `std::uint32_t`, `std::uint64_t`, `std::uintmax_t`, `std::byte`, `std::size_t`, `std::ptrdiff_t` | 고정·최대 폭 정수, 원시 바이트, 크기·차이 타입 | [비트·바이트](bit-and-byte-utilities.md) |
+| `std::int64_t`, `std::uint16_t`, `std::uint32_t`, `std::uint64_t`, `std::uintmax_t`, `std::byte`, `std::size_t`, `std::ptrdiff_t` | 고정·최대 폭 정수, 원시 바이트, 크기·차이 타입 | [비트·바이트](bit-and-byte-utilities.md) |
 
 ## 소유권과 어휘 타입
 
@@ -165,6 +165,7 @@
 | `std::getline` | 구분자 전까지 한 줄을 소유 문자열에 입력 | [입출력](io-parsing-and-utilities.md) |
 | `std::to_string` | 숫자를 소유 문자열로 변환 | [입출력](io-parsing-and-utilities.md) |
 | `std::move`, `std::forward`, `std::forward_like`, `std::exchange` | 값 범주 변환·전달·const/참조 범주 투영·값 교체 | [입출력](io-parsing-and-utilities.md) |
+| `std::to_underlying` | C++23 강한 enum 값을 선언된 기저 정수 타입으로 변환 | [입출력](io-parsing-and-utilities.md) |
 | `std::numeric_limits` | 기본 타입 수치 한계 | [입출력](io-parsing-and-utilities.md) |
 | `std::abs` | 절댓값 계산 | [입출력](io-parsing-and-utilities.md) |
 | `std::numbers::pi_v` | 타입별 원주율 상수 | [입출력](io-parsing-and-utilities.md) |
