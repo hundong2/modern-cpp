@@ -127,6 +127,40 @@ int main() {
 - `unordered_map`은 자체 동기화를 제공하지 않는다. 다른 스레드의 변경과 겹치는 `contains → extract → insert`는 데이터 경쟁과 검사-행동 경쟁을 피하도록 외부에서 직렬화해야 한다.
 - 표준 allocator가 아닌 서로 다른 allocator 상태의 컨테이너 사이 노드 삽입에는 allocator 동등성 전제조건을 확인한다. 해시·동등 비교·키 대입은 사용자 정의 타입에 따라 예외를 던질 수 있다.
 
+## `std::unordered_set<Key, Hash, KeyEqual, Allocator>` — `<unordered_set>`의 고유 키 해시 집합
+
+- **헤더·항목 종류·대표 선언:** `<unordered_set>`에 선언된 소유형 unordered associative container class template이다. 대표 형태는 `template<class Key, class Hash = std::hash<Key>, class KeyEqual = std::equal_to<Key>, class Allocator = std::allocator<Key>> class unordered_set;`이다. 동등한 키는 하나만 소유하며 순회 순서는 입력 순서나 정렬 순서가 아니다. `Hash`가 같은 동등 그룹에 같은 hash 값을 만들고 `KeyEqual`이 동치 관계를 이뤄야 한다. 컨테이너 안의 key를 이 관계가 바뀌도록 수정하면 불변식을 깰 수 있으므로 iterator가 제공하는 원소 접근은 사실상 읽기 전용이다.
+- **오늘 코드에서의 역할:** 2026-10-16 CSES 1139 풀이는 `using ColorSet = std::unordered_set<int>;`로 각 아직 소비되지 않은 서브트리 bag의 서로 다른 색 node를 소유한다. 작은 bag을 큰 bag으로 `merge`하여 복사·이동 생성 대신 node 소유권을 이전하고, 목적지와 중복된 색 node만 source에 남긴 뒤 source bag을 파괴한다. 평균적인 전체 비용을 줄이는 small-to-large 불변식과 해시 평균 비용을 함께 이용하지만, 적대적 충돌에서는 최악 복잡도가 악화될 수 있다.
+- **공통 수명·할당·스레드 계약:** 원소는 container가 소유하는 node 안에서 container 삭제·파괴 또는 다른 container로의 node 이전까지 산다. bucket 배열과 node 저장소는 allocator를 통해 동적 할당될 수 있다. 재해시는 모든 iterator를 무효화하지만 원소의 pointer/reference는 유지한다. 원소 삭제는 그 원소의 iterator/pointer/reference만 무효화한다. 서로 다른 container는 독립적으로 쓸 수 있지만, 같은 container를 한 실행 흐름이 변경하는 동안 다른 흐름이 읽거나 변경하면 외부 동기화 없이는 데이터 경쟁이 될 수 있다. hash/equality 객체도 동시에 호출 가능한 상태인지 별도로 보장해야 한다.
+
+### 기본 생성 `unordered_set()` 계약
+
+- **수신 상태·시그니처·인자:** 아직 수명이 시작되지 않은 `std::unordered_set<Key, Hash, KeyEqual, Allocator>` 저장소에 대표 생성자 `unordered_set()`를 적용한다. 명시 인자는 없고 기본 생성한 `Hash`, `KeyEqual`, `Allocator` 정책 객체를 결과 container가 값으로 소유한다. 외부 원소나 저장소를 빌리지 않는다.
+- **결과·사후조건:** 생성자는 반환값이 없으며 성공하면 `size()==0`인 유효한 집합의 수명이 시작된다. bucket 수와 초기 할당 여부는 구현 세부이므로 “반드시 무할당”이라고 가정하지 않는다. 원소가 없어 무효화할 iterator/pointer/reference도 아직 없다.
+- **복잡도·오류:** 대표 복잡도는 상수 시간이다. 정책 객체 생성이나 구현이 수행하는 할당이 실패하면 해당 예외가 전파되고 완성된 container는 남지 않는다. 일반 생성자를 일률적으로 `noexcept`라고 가정하지 않는다. 생성 중 객체를 다른 thread에 공개하지 않으며, 완성 뒤 파괴되면 정책 객체와 bucket 저장소의 수명도 끝난다.
+
+### `insert(const value_type&)` 계약
+
+- **수신 상태·시그니처·인자:** 유효한 `unordered_set` lvalue가 수신자이며 선택 오버로드는 `std::pair<iterator, bool> insert(const value_type& value)`다. `value`는 살아 있는 const lvalue로 호출 동안만 빌리고, 새 key가 필요하면 node 안에 복사한다. 호출자 객체의 소유권은 이전하지 않는다.
+- **반환·상태 변화:** 반환 pair의 iterator는 새로 삽입한 원소 또는 이미 존재하던 동등 key를 가리키고, `bool`은 새 node를 넣었는지를 뜻한다. 새 key면 `size()`가 1 증가하고, 중복이면 container와 인자는 그대로다. 오늘 첫 삽입은 빈 집합이어서 성공을 알고 반환값을 버리지만 일반 코드에서는 `bool`을 확인해야 한다.
+- **복잡도·할당·무효화:** 평균 `O(1)`, hash 충돌 최악에는 삽입 전 container 크기에 선형이다. 새 key는 node 할당을, load factor 초과는 bucket 재할당과 rehash를 일으킬 수 있다. rehash가 일어나면 모든 기존 iterator가 무효화되지만 원소 pointer/reference는 유지된다. rehash가 없으면 기존 원소 관찰자는 유지되고, 반환 iterator는 해당 원소 삭제·container 파괴·향후 rehash까지 유효하다.
+- **예외·전제·스레드:** `Key` 복사 생성, allocator, hash, equality가 던질 수 있다. 실패 뒤 container는 유효하며 표준이 제공하는 해당 삽입의 예외 보장 이상을 가정하지 않는다. hash/equality 일관성이 깨지거나 동일 container를 무동기 병행 수정하면 올바른 사용 계약을 벗어난다.
+
+### `merge(unordered_set& source)` 계약
+
+- **수신 상태·시그니처·인자:** 서로 다른 유효한 목적지와 source 집합이 필요하다. 오늘 선택된 대표 overload는 `template<class H2, class P2> void merge(unordered_set<Key, H2, P2, Allocator>& source)`이며 `source`는 수정 가능한 lvalue reference로 빌린다. container 객체 자체의 소유권은 넘기지 않지만 이전 가능한 원소 node의 소유권 변경을 허용한다. **전제조건은 `get_allocator() == source.get_allocator()`**이며, 거짓인데 호출하면 미정의 동작이다. 오늘의 두 `ColorSet`은 같은 기본 `std::allocator<int>`를 써 이 전제를 만족한다.
+- **반환·node 소유권·중복 잔류:** 반환형은 `void`다. source의 각 node를 목적지의 hash/equality로 검사하여 동등 key가 목적지에 없을 때만 추출해 목적지로 이전한다. key 객체를 새로 복사·이동 생성하지 않는다. 목적지에 이미 있는 key와 중복되는 node는 **source에 그대로 남아 source가 계속 소유**한다. 성공 뒤 두 container는 모두 유효하고, 오늘 코드는 남은 중복 node를 source bag 파괴 때 정리한다.
+- **복잡도:** `N = source.size()`의 호출 전 값, `S = destination.size()`라 하면 평균 `O(N)`, hash 충돌 최악에는 `O(N*S + N)`이다. 따라서 small-to-large만으로 해시의 병적 최악 시간을 없앴다고 주장하면 안 된다.
+- **할당·무효화·수명:** node 자체를 다시 할당하지 않지만 목적지 bucket rehash를 위한 할당은 가능하다. 표준 merge 계약상 목적지의 기존 iterator 전부와 이전된 source 원소의 iterator는 무효화되고, source에 남은 중복 원소 iterator는 유지된다. 이전 원소의 pointer/reference는 같은 객체를 계속 가리키지만 이제 목적지 소속이며 목적지에서 삭제되거나 목적지가 파괴될 때 수명이 끝난다. source에 남은 원소의 pointer/reference와 수명은 source에 계속 묶인다.
+- **예외·스레드:** bucket allocation, 목적지 hash, equality가 예외를 던질 수 있으므로 여러 node를 모두 옮기는 강한 전체 rollback을 가정하지 않는다. 예외 뒤 각 node는 어느 한 container가 소유하는 유효 상태여야 하지만 정확히 몇 개가 이전됐는지는 호출 전처럼 단정하지 않는다. 두 container 어느 쪽도 다른 thread가 동시에 읽거나 수정하지 않도록 외부에서 직렬화한다.
+
+### `size() const noexcept` 계약
+
+- 살아 있는 const 또는 non-const `unordered_set`을 읽기만 하는 `size_type size() const noexcept` 관찰자다. 명시 인자나 소유권 이동이 없고 현재 node 수를 `size_type` prvalue로 반환한다. 호출부는 값을 저장·비교·변환할 수 있다.
+- 평균과 최악 모두 `O(1)`이며 container, bucket, node, 인자, iterator/pointer/reference 상태를 바꾸지 않는다. 할당과 사용자 callback 호출이 없고 예외를 던지지 않는다. 반환 정수는 container와 독립된 값이지만 그 값이 나타내는 크기는 이후 변경 뒤 낡을 수 있다. 같은 container의 동시 수정과 겹치는 무동기 호출은 허용되지 않는다.
+
+기계 실행 관점에서 `insert`와 `merge`는 key load, hash 계산, bucket 선택, equality 비교와 조건 분기, node link 변경, 필요시 allocation/rehash를 포함할 수 있다. `size`는 저장된 개수를 읽는 형태일 수 있다. 실제 bucket 구조, hash 인라인, node 배치, load/store/분기와 명령열은 CPU, ABI, 표준 라이브러리, allocator, 컴파일러 및 최적화 옵션에 따라 달라 특정 어셈블리로 단정하지 않는다.
+
 ## `std::queue<T>` — `<queue>`의 FIFO 어댑터
 
 - 먼저 넣은 원소를 먼저 꺼내는 선입선출 인터페이스다.

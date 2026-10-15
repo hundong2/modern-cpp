@@ -46,6 +46,7 @@
 | `std::flat_map` | C++23 정렬·연속 키/값 저장소의 고유 키 테이블 | [컨테이너](containers-and-views.md) |
 | `std::unordered_map` | 해시 기반 연관 컨테이너 | [컨테이너](containers-and-views.md) |
 | `std::unordered_map::find`, `std::unordered_map::insert_or_assign`, `std::unordered_map::reserve` | 해시 key 조회, 삽입-or-대입, 예상 원소 수 기반 재해시 준비 | [컨테이너](containers-and-views.md) |
+| `std::unordered_set` | 고유 key node를 소유하고 `insert`·`merge`·`size`를 제공하는 해시 집합 | [컨테이너](containers-and-views.md) |
 | `std::queue` | FIFO 컨테이너 어댑터 | [컨테이너](containers-and-views.md) |
 | `std::priority_queue`, `std::priority_queue::empty`, `std::priority_queue::top`, `std::priority_queue::pop` | 힙 기반 우선순위 어댑터와 상태·최우선 원소·제거 연산 | [컨테이너](containers-and-views.md) |
 | `std::vector` | 동적 연속 배열 | [컨테이너](containers-and-views.md) |

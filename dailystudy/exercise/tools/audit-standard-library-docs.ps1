@@ -137,6 +137,9 @@ $priorityQueueReceiverDeclarationPattern =
 $multisetReceiverDeclarationPattern =
     '(?m)^[ \t]*' + $declarationQualifierPattern +
     'std::multiset\s*<[^;\r\n]+>\s*(?:[&*]\s*)?(?<Receiver>[A-Za-z_][A-Za-z0-9_]*)\b'
+$unorderedSetReceiverDeclarationPattern =
+    '(?m)^[ \t]*' + $declarationQualifierPattern +
+    'std::unordered_set\s*<[^;\r\n]+>\s*(?:[&*]\s*)?(?<Receiver>[A-Za-z_][A-Za-z0-9_]*)\b'
 
 # std::가 이름에 드러나지 않는 표준 멤버 중 현재 학습 코드에서 자주 쓰는 항목만 검사한다.
 $knownStandardMembers = [Collections.Generic.HashSet[string]]::new(
@@ -144,7 +147,7 @@ $knownStandardMembers = [Collections.Generic.HashSet[string]]::new(
         'acquire', 'append', 'arrive_and_wait', 'assign', 'at', 'back', 'begin', 'c_str', 'clear', 'contains', 'count_down', 'data', 'empty', 'emplace', 'emplace_back', 'end', 'erase',
         'error', 'expired', 'extent', 'extract', 'fetch_add', 'file_size', 'find', 'front', 'get',
         'has_value', 'is_absolute', 'is_regular_file', 'join', 'joinable', 'lexically_normal', 'load',
-        'insert', 'key', 'lock', 'mapped', 'message', 'pop', 'pop_back', 'pop_front', 'push', 'push_back', 'push_front', 'release',
+        'insert', 'key', 'lock', 'mapped', 'merge', 'message', 'pop', 'pop_back', 'pop_front', 'push', 'push_back', 'push_front', 'release',
         'notify_all', 'notify_one', 'reserve', 'reset', 'resize', 'resize_and_overwrite', 'size', 'span', 'store', 'str', 'substr', 'swap', 'tie', 'top', 'value', 'wait',
         'value_or'
     )
@@ -440,7 +443,11 @@ $contractPatterns = @(
     [pscustomobject]@{ Name = 'multiset::begin'; MultisetMember = 'begin'; Readme = 'multiset::begin' },
     [pscustomobject]@{ Name = 'multiset::end'; MultisetMember = 'end'; Readme = 'multiset::end' },
     [pscustomobject]@{ Name = 'multiset::find'; MultisetMember = 'find'; Readme = 'multiset::find' },
-    [pscustomobject]@{ Name = 'multiset::erase'; MultisetMember = 'erase'; Readme = 'multiset::erase' }
+    [pscustomobject]@{ Name = 'multiset::erase'; MultisetMember = 'erase'; Readme = 'multiset::erase' },
+    [pscustomobject]@{ Name = 'unordered_set default constructor'; UnorderedSetDefaultConstruction = $true; Readme = '기본 생성' },
+    [pscustomobject]@{ Name = 'unordered_set::insert'; UnorderedSetMember = 'insert'; Readme = 'insert' },
+    [pscustomobject]@{ Name = 'unordered_set::merge'; UnorderedSetMember = 'merge'; Readme = 'merge' },
+    [pscustomobject]@{ Name = 'unordered_set::size'; UnorderedSetMember = 'size'; Readme = 'size' }
 )
 
 foreach ($file in Get-ChildItem -LiteralPath $latestDirectory.FullName -Filter '*.cpp' -File) {
@@ -592,6 +599,29 @@ foreach ($file in Get-ChildItem -LiteralPath $latestDirectory.FullName -Filter '
     ) | Sort-Object -Unique
     $multisetReceiverAlternation =
         ($multisetReceiverNames | ForEach-Object { [regex]::Escape($_) }) -join '|'
+    $unorderedSetAliasNames = @(
+        [regex]::Matches(
+            $contractSource,
+            '(?m)^[ \t]*using\s+(?<Alias>[A-Za-z_][A-Za-z0-9_]*)\s*=\s*std::unordered_set\s*<[^;\r\n]+>\s*;'
+        ) |
+            ForEach-Object { $_.Groups['Alias'].Value } |
+            Sort-Object -Unique
+    )
+    $unorderedSetReceiverNames = @(
+        [regex]::Matches($contractSource, $unorderedSetReceiverDeclarationPattern) |
+            ForEach-Object { $_.Groups['Receiver'].Value }
+        if ($unorderedSetAliasNames.Count -gt 0) {
+            $unorderedSetAliasAlternation =
+                ($unorderedSetAliasNames | ForEach-Object { [regex]::Escape($_) }) -join '|'
+            [regex]::Matches(
+                $contractSource,
+                '(?m)^[ \t]*' + $declarationQualifierPattern + '(?:' + $unorderedSetAliasAlternation +
+                ')\s*(?:[&*]\s*)?(?<Receiver>[A-Za-z_][A-Za-z0-9_]*)\b'
+            ) | ForEach-Object { $_.Groups['Receiver'].Value }
+        }
+    ) | Sort-Object -Unique
+    $unorderedSetReceiverAlternation =
+        ($unorderedSetReceiverNames | ForEach-Object { [regex]::Escape($_) }) -join '|'
 
     foreach ($candidate in $contractPatterns) {
         # enumerate 구조적 바인딩에는 소스에 직접 보이지 않는 begin/end/*/++와 ADL std::get 호출이 있다.
@@ -663,6 +693,39 @@ foreach ($file in Get-ChildItem -LiteralPath $latestDirectory.FullName -Filter '
                 $selectedMatch = $possibleMatch
                 break
             }
+            if ($null -eq $selectedMatch) {
+                continue
+            }
+        }
+        if ($null -ne $candidate.PSObject.Properties['UnorderedSetDefaultConstruction']) {
+            if ($unorderedSetReceiverNames.Count -eq 0) {
+                continue
+            }
+            # 명시적인 `{}` 선언과 생성자 멤버 초기화 목록만 기본 생성으로 잡는다. class 안의
+            # `Alias member;` 선언은 실제 생성 지점이 아니므로 이 후보에서 의도적으로 제외한다.
+            $unorderedSetDefaultConstructionMatches = @(
+                [regex]::Matches(
+                    $contractSource,
+                    '(?m)^[ \t]*' + $declarationQualifierPattern +
+                    'std::unordered_set\s*<[^;\r\n]+>\s+[A-Za-z_][A-Za-z0-9_]*\s*' +
+                    '(?:\{\s*\}|=\s*\{\s*\})\s*;'
+                )
+                if ($unorderedSetAliasNames.Count -gt 0) {
+                    [regex]::Matches(
+                        $contractSource,
+                        '(?m)^[ \t]*' + $declarationQualifierPattern + '(?:' +
+                        $unorderedSetAliasAlternation + ')\s+[A-Za-z_][A-Za-z0-9_]*\s*' +
+                        '(?:\{\s*\}|=\s*\{\s*\})\s*;'
+                    )
+                }
+                [regex]::Matches(
+                    $contractSource,
+                    '(?m)^[ \t]*(?::|,)\s*(?:' + $unorderedSetReceiverAlternation + ')\s*\{\s*\}'
+                )
+            )
+            $selectedMatch = $unorderedSetDefaultConstructionMatches |
+                Sort-Object Index |
+                Select-Object -First 1
             if ($null -eq $selectedMatch) {
                 continue
             }
@@ -781,6 +844,15 @@ foreach ($file in Get-ChildItem -LiteralPath $latestDirectory.FullName -Filter '
             $candidatePattern =
                 '(?m)^(?!\s*//)\s*[^\r\n]*\b(?:' + $multisetReceiverAlternation +
                 ')\s*(?:\.|->)\s*' + [regex]::Escape($candidate.MultisetMember) + '\s*\('
+        }
+        $unorderedSetMemberProperty = $candidate.PSObject.Properties['UnorderedSetMember']
+        if ($null -ne $unorderedSetMemberProperty) {
+            if ($unorderedSetReceiverNames.Count -eq 0) {
+                continue
+            }
+            $candidatePattern =
+                '(?m)^(?!\s*//)\s*[^\r\n]*\b(?:' + $unorderedSetReceiverAlternation +
+                ')\s*(?:\.|->)\s*' + [regex]::Escape($candidate.UnorderedSetMember) + '\s*\('
         }
 
         $match = if ($null -ne $selectedMatch) {
