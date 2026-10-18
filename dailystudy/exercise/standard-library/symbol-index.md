@@ -19,6 +19,7 @@
 | `std::swap` | 두 객체 값 교환 | [알고리즘](algorithms-and-ranges.md) |
 | `std::unique` | 인접 동등 원소를 앞쪽 대표 구간으로 제자리 압축 | [알고리즘](algorithms-and-ranges.md) |
 | `std::ranges::count_if` | 범위에서 술어가 참인 개수 | [알고리즘](algorithms-and-ranges.md) |
+| `std::ranges::contains` | C++23 범위에서 투영 결과와 값의 동등 원소 존재 여부 반환 | [알고리즘](algorithms-and-ranges.md) |
 | `std::ranges::equal_range` | 정렬·분할된 범위에서 비교 동등한 연속 구간을 비소유 subrange로 반환 | [알고리즘](algorithms-and-ranges.md) |
 | `std::ranges::end` | 범위 끝 센티널 획득 | [알고리즘](algorithms-and-ranges.md) |
 | `std::ranges::find` | 범위에서 값 탐색 | [알고리즘](algorithms-and-ranges.md) |
@@ -34,6 +35,7 @@
 | `std::views::transform` | 변환 결과의 지연 뷰 | [알고리즘](algorithms-and-ranges.md) |
 | `std::views::zip` | C++23 여러 범위의 같은 위치를 참조 tuple 행으로 결합 | [알고리즘](algorithms-and-ranges.md) |
 | `std::less`, `std::greater`, `std::equal_to` | 엄격 순서·동등 비교 함수 객체 | [알고리즘](algorithms-and-ranges.md) |
+| `std::identity` | 입력을 같은 값 범주로 전달하는 기본 projection 함수 객체 | [알고리즘](algorithms-and-ranges.md) |
 
 ## 컨테이너와 문자열
 

@@ -452,6 +452,87 @@ int main() {
 
 기계 실행 관점에서 오늘 materialization은 거리 계산을 위한 원본 순회, 결과 저장소 확보, 다시 수행하는 술어 비교와 조건 분기, 선택 원소 변환·store로 이어질 수 있다. 이 forward-range vector 생성 중 원소 저장소 재할당은 없다. 실제 명령, inlining, 분기 제거와 벡터화 여부는 CPU, ABI, 표준 라이브러리, 컴파일러와 최적화 옵션에 따라 달라 특정 어셈블리로 단정하지 않는다.
 
+## `std::ranges::contains` — `<algorithm>`의 C++23 범위 알고리즘
+
+`std::ranges::contains`는 범위 안에 주어진 값과 같은 투영 결과가 하나라도 있는지를 `bool`로 답한다.
+2026-10-19의 `AllowList`와 `RetryPolicy`는 소유 `vector<int>`를 외부에 노출하지 않고 정책 질의를
+`contains(owner, key)`로 표현한다. 반복자 반환이 필요한 위치 검색에는 `ranges::find`, 이미 정렬된 큰
+범위의 반복 조회에는 이진 검색 계열처럼 요구조건과 복잡도가 다른 도구를 선택한다.
+
+- **항목 종류·헤더**: `<algorithm>`이 선언하는 C++23 niebloid(range customization-point-like function
+  object)다. ADL로 사용자 overload를 끼워 넣는 평범한 자유 함수 template처럼 취급하지 않는다.
+- **대표 range overload**:
+  `template<input_range R, class T, class Proj = identity> requires
+  indirect_binary_predicate<ranges::equal_to, projected<iterator_t<R>, Proj>, const T*>
+  constexpr bool ranges::contains(R&& r, const T& value, Proj proj = {});`
+  iterator/sentinel을 직접 받는 overload도 있으며 오늘 코드는 range overload를 쓴다.
+- **수신 객체·호출 전 상태**: 사용자 데이터 수신 객체는 없다. `r`은 호출이 끝날 때까지 유효한
+  `input_range`여야 한다. 유한 범위라면 시작 iterator를 증가시켜 sentinel에 도달할 수 있어야 한다.
+  표준 range에는 `unreachable_sentinel`을 쓰는 무한 범위도 있을 수 있으며, 이 경우 찾는 값이 끝내
+  나타나지 않으면 호출도 끝나지 않는다. 오늘 `r`은 살아 있는 유한 `const vector<int>` lvalue이고
+  구조 변경 없이 읽는다.
+- **매개변수·값 범주·소유권**: `R&&`는 forwarding reference라 오늘 const lvalue vector가 참조로
+  전달된다. `value`는 `const T&`로 읽기만 하며 오늘 이름 있는 `int` lvalue에 결합된다. `Proj`는 값으로
+  받아 각 원소에 적용한다. 오늘 생략된 인자는 무상태 `identity`이고 range·원소·검색 값의 소유권이나
+  수명을 가져오지 않는다.
+- **선택 제약**: `R`은 `input_range`, 그 iterator는 간접 읽기가 가능해야 한다. `ranges::equal_to`가
+  `invoke(proj, *iterator)`와 `value`를 bool-testable하게 비교할 수 있어야 한다. 조건을 만족하지 않으면
+  runtime false가 아니라 적합한 overload가 없어 compile error가 된다.
+- **반환형·사용**: 일치 원소가 있으면 `true`, 끝까지 없으면 `false`인 `bool` prvalue다. 오늘
+  `AllowList::contains`는 그대로 반환하고 `AccessGate`의 단락 `&&`가 소비한다. 위치나 원소 참조를
+  반환하지 않으므로 호출 뒤 저장할 iterator 수명은 없다.
+- **사후 상태**: 순수한 projection/비교와 읽기 전용 범위라면 range의 size, capacity, 원소, 검색 값은
+  그대로이고 iterator/reference도 무효화되지 않는다. 그러나 일반 사용자 projection은 외부 상태를
+  바꿀 수 있으므로 알고리즘 이름만으로 전체 호출의 무부수효과를 보장하지 않는다.
+- **복잡도·할당**: 유한 범위 길이를 `N`, 첫 일치 위치를 `i`라 하면 projection과 동등 비교를 최대
+  `N`번, 일치가 있으면 앞에서부터 `i+1`번 적용한다. 무한 범위도 유한 위치에서 일치하면 그 위치까지
+  선형 진행하지만, 값이 없으면 종료하지 않는다. 추가 알고리즘 공간은 `O(1)`이고 자체 결과 저장소를
+  동적 할당하지 않는다. iterator/projection/comparison 구현이 별도 비용이나 할당을 가지면 전파된다.
+- **수명·무효화**: 알고리즘이 순회하는 동안 owner, iterator/sentinel, projection이 캡처한 모든 비소유
+  대상이 살아 있어야 한다. vector를 같은 호출 안이나 다른 실행 흐름에서 재할당·erase하면 내부
+  iterator가 무효가 될 수 있다. `contains`가 bool만 반환하므로 성공 뒤 owner를 파괴해도 반환 bool은
+  독립적으로 유효하지만, 이것이 호출 도중의 수명 전제를 없애지는 않는다.
+- **예외·오류·미정의 동작**: iterator 증가/역참조, projection, equality가 던진 예외는 전파된다.
+  오늘의 vector iterator, identity, int 동등 비교는 정상 전제에서 비투척이다. dangling range,
+  의미 요구를 깨는 잘못된 iterator/sentinel 쌍, 무효 iterator 역참조, 또는 동기화 없는 읽기/쓰기
+  데이터 경쟁은 계약 위반과 미정의 동작으로 이어질 수 있다. 유한 범위의 “찾지 못함”은 오류가 아니라
+  정상적인 false 결과이고, 올바른 무한 범위에서 값이 영원히 없으면 미정의 동작이 아니라 비종료다.
+- **thread 보장**: 자체 잠금이나 snapshot을 제공하지 않는다. 같은 불변 저장소를 여러 실행 흐름이
+  읽는 것은 원소 타입의 동시 const-read 규칙을 따르지만, 한쪽이 구조나 같은 원소를 수정하면 외부
+  동기화가 필요하다.
+
+기계 실행 관점에서 연속 `vector<int>`의 기본 호출은 원소 load, 정수 비교, 일치·끝 조건 분기로
+구현될 수 있다. 컴파일러가 loop를 inline·unroll·vectorize할 수도 있지만 실제 명령, 조기 종료 비용,
+분기 예측과 cache 동작은 CPU, ABI, 구현과 최적화 옵션에 따라 달라 특정 형태로 단정하지 않는다.
+
+### 최소 실행 예제
+
+```cpp
+#include <algorithm>
+#include <iostream>
+#include <vector>
+
+int main() {
+    const std::vector<int> allowed{7, 42, 99};
+    const bool known{std::ranges::contains(allowed, 42)};
+    const bool unknown{std::ranges::contains(allowed, 8)};
+    std::cout << known << ' ' << unknown << '\n'; // 1 0
+}
+```
+
+### 흔한 실수와 점검 질문
+
+1. 정렬 vector라는 이유만으로 선형 `contains`가 자동 이진 검색을 한다고 생각한다. `N`번 조회할 때
+   선형 검색과 정렬+이진 검색의 전체 비용을 비교한다.
+2. projection이 새 소유 객체를 만든다고 단정한다. projection의 반환 타입과 값 범주가 비교 호출 및
+   예외 비용에 주는 영향을 적는다.
+3. 다른 thread가 같은 vector에 `push_back`하는 동안 검색한다. 재할당 여부와 무관하게 데이터 경쟁
+   가능성을 설명한다.
+4. rvalue owner를 넘긴 bool 결과가 댕글링한다고 생각한다. 내부 순회 수명과 반환 bool 수명을 나눠
+   설명하되, projection이 외부 참조를 캡처한 경우도 따로 점검한다.
+5. 위치가 필요한데 contains 뒤 다시 find한다. 한 번의 find 결과와 끝 비교로 중복 순회를 없애는 방식을
+   작성한다.
+
 ## `std::ranges::end`
 
 - 범위의 끝 센티널을 사용자 정의 `end`까지 고려해 얻는 customization point object다.

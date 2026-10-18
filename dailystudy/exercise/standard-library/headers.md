@@ -4,7 +4,7 @@
 
 | 헤더 | 현재 자료에서 사용하는 대표 선언 |
 |---|---|
-| `<algorithm>` | `sort`, `find_if`, `fill`, `max_element`, `ranges::sort`, `ranges::equal_range` 등 ranges 알고리즘 |
+| `<algorithm>` | `sort`, `find_if`, `fill`, `max_element`, `ranges::sort`, `ranges::equal_range`, C++23 `ranges::contains` 등 ranges 알고리즘 |
 | `<any>` | 소유형 단일 값 타입 소거 컨테이너 `std::any`, 안전한 `any_cast`, 실패 예외 `bad_any_cast` |
 | `<array>` | 고정 크기 `std::array` |
 | `<atomic>` | 소유 원자 객체 `std::atomic`, 기존 저장소의 비소유 원자 뷰 `std::atomic_ref`, 메모리 순서 상수 |
