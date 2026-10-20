@@ -134,6 +134,9 @@ $stringCopyConstructionPattern =
 $priorityQueueReceiverDeclarationPattern =
     '(?m)^[ \t]*' + $declarationQualifierPattern +
     'std::priority_queue\s*<[^;\r\n]+>\s*(?:[&*]\s*)?(?<Receiver>[A-Za-z_][A-Za-z0-9_]*)\b'
+$unorderedMapReceiverDeclarationPattern =
+    '(?m)^[ \t]*' + $declarationQualifierPattern +
+    'std::unordered_map\s*<[^;\r\n]+>\s*(?:[&*]\s*)?(?<Receiver>[A-Za-z_][A-Za-z0-9_]*)\b'
 $multisetReceiverDeclarationPattern =
     '(?m)^[ \t]*' + $declarationQualifierPattern +
     'std::multiset\s*<[^;\r\n]+>\s*(?:[&*]\s*)?(?<Receiver>[A-Za-z_][A-Za-z0-9_]*)\b'
@@ -148,7 +151,7 @@ $knownStandardMembers = [Collections.Generic.HashSet[string]]::new(
         'error', 'expired', 'extent', 'extract', 'fetch_add', 'file_size', 'find', 'front', 'get',
         'has_value', 'is_absolute', 'is_regular_file', 'join', 'joinable', 'lexically_normal', 'load',
         'insert', 'key', 'lock', 'mapped', 'merge', 'message', 'pop', 'pop_back', 'pop_front', 'push', 'push_back', 'push_front', 'release',
-        'notify_all', 'notify_one', 'reserve', 'reset', 'resize', 'resize_and_overwrite', 'size', 'span', 'store', 'str', 'substr', 'swap', 'tie', 'top', 'value', 'wait',
+        'notify_all', 'notify_one', 'reserve', 'reset', 'resize', 'resize_and_overwrite', 'size', 'span', 'store', 'str', 'substr', 'swap', 'tie', 'top', 'try_emplace', 'value', 'wait',
         'value_or'
     )
 )
@@ -437,6 +440,7 @@ $contractPatterns = @(
     [pscustomobject]@{ Name = 'priority_queue::empty'; PriorityQueueMember = 'empty'; Readme = 'priority_queue::empty' },
     [pscustomobject]@{ Name = 'vector::back'; VectorMember = 'back'; Readme = 'vector::back' },
     [pscustomobject]@{ Name = 'vector::pop_back'; VectorMember = 'pop_back'; Readme = 'vector::pop_back' },
+    [pscustomobject]@{ Name = 'unordered_map::try_emplace'; UnorderedMapMember = 'try_emplace'; Readme = 'try_emplace(' },
     [pscustomobject]@{ Name = 'multiset default constructor'; MultisetDefaultConstruction = $true; Readme = 'multiset 기본 생성자' },
     [pscustomobject]@{ Name = 'multiset::size'; MultisetMember = 'size'; Readme = 'multiset::size' },
     [pscustomobject]@{ Name = 'multiset::insert'; MultisetMember = 'insert'; Readme = 'multiset::insert' },
@@ -576,6 +580,29 @@ foreach ($file in Get-ChildItem -LiteralPath $latestDirectory.FullName -Filter '
     ) | Sort-Object -Unique
     $priorityQueueReceiverAlternation =
         ($priorityQueueReceiverNames | ForEach-Object { [regex]::Escape($_) }) -join '|'
+    $unorderedMapAliasNames = @(
+        [regex]::Matches(
+            $contractSource,
+            '(?m)^[ \t]*using\s+(?<Alias>[A-Za-z_][A-Za-z0-9_]*)\s*=\s*std::unordered_map\s*<[^;\r\n]+>\s*;'
+        ) |
+            ForEach-Object { $_.Groups['Alias'].Value } |
+            Sort-Object -Unique
+    )
+    $unorderedMapReceiverNames = @(
+        [regex]::Matches($contractSource, $unorderedMapReceiverDeclarationPattern) |
+            ForEach-Object { $_.Groups['Receiver'].Value }
+        if ($unorderedMapAliasNames.Count -gt 0) {
+            $unorderedMapAliasAlternation =
+                ($unorderedMapAliasNames | ForEach-Object { [regex]::Escape($_) }) -join '|'
+            [regex]::Matches(
+                $contractSource,
+                '(?m)^[ \t]*' + $declarationQualifierPattern + '(?:' +
+                $unorderedMapAliasAlternation + ')\s*(?:[&*]\s*)?(?<Receiver>[A-Za-z_][A-Za-z0-9_]*)\b'
+            ) | ForEach-Object { $_.Groups['Receiver'].Value }
+        }
+    ) | Sort-Object -Unique
+    $unorderedMapReceiverAlternation =
+        ($unorderedMapReceiverNames | ForEach-Object { [regex]::Escape($_) }) -join '|'
     $multisetAliasNames = @(
         [regex]::Matches(
             $contractSource,
@@ -828,6 +855,15 @@ foreach ($file in Get-ChildItem -LiteralPath $latestDirectory.FullName -Filter '
             $candidatePattern =
                 '(?m)^(?!\s*//)\s*[^\r\n]*\b(?:' + $priorityQueueReceiverAlternation +
                 ')\s*(?:\.|->)\s*' + [regex]::Escape($candidate.PriorityQueueMember) + '\s*\('
+        }
+        $unorderedMapMemberProperty = $candidate.PSObject.Properties['UnorderedMapMember']
+        if ($null -ne $unorderedMapMemberProperty) {
+            if ($unorderedMapReceiverNames.Count -eq 0) {
+                continue
+            }
+            $candidatePattern =
+                '(?m)^(?!\s*//)\s*[^\r\n]*\b(?:' + $unorderedMapReceiverAlternation +
+                ')\s*(?:\.|->)\s*' + [regex]::Escape($candidate.UnorderedMapMember) + '\s*\('
         }
         if ($null -ne $candidate.PSObject.Properties['MultisetDefaultConstruction']) {
             if ($multisetReceiverNames.Count -eq 0) {

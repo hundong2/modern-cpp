@@ -106,6 +106,127 @@ int main() {
 - 원소 증가로 재해시가 일어나면 반복자는 무효가 될 수 있다. 원소에 대한 포인터·참조의 규칙은 연산별로 확인한다.
 - `reserve(count)`는 예상 원소 수를 알려 재해시를 줄인다. 버킷 수와 원소 용량은 `vector`의 capacity와 다른 개념이다.
 
+### `std::unordered_map::try_emplace` — 없는 key의 mapped 값만 제자리 구성하는 멤버 함수 template
+
+2026-10-20의 endpoint/job 레지스트리는 **최초 등록을 유지하고 중복 등록으로 기존 값을 덮어쓰지 않는**
+경계가 필요하다. `try_emplace`는 먼저 동등 key를 찾고, 없을 때만 map의 node 안에 key와 `mapped_type`을
+구성한다. 갱신이 필요한 `insert_or_assign`, 조회만 하는 `find`, 존재 여부와 무관하게 값 초기화를 요구하는
+`operator[]`와 의도를 구분한다.
+
+- **헤더·항목 종류**: `<unordered_map>`이 선언하는 `std::unordered_map<Key, T, Hash, KeyEqual,
+  Allocator>`의 C++17 멤버 함수 template이다.
+- **대표 overload**:
+  `template<class... Args> std::pair<iterator, bool> try_emplace(const key_type& key,
+  Args&&... args);`와
+  `template<class... Args> std::pair<iterator, bool> try_emplace(key_type&& key,
+  Args&&... args);`가 있다. `const_iterator hint`를 첫 인자로 받고 `iterator`만 반환하는 hint overload도
+  있다. 투명 hash/equality로 다른 key 타입을 직접 받는 overload는 C++26 기능이므로 오늘 C++23 코드의
+  선택 대상이 아니다.
+- **오늘 선택된 수신 객체·overload**: 수신자는
+  `std::unordered_map<std::string, Endpoint>` 또는 같은 형태의 job policy map인 유효한 non-const
+  lvalue다. 생략된 정책은 `std::hash<std::string>`, `std::equal_to<std::string>`과 기본 allocator다.
+  호출 전에는 allocator, hash, key equality와 bucket 불변식을 만족하며 같은 객체를 다른 thread가
+  읽거나 쓰지 않는다. 이름 있는 `std::string`을 `std::move(name)`으로 전달하므로
+  `key_type&&` overload가 선택되고, hint는 사용하지 않는다.
+- **key 인자·값 범주·소유권**: `std::move(name)`은 기존 문자열을 가리키는 xvalue일 뿐 그 식 자체가
+  문자를 옮기지는 않는다. 동등 key가 없을 때 node의 `const key_type`을 구성하면서 실제 이동 또는
+  구현이 허용한 생성이 일어나고 map이 새 key 수명을 소유한다. 동등 key가 있으면 함수는 key로부터
+  이동하지 않으므로 이름 있는 `name`의 값은 이 호출 때문에 moved-from 상태가 되지 않는다.
+- **mapped 생성자 인자**: `Args&&...`는 forwarding reference pack이다. 오늘의 URL 문자열 xvalue와
+  timeout/job 수치 인자는 삽입 성공 경로에서만 `Endpoint` 또는 policy 생성자로 완벽 전달된다. 함수는
+  이 인자들의 소유권을 별도로 저장하지 않는다. 삽입되면 완성된 `mapped_type`을 node가 소유하고,
+  충돌하면 기존 mapped 객체도 전달 인자도 함수에 의해 바뀌지 않는다.
+- **구성 전제조건**: 새 `value_type`은 개념적으로 `piecewise_construct`, key tuple,
+  `std::forward<Args>(args)...` tuple에서 emplacement 가능해야 한다. hash가 같지 않은 두 key를
+  `KeyEqual`이 동등하다고 판단하게 만드는 등 `Hash`/`KeyEqual`의 의미 요구를 깨거나 유효하지 않은
+  참조를 생성자 인자로 넘기면 계약 위반이다. 진단 가능한 타입 불일치는 대개 compile error가 되지만,
+  라이브러리의 의미 전제조건까지 compiler가 모두 증명해 주지는 않는다.
+- **반환형·사용**: non-hint overload는 `std::pair<iterator, bool>` prvalue를 반환한다. `first`는 새로
+  삽입했거나 이미 존재하던 동등 key 원소를 가리키고, `second`는 이번 호출이 삽입했을 때만 `true`다.
+  오늘 코드는 두 값을 검사한 뒤 iterator 자체를 외부에 내보내지 않고 `bool`과 `size`를 값 snapshot으로
+  복사한다. hint overload는 iterator만 반환하므로 삽입 여부가 필요할 때는 적합하지 않다.
+- **사후 상태**: 충돌이면 size, bucket, 기존 key/mapped 값과 인자가 그대로다. 성공이면 size가 정확히
+  1 증가하고 반환 iterator가 새 node를 가리키며, key와 mapped 객체의 소유권은 map에 있다. 기존 값을
+  대입하지 않으므로 `insert_or_assign`와 달리 중복 등록이 기존 mapped 하위 객체의 수명을 끝내지 않는다.
+- **시간·공간 복잡도**: hash 분포가 정상이라는 평균 모델에서 조회와 삽입은 평균 `O(1)`, 공격적 충돌
+  또는 퇴화한 bucket에서는 최악 `O(N)`이다. 성공한 삽입은 보통 node 하나를 동적 할당하고 load factor를
+  넘으면 bucket 배열 재할당과 기존 node 재배치를 동반할 수 있다. 컨테이너가 소유하는 공간은 `O(N)`이며
+  한 호출의 node 외 보조 상태는 구현 세부사항이다. `reserve`는 재해시 가능성을 줄여도 node 할당 자체를
+  없애는 보장은 아니다.
+- **iterator·참조·pointer 무효화**: 충돌 경로는 원소를 추가하지 않으므로 기존 관찰자를 무효화하지
+  않는다. 성공했지만 재해시하지 않으면 기존 iterator도 유효하다. 성공과 함께 재해시하면 **모든 기존
+  iterator가 무효화**되지만 원소를 가리키던 reference와 pointer는 유지된다. 반환 iterator도 이후 재해시,
+  해당 원소 `erase`, map 파괴 뒤에는 사용할 수 없다. reference/pointer도 해당 원소 삭제나 map 파괴 뒤에는
+  dangling이다.
+- **수명**: 새 key와 mapped 객체는 node 삽입 완료부터 해당 원소의 erase 또는 map 파괴까지 산다.
+  반환 pair는 값이지만 그 안의 iterator는 비소유 관찰자다. 오늘처럼 iterator에서 필요한 bool/크기만
+  복사한 결과 객체는 map 수명과 독립적이다. mapped 생성자가 전달 인자의 reference를 저장한다면 그
+  피참조 객체의 수명은 별도로 보장해야 하며, `try_emplace`가 자동 연장하지 않는다.
+- **예외 보장**: allocation은 `std::bad_alloc`, key/mapped 생성과 사용자 `Hash`/`KeyEqual`은 사용자
+  예외를 던질 수 있다. 단일 원소 insert/emplace 계열은 hash 함수가 던진 경우를 제외하면 예외 시
+  container 삽입 효과가 없다는 보장을 받는다. 이 보장은 이미 이동이 시작된 호출자 인자의 원래 값을
+  복원한다는 뜻이 아니다. 던질 수 있는 사용자 hash에 대해서는 더 강한 no-effect 보장을 가정하지 않는다.
+- **미정의 동작·thread 보장**: 무효 iterator/reference 사용, 수명이 끝난 생성자 인자 참조, 또는
+  `Hash`와 `KeyEqual`의 필수 관계 위반은 안전한 사용 계약을 벗어난다. 컨테이너는 내부 잠금을 제공하지
+  않는다. 같은 map의 `try_emplace`, `erase`, `reserve` 같은 변경과 다른 읽기/쓰기가 겹치지 않도록 외부
+  동기화해야 하며, 서로 다른 map 객체는 각 객체와 원소 타입의 thread 규칙 아래 독립적으로 다룰 수 있다.
+
+#### 함수 인자 평가와 조건부 이동을 구분한다
+
+“중복 key면 mapped 객체를 만들지 않는다”는 말은 **호출 인자 식을 평가하지 않는다**는 뜻이 아니다.
+C++ 함수 호출의 인자 식은 함수 본문에 들어가기 전에 평가된다. 따라서 다음 호출에서
+`expensive_factory()`는 key가 이미 있어도 실행되고, 그 반환 temporary는 충돌 경로에서 사용되지 않은 채
+파괴될 수 있다.
+
+```cpp
+registry.try_emplace("billing", expensive_factory());
+```
+
+반면 미리 존재하는 `std::unique_ptr<T> prepared`를 `std::move(prepared)`로 넘기면 `std::move`는 값
+범주만 xvalue로 바꾼다. 중복 key라 실제 mapped 생성이 없으면 `prepared`에서 이동하지 않는다. factory
+실행까지 정말 지연해야 한다면 먼저 `find`/별도 API로 충돌 정책을 결정하거나, factory 자체를 저장해
+필요한 경로에서만 명시적으로 호출하는 설계를 사용한다. 다만 `find` 뒤 `try_emplace`는 같은 key를 두 번
+조회하며, 외부 동기화 없는 concurrent 변경을 안전하게 만드는 원자적 복합 연산도 아니다.
+
+#### 최소 실무 예제
+
+```cpp
+#include <string>
+#include <unordered_map>
+#include <utility>
+
+struct Endpoint {
+    explicit Endpoint(std::string address_value, int timeout_value)
+        : address{std::move(address_value)}, timeout_ms{timeout_value} {}
+
+    std::string address;
+    int timeout_ms{};
+};
+
+int main() {
+    std::unordered_map<std::string, Endpoint> registry;
+    std::string name{"billing"};
+    std::string address{"https://first.example"};
+
+    const auto [position, inserted] = registry.try_emplace(
+        std::move(name), std::move(address), 500);
+    if (!inserted || position->second.timeout_ms != 500) {
+        return 1;
+    }
+
+    std::string duplicate_name{"billing"};
+    std::string duplicate_address{"https://ignored.example"};
+    const auto [same_position, inserted_again] = registry.try_emplace(
+        std::move(duplicate_name), std::move(duplicate_address), 900);
+
+    // 충돌 경로는 기존 값을 유지하고 두 이름 있는 문자열에서 이동하지 않는다.
+    return inserted_again || same_position->second.timeout_ms != 500 ||
+                   duplicate_name.empty() || duplicate_address.empty()
+               ? 2
+               : 0;
+}
+```
+
 ### `std::unordered_map::find`·`std::unordered_map::insert_or_assign`·`std::unordered_map::reserve` 호출 계약
 
 - `bool contains(const Key& key) const`: `key`를 소유하지 않고 빌려 동등 키 존재 여부를 반환한다. 수신 map은 바뀌지 않는다. 평균 `O(1)`, 최악 `O(N)`이며 해시·동등 비교가 예외를 던질 수 있다.

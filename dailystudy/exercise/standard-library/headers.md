@@ -57,7 +57,7 @@
 | `<thread>` | `jthread`, `this_thread` 함수 |
 | `<tuple>` | 이종 값 묶음 `tuple`, 원소 접근 `get`, tuple-like 호출 어댑터 `apply` |
 | `<type_traits>` | `is_same_v`, `decay_t`, `remove_cvref_t` |
-| `<unordered_map>` | 해시 연관 컨테이너 `unordered_map` |
+| `<unordered_map>` | 해시 연관 컨테이너 `unordered_map`과 없는 key의 mapped 값만 제자리 구성하는 `try_emplace` |
 | `<unordered_set>` | 고유 key를 node로 소유하는 해시 연관 컨테이너 `std::unordered_set`과 `insert`·`merge`·`size` |
 | `<utility>` | `in_place` 태그, `move`, `forward`, C++23 `forward_like`·`to_underlying`, `exchange`, `pair` |
 | `<variant>` | 태그된 합 타입 `variant`와 방문 API |

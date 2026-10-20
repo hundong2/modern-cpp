@@ -70,14 +70,22 @@
 | [2026-09-23](./2026-09-23/README.md) | `std::views::zip` 검증 열 저장소·비소유 행 투영과 가중 구간 스케줄링 | C++23 |
 | [2026-09-25](./2026-09-25/README.md) | `std::generator` frame-owned 지연 참조 스트림과 Meet-in-the-middle 부분집합 합 | C++23 |
 | [2026-09-28](./2026-09-28/README.md) | `std::views::slide` owner-backed 겹치는 창과 두 multiset 중앙값 비용 | C++23 |
+| [2026-09-29](./2026-09-29/README.md) | `std::string::resize_and_overwrite` 직접 쓰기와 Booth 최소 회전 | C++23 |
+| [2026-09-30](./2026-09-30/README.md) | `std::views::chunk_by` 인접 그룹과 Fenwick 급여 질의 | C++23 |
+| [2026-10-01](./2026-10-01/README.md) | `std::views::enumerate` 위치 투영과 트리 경로 차분 | C++23 |
+| [2026-10-14](./2026-10-14/README.md) | `std::to_underlying` 직렬화 경계와 Suffix Automaton | C++23 |
+| [2026-10-15](./2026-10-15/README.md) | `std::atomic_ref` 레거시 저장소 경계와 k개 최단 Walk | C++23 |
+| [2026-10-16](./2026-10-16/README.md) | RAII 범위 종료 가드와 small-to-large 집합 병합 | C++23 |
+| [2026-10-19](./2026-10-19/README.md) | `std::ranges::contains` 정책 경계와 SCC 압축 DAG DP | C++23 |
+| [2026-10-20](./2026-10-20/README.md) | `std::unordered_map::try_emplace` 멱등 레지스트리와 트리 센트로이드 | C++23 |
 
 ## 표준 라이브러리 설명 찾기
 
 - [표준 라이브러리 학습 지도](./standard-library/README.md): 설명 품질 기준과 분야별 대표 문서
-- [날짜별 사용 색인](./standard-library/by-date.md): 현재 66개 날짜, 179개 C++ 파일의 헤더와 `std::` 심볼
-- [심볼 색인](./standard-library/symbol-index.md): 178개 현재 심볼의 역할과 상세 문서 링크
+- [날짜별 사용 색인](./standard-library/by-date.md): 현재 74개 날짜, 203개 C++ 파일의 헤더와 `std::` 심볼
+- [심볼 색인](./standard-library/symbol-index.md): 194개 현재 심볼의 역할과 상세 문서 링크
 - [공통 용어](./standard-library/terms.md): 반복자, 뷰, 술어, 소유권, 무효화, 예외 보장, 원자성
-- [표준 헤더](./standard-library/headers.md): 현재 사용하는 57개 헤더와 대표 선언
+- [표준 헤더](./standard-library/headers.md): 현재 사용하는 58개 헤더와 대표 선언
 
 코드의 인접 주석은 현재 호출의 인자·반환값·상태 변화를 설명한다. 공용 문서는 전제조건, 복잡도, 객체 수명, 참조·반복자 무효화, 오류·예외 계약을 설명한다. 새 심볼은 다음 감사로 누락 여부를 검사한다.
 
