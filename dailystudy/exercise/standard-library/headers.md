@@ -25,7 +25,7 @@
 | `<filesystem>` | `path`, 디렉터리 반복자와 파일 상태 API |
 | `<flat_map>` | C++23 정렬된 고유 키의 평면 소유 연관 컨테이너 `flat_map` |
 | `<format>` | 타입 안전 문자열 형식화 `std::format`, 형식 오류 `std::format_error` |
-| `<functional>` | `function`, C++23 `move_only_function`·`bind_back`, 비교 함수 객체, 참조 래퍼 |
+| `<functional>` | 복사 가능한 타입 소거 callback `function`, C++23 `move_only_function`·`bind_back`, 비교 함수 객체, 참조 래퍼 |
 | `<future>` | 단일 결과 shared state의 생산자 `promise`와 소비자 `future` |
 | `<generator>` | C++23 동기 coroutine 기반 단일-pass lazy view `std::generator` |
 | `<iomanip>` | `setprecision` 등 스트림 형식 조작자 |
@@ -33,7 +33,7 @@
 | `<latch>` | C++20 일회성 카운트다운 동기화 객체 `std::latch` |
 | `<limits>` | `numeric_limits` 타입별 수치 한계 |
 | `<map>` | 정렬 연관 컨테이너 `map` |
-| `<memory>` | 스마트 포인터, `make_unique`/`make_shared`, C++23 출력 포인터 어댑터 `out_ptr` |
+| `<memory>` | 스마트 포인터, 자기 수명 관찰 기반 `enable_shared_from_this`, `make_unique`/`make_shared`, C++23 출력 포인터 어댑터 `out_ptr` |
 | `<memory_resource>` | `std::pmr` 메모리 자원과 컨테이너 별칭 |
 | `<mdspan>` | C++23 다차원 비소유 뷰 `mdspan`, 동적 차원 `dextents`, 레이아웃 정책 |
 | `<mutex>` | `mutex`, `scoped_lock`, `unique_lock`, 일회 초기화 `once_flag`/`call_once` |

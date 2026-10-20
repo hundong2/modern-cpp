@@ -98,16 +98,53 @@ int main() {
 }
 ```
 
-## `std::shared_ptr<T>`, `std::weak_ptr<T>`, `std::make_shared<T>`
+## `std::shared_ptr<T>`, `std::weak_ptr<T>`, `std::enable_shared_from_this<T>`, `std::make_shared<T>` — `<memory>`
 
-- `shared_ptr` 복사는 공유 참조 횟수를 늘리고 마지막 소유자가 사라질 때 객체를 파괴한다.
-- 이동은 소유권 몫을 옮기며 원본은 보통 빈 상태가 된다.
-- 참조 횟수 조작 자체는 스레드 안전하게 조정되지만 가리키는 `T`의 동시 변경까지 보호하지 않는다.
-- 순환 참조는 참조 횟수가 0이 되지 않아 누수된다. 순환의 비소유 방향을 `weak_ptr`로 표현한다.
-- `weak_ptr::lock()`은 객체가 살아 있으면 임시 `shared_ptr`, 만료됐으면 빈 `shared_ptr`를 반환한다. 검사와 수명 연장을 한 동작으로 묶는다.
-- `expired()` 직후 다른 스레드에서 소멸할 수 있으므로 실제 사용에는 `lock()` 결과를 검사한다.
-- `make_shared<T>(args...)`는 보통 객체와 제어 블록을 한 할당으로 만들며 `shared_ptr<T>`를 반환한다.
-- 별도 자원 해제 정책이나 매우 큰 객체의 메모리 반환 시점 때문에 직접 생성이 필요한 경우도 있지만 기본 선택은 `make_shared`다.
+`shared_ptr`는 관리 객체와 control block의 공유 소유권을 나타낸다. control block에는 strong/weak 소유 상태와
+deleter·allocator 정보가 들어갈 수 있다. 마지막 strong owner가 사라지면 관리 객체의 수명은 끝나지만,
+`weak_ptr`가 남아 있으면 만료 상태를 표현하기 위해 control block 저장소는 더 오래 남을 수 있다. `weak_ptr`는
+객체를 살려 두지 않으며, 순환 소유권의 비소유 방향이나 원래 객체보다 오래 보관될 수 있는 콜백에 적합하다.
+
+### `std::make_shared<T>(args...)` 생성 계약
+
+- **항목 종류·대표 선언:** `<memory>`의 자유 함수 템플릿이다. 오늘 선택하는 비배열 overload의 대표 형태는 `template<class T, class... Args> shared_ptr<T> make_shared(Args&&... args);`다. C++20 이후 배열용 overload도 있으므로 인자 모양만 보고 모두 같은 계약이라고 일반화하지 않는다.
+- **수신 객체·인자:** 자유 함수라 수신 객체는 없다. 각 `args`는 forwarding reference이며 `T`의 생성자로 값 범주와 cv 한정을 전달한다. lvalue 인자는 복사·참조 바인딩 대상, rvalue 인자는 이동 대상이 될 수 있지만 실제 자원 이전은 선택된 `T` 생성자가 수행한다. 모든 인자 식은 호출 전에 평가되고 참조 인자의 대상은 생성이 끝날 때까지 유효해야 한다.
+- **반환형·사후 상태:** 완성한 `T`와 그 control block을 공동 소유하는 `shared_ptr<T>` prvalue를 반환한다. 반환값은 호출자의 핸들을 직접 초기화하며, 별도 owner 복사 없이 결과 객체에 구성될 수 있다. 성공 직후 다른 owner를 아직 만들지 않았다면 strong owner는 반환 핸들 하나다.
+- **복잡도·할당·예외:** wrapper 작업은 상수 크기지만 전체 비용은 동적 저장소 획득과 `T` 생성 비용을 포함한다. 구현은 보통 객체와 control block을 한 번의 할당으로 배치하지만 그 물리적 배치와 정확한 할당 횟수에 의존하지 않는다. 저장소 획득은 `bad_alloc`, `T` 생성은 해당 생성자의 예외를 전파할 수 있으며, 실패하면 이미 획득한 자원을 정리해 완성되지 않은 owner를 공개하지 않는다.
+- **수명·무효화:** 반환 핸들의 마지막 strong 몫이 해제될 때 `T`를 파괴한다. 객체와 control block을 같은 할당에 둔 구현에서는 남은 weak owner 때문에 `T`가 파괴된 뒤에도 그 결합 저장소 반환이 늦어질 수 있다. 객체 파괴 뒤 과거 raw pointer·reference는 무효지만 weak handle 자체는 만료 상태로 검사할 수 있다.
+- **스레드 보장·현재 역할:** factory 자체가 `T`의 상태 접근을 동기화하지 않는다. 같은 control block을 공유하는 서로 다른 스마트 포인터 핸들의 참조 횟수 조정은 안전하지만 `T`의 동시 읽기·쓰기는 별도 계약이 필요하다. 오늘은 callback을 만들 객체가 처음부터 올바른 shared control block에 연결되도록 raw `new` 대신 factory 경계에서 사용한다.
+
+### `std::enable_shared_from_this<T>`와 `weak_from_this()`
+
+- **항목 종류·상속 조건:** `<memory>`의 class template이며, `T`가 `public std::enable_shared_from_this<T>`를 접근 가능하고 모호하지 않은 기반으로 정확히 한 번 갖는 패턴을 사용한다. `shared_ptr`가 새 control block으로 `T`를 최초 소유할 때 이 기반을 발견하면 내부 weak 관찰자를 같은 control block에 연결한다. 기반 subobject와 내부 weak 관찰자는 `T`를 strong ownership하지 않는다.
+- **대표 시그니처·수신 객체:** `weak_ptr<T> weak_from_this() noexcept;`와 `weak_ptr<const T> weak_from_this() const noexcept;` 두 overload가 있다. non-const `T` lvalue 수신자에는 전자, `const T` lvalue 수신자에는 후자가 선택된다. 명시적 데이터 인자는 없으며, 멤버를 호출하려면 그 순간 `*this` 자체의 수명이 이미 보장돼 있어야 한다.
+- **반환형·사후 상태:** 연결된 내부 관찰자를 복사한 `weak_ptr` prvalue를 반환하고 수신 `T`와 기존 owner를 바꾸지 않는다. 반환 weak handle을 lambda에 값 캡처하면 closure가 control block 관찰 상태를 소유하지만 `T`의 strong count는 늘지 않는다. 따라서 외부 queue가 callback을 오래 보관해도 그 사실만으로 `T`를 살려 두지 않는다.
+- **너무 이른 호출과 오류:** `T`가 아직 shared owner에 연결되지 않은 stack/raw 객체이거나 `make_shared`가 객체 생성자를 실행 중인 시점에는 `weak_from_this()`가 빈 weak handle을 반환하며 예외를 던지지 않는다. 같은 상태의 `shared_from_this()`는 `bad_weak_ptr`를 던질 수 있다. 생성자에서 자기 callback을 완성하지 말고 factory가 owner를 만든 뒤 별도 멤버 함수에서 생성한다.
+- **전제조건 위반과 UB:** private/protected 상속이나 모호한 다중 기반은 shared owner가 기반을 정상 연결하는 공개·비모호 패턴을 만족하지 않는다. 이를 우회해 `shared_ptr<T>(this)`로 별도 control block을 만들면 같은 객체를 독립 owner들이 중복 삭제할 수 있어 미정의 동작으로 이어진다. `enable_shared_from_this`는 이미 만들어진 독립 control block들을 합치지 않는다.
+- **복잡도·할당·수명:** `weak_from_this()`는 상수 시간에 control block 관찰 몫을 복사하고 별도 동적 할당 없이 `noexcept`로 끝난다. 마지막 strong owner가 사라지면 `T`는 파괴되며 반환 weak handle은 만료된다. 마지막 weak handle까지 사라질 때 control block도 해제될 수 있다. weak handle 또는 callback을 파괴하면 그 handle만 무효가 되고 다른 핸들은 유지된다.
+- **스레드 보장·현재 역할:** control block 참조 횟수의 안전성은 `T` 멤버 상태를 자동으로 보호하지 않는다. 같은 callback에서 얻은 strong handle로 객체 수명은 지킬 수 있지만 mutable 멤버의 병행 접근에는 mutex·불변 객체 같은 별도 정책이 필요하다. 이미 수명이 끝날 수 있는 raw `this`로 `weak_from_this()` 자체를 호출하는 것은 안전 장치가 아니다. 오늘 패턴은 살아 있는 owner를 통해 callback factory를 호출하고, callback 실행 때마다 weak handle을 승격한다.
+
+### `std::weak_ptr<T>::lock()` 승격 계약
+
+- **수신 객체·시그니처:** 수신자는 살아 있는 `const` 또는 non-const `weak_ptr<T>` lvalue이며 연결된 control block이 있거나 빈 상태일 수 있다. 선택되는 멤버는 `shared_ptr<T> lock() const noexcept;`이고 데이터 인자는 없다.
+- **반환형·사후 상태:** 관리 객체가 아직 살아 있으면 같은 control block의 strong 몫 하나를 얻은 `shared_ptr<T>` prvalue, 이미 만료됐거나 처음부터 비어 있으면 빈 `shared_ptr<T>`를 반환한다. 수신 weak handle은 변하지 않는다. 성공 반환값을 지역 변수에 보관하면 그 지역 핸들이 사는 동안 객체 수명이 유지된다.
+- **원자적 검사·경쟁:** 만료 확인과 strong count 증가는 control block에 대해 하나의 원자적 승격 동작으로 수행된다. `expired()`를 먼저 검사한 뒤 raw pointer를 사용하는 두 단계는 사이에 마지막 owner가 사라질 수 있으므로 대신 `lock()` 반환값 자체를 검사한다.
+- **복잡도·할당·오류:** control block 상태 확인과 참조 횟수 조정은 상수 시간이고 새 control block이나 관리 객체를 할당하지 않으며 `noexcept`다. 만료는 오류 예외가 아니라 빈 반환값이다. 빈 결과에 `operator*` 또는 `operator->`를 적용하면 전제조건을 어겨 미정의 동작이므로 먼저 bool 상태를 확인한다.
+- **수명·스레드:** 성공한 strong handle 파괴는 strong count를 줄이고 마지막 owner라면 객체를 파괴할 수 있다. 서로 다른 shared/weak handle의 control-block 조정은 안전하지만 같은 handle 객체에 대한 `reset`/대입과 읽기를 동기화 없이 겹치면 안 되고, 가리키는 `T`의 데이터 경쟁도 별도 문제다.
+
+### `std::shared_ptr<T>::reset()` 해제 계약
+
+- **수신 객체·시그니처:** 수신자는 비어 있거나 strong 몫 하나를 가진 수정 가능한 `shared_ptr<T>` lvalue다. 오늘의 무인자 호출은 `void reset() noexcept;`를 선택하며 새 pointer·deleter·allocator 인자는 없다. pointer를 받는 template overload들은 별도 control block 생성과 할당 실패 가능성이 있어 이 계약과 다르다.
+- **반환형·사후 상태:** 반환값은 `void`이고 호출 뒤 수신 핸들은 빈 상태다. 기존 control block의 strong count를 하나 줄이며, 이것이 마지막 strong 몫이면 관리 객체의 소멸자와 저장된 deleter를 실행한다. 다른 strong owner가 있으면 객체 수명은 계속된다.
+- **복잡도·할당·오류:** 핸들 교체와 참조 횟수 조정은 상수 시간이지만 마지막 owner에서는 `T` 소멸과 deleter 비용이 더해진다. 무인자 overload는 새 저장소를 할당하지 않고 `noexcept`다. 소멸자나 deleter가 예외를 밖으로 내보내도록 설계하면 `noexcept` 파괴 경계에서 종료될 수 있으므로 던지지 않아야 한다.
+- **무효화·수명:** 마지막 owner였다면 객체를 가리키던 raw pointer·reference는 호출 과정에서 무효가 된다. weak handle과 이를 값 캡처한 callback은 control block을 관찰하는 유효한 만료 객체로 남고, 이후 `lock()`은 빈 값을 반환한다. 빈 수신자에 다시 호출하는 것은 허용되며 계속 빈 상태다.
+- **스레드 보장:** 같은 control block의 다른 스마트 포인터 핸들은 독립적으로 사용할 수 있지만 동일한 `shared_ptr` 객체에 대한 `reset`과 다른 접근을 동기화 없이 겹치면 데이터 경쟁이다. reset이 가리키던 `T`의 임의 동시 접근을 기다려 주는 것은 아니므로 각 사용자는 자신의 strong owner나 상위 동기화로 수명을 보장해야 한다.
+
+요약하면 `shared_ptr` 복사는 strong count를 늘리고 이동은 소유 몫을 옮긴다. 강한 자기 캡처는 callback이 객체를
+불필요하게 오래 살리거나 객체가 callback을 소유할 때 순환을 만들 수 있다. 반대로 weak 자기 캡처는 callback
+실행 때 `lock()`에 성공한 짧은 범위에서만 strong 수명을 확보한다. 별도 자원 해제 정책이나 매우 큰 객체의
+메모리 반환 시점 때문에 직접 생성이 필요한 경우도 있지만 일반 객체와 control block의 공동 생성을 의도하면
+`make_shared`가 기본 선택이다.
 
 ### `shared_ptr` aliasing constructor와 부분 객체 수명
 
@@ -267,11 +304,26 @@ int main() {
 
 ## `std::function<Signature>` — `<functional>`
 
-- 지정한 호출 서명을 만족하는 함수, 람다, 함수 객체를 타입 소거해 값으로 보관한다.
-- 복사 가능한 호출 대상을 요구하며 내부 작은 객체 최적화 여부는 구현에 따라 다르다.
-- 빈 `std::function`을 호출하면 `std::bad_function_call`을 던진다.
-- 간접 호출·동적 할당 가능성이 있어 성능이 중요한 템플릿 경로에서는 구체 호출 타입이나 `auto` 매개변수를 검토한다.
-- 서로 다른 명령을 한 컨테이너에 저장하거나 런타임 교체 가능한 콜백 경계에 유용하다.
+`std::function<R(Args...)>`은 지정한 서명으로 호출할 수 있는 함수, lambda, 함수 객체를 타입 소거해 **값으로
+소유**하는 class template이다. 서로 다른 구체 callback을 한 저장소나 scheduler 경계에 넣을 수 있지만, 저장
+대상은 복사 가능해야 하고 타입 소거 호출·저장 비용을 고려해야 한다.
+
+### 호출 대상 생성과 소유 계약
+
+- **항목 종류·대표 형태:** `<functional>`의 class template이며, 호출 대상을 받는 대표 생성자는 `template<class F> function(F&& f);`다. 실제 참여 조건은 `decay_t<F>`가 CopyConstructible이고 선언한 `R(Args...)` 서명으로 호출 가능하며 결과가 `R` 요구를 만족하는지 등을 검사한다.
+- **수신 객체·인자:** 아직 구성되지 않은 `function<R(Args...)>` 목적 객체가 결과다. `f`는 forwarding reference다. lvalue 호출 대상은 내부 저장 객체로 복사되고 rvalue는 이동될 수 있으며, 람다의 값 캡처도 closure의 subobject로 함께 복사·이동된다. 참조 캡처는 참조 대상의 수명을 연장하지 않는다.
+- **반환형·사후 상태:** 생성자는 별도 반환값이 없다. 성공하면 wrapper가 decay된 호출 대상의 독립 수명을 소유하고 bool 검사에서 참이 된다. 오늘 weak-self lambda의 closure는 `weak_ptr` 값만 소유하므로 callback이 살아 있어도 원래 서비스 객체의 strong count는 늘지 않는다.
+- **복잡도·할당·예외:** 저장과 복사 비용은 호출 대상 크기·연산에 따르며 작은 객체 최적화의 크기와 적용 여부는 구현 세부다. 함수 pointer와 `reference_wrapper`를 저장하는 경우 동적 할당을 하지 않아야 하지만 일반 lambda는 동적 할당과 `bad_alloc` 가능성을 배제할 수 없다. 호출 대상 복사·이동 생성자의 예외도 전파되며 실패하면 목적 wrapper는 완성되지 않는다.
+- **수명·무효화:** wrapper 파괴·대입·reset 성격의 빈 값 교체는 보관한 closure를 파괴하고 그 closure가 가진 weak count도 해제한다. closure가 빌린 reference/pointer는 별도 owner가 먼저 파괴하면 댕글링할 수 있다. 값 캡처한 weak handle은 객체 파괴 뒤에도 만료 상태로 검사 가능하며 마지막 weak 몫이면 control block 해제로 이어질 수 있다.
+
+### `std::function::operator()` 호출 계약
+
+- **수신 객체·시그니처:** 수신자는 호출 대상을 가진 `const` 또는 non-const `function<R(Args...)>` lvalue다. 대표 멤버는 `R operator()(Args... args) const;`이며 오늘의 `function<bool(int)>`에는 `int` 하나를 값으로 받아 `bool`을 반환하는 specialization이 대응한다.
+- **매개변수·반환값:** 일반 서명에서는 선언된 `Args...`에 맞게 각 호출 인자를 받아 저장 대상에 전달한다. 참조 매개변수는 대상을 빌리고 값 매개변수는 별도 매개변수 객체를 만들 수 있다. 오늘의 `int` prvalue는 event/job code 매개변수 값이 되고 소유권을 전달하지 않는다. 저장 대상의 호출 결과를 `R`로 반환하며 `void` 서명은 값 결과가 없다. 오늘 반환 `bool`은 weak 승격 성공 뒤 조건까지 만족했는지를 뜻하고 호출자가 검사한다.
+- **사후 상태:** `function` wrapper 자체는 계속 같은 호출 대상을 소유한다. 다만 mutable lambda나 상태 있는 함수 객체는 호출 과정에서 내부 상태를 바꿀 수 있으므로 `operator() const` 표기만 보고 논리적 불변이라고 단정하지 않는다. weak-self callback은 매 호출마다 `lock()`의 지역 strong handle을 만들었다가 호출 끝에 해제한다.
+- **오류·전제조건:** 빈 wrapper 호출은 미정의 동작이 아니라 `bad_function_call` 예외를 던진다. 저장 대상이 던진 예외도 호출자에게 전파된다. 수명 보장이 없는 참조 캡처나 빈 `shared_ptr` 역참조에서 생기는 UB를 wrapper가 막아 주지는 않는다.
+- **복잡도·할당·기계 실행:** 호출 자체는 일반적으로 새 저장소를 할당하지 않지만 대상 함수의 동작은 할당할 수 있다. 타입 소거 dispatch는 간접 호출이 될 수 있으나 정확한 인라이닝·분기 형태는 compiler, ABI, 최적화 옵션에 따라 다르다. 성능이 중요한 닫힌 template 경로에서는 구체 lambda 타입이나 `auto` 매개변수를 검토한다.
+- **스레드 보장:** 서로 다른 wrapper 사본의 저장 상태는 독립적이지만 캡처한 대상이나 control block은 공유될 수 있다. 같은 wrapper 또는 mutable closure 상태를 동시 변경·호출하는 안전성은 자동 제공되지 않는다. weak/shared control block 조정이 안전해도 원래 서비스 객체의 mutable 데이터에는 별도 동기화가 필요하다.
 
 ## `std::move_only_function<Signature>` — `<functional>`
 

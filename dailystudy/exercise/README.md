@@ -78,12 +78,13 @@
 | [2026-10-16](./2026-10-16/README.md) | RAII 범위 종료 가드와 small-to-large 집합 병합 | C++23 |
 | [2026-10-19](./2026-10-19/README.md) | `std::ranges::contains` 정책 경계와 SCC 압축 DAG DP | C++23 |
 | [2026-10-20](./2026-10-20/README.md) | `std::unordered_map::try_emplace` 멱등 레지스트리와 트리 센트로이드 | C++23 |
+| [2026-10-21](./2026-10-21/README.md) | `weak_from_this` 지연 콜백 수명 경계와 Hungarian 최소 비용 완전 배정 | C++23 |
 
 ## 표준 라이브러리 설명 찾기
 
 - [표준 라이브러리 학습 지도](./standard-library/README.md): 설명 품질 기준과 분야별 대표 문서
-- [날짜별 사용 색인](./standard-library/by-date.md): 현재 74개 날짜, 203개 C++ 파일의 헤더와 `std::` 심볼
-- [심볼 색인](./standard-library/symbol-index.md): 194개 현재 심볼의 역할과 상세 문서 링크
+- [날짜별 사용 색인](./standard-library/by-date.md): 현재 75개 날짜, 206개 C++ 파일의 헤더와 `std::` 심볼
+- [심볼 색인](./standard-library/symbol-index.md): 195개 현재 심볼의 역할과 상세 문서 링크
 - [공통 용어](./standard-library/terms.md): 반복자, 뷰, 술어, 소유권, 무효화, 예외 보장, 원자성
 - [표준 헤더](./standard-library/headers.md): 현재 사용하는 58개 헤더와 대표 선언
 

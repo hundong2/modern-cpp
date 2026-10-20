@@ -89,9 +89,10 @@
 | `std::make_unique` | 객체와 unique_ptr 생성 | [소유권](ownership-and-vocabulary-types.md) |
 | `std::out_ptr` | `T**` 출력 API를 스마트 포인터 소유권으로 잇는 C++23 어댑터 함수 | [소유권](ownership-and-vocabulary-types.md) |
 | `std::out_ptr_t` | 출력 슬롯과 스마트 포인터 재채택 수명을 관리하는 임시 어댑터 타입 | [소유권](ownership-and-vocabulary-types.md) |
-| `std::shared_ptr` | 참조 횟수 기반 공유 소유권 | [소유권](ownership-and-vocabulary-types.md) |
-| `std::make_shared` | 객체와 shared_ptr 생성 | [소유권](ownership-and-vocabulary-types.md) |
-| `std::weak_ptr` | shared_ptr 객체의 비소유 관찰자 | [소유권](ownership-and-vocabulary-types.md) |
+| `std::shared_ptr` | 참조 횟수 기반 공유 소유권과 명시적 strong 몫 해제 | [소유권](ownership-and-vocabulary-types.md) |
+| `std::make_shared` | 객체와 control block을 함께 준비하는 shared owner factory | [소유권](ownership-and-vocabulary-types.md) |
+| `std::weak_ptr` | shared control block의 비소유 관찰과 안전한 일시 승격 | [소유권](ownership-and-vocabulary-types.md) |
+| `std::enable_shared_from_this` | shared owner가 연결한 자기 control block의 weak 관찰자 제공 | [소유권](ownership-and-vocabulary-types.md) |
 | `std::optional`, `std::nullopt_t`, `std::nullopt`, `std::bad_optional_access` | 선택적 값, 빈 상태 태그 타입·객체와 검사형 접근 실패 예외 | [소유권](ownership-and-vocabulary-types.md) |
 | `std::expected`, `std::unexpected`, `std::expected::error` | 성공값 또는 오류값과 오류 대안 접근 | [소유권](ownership-and-vocabulary-types.md) |
 | `std::in_place` | `expected` 성공값을 내부 저장소에 직접 생성하는 태그 | [소유권](ownership-and-vocabulary-types.md) |
@@ -103,7 +104,7 @@
 | `std::apply` | tuple-like 원소를 위치 인자로 펼치는 호출 어댑터 | [소유권](ownership-and-vocabulary-types.md) |
 | `std::reference_wrapper`, `std::cref` | 복사 가능한 비소유 참조 래퍼 | [소유권](ownership-and-vocabulary-types.md) |
 | `std::bind_back` | C++23 뒤쪽 인자 decay 소유·perfect-forwarding 호출 래퍼 생성 | [소유권](ownership-and-vocabulary-types.md) |
-| `std::function` | 호출 가능 객체 타입 소거 래퍼 | [소유권](ownership-and-vocabulary-types.md) |
+| `std::function` | 복사 가능한 호출 대상을 값 소유하는 타입 소거 callback 래퍼 | [소유권](ownership-and-vocabulary-types.md) |
 | `std::move_only_function` | 이동 전용 호출 가능 객체 타입 소거 래퍼 | [소유권](ownership-and-vocabulary-types.md) |
 | `std::source_location`, `std::source_location::current` | 호출 소스 위치 캡처 | [소유권](ownership-and-vocabulary-types.md) |
 | `std::strong_ordering` | 강한 삼방향 비교 결과 | [소유권](ownership-and-vocabulary-types.md) |

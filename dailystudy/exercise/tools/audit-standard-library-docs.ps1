@@ -102,6 +102,110 @@ $bindBackReceiverDeclarationPattern =
     '(?m)^[ \t]*(?:const\s+)?auto\s+(?<Receiver>[A-Za-z_][A-Za-z0-9_]*)\s*' +
     '(?:=\s*|\{\s*)std::bind_back\s*\('
 
+# shared/weak owner와 std::function callback은 선언에서 정확한 수신자 이름을 수집한다.
+# 함수 반환 선언을 객체로 오인하지 않도록 이름 뒤 `(`를 제외하고 같은 줄의 `;`를 요구한다.
+$sharedPtrReceiverDeclarationPattern =
+    '(?m)^[ \t]*' + $declarationQualifierPattern +
+    'std::shared_ptr\s*<[^;\r\n]+>\s*(?:[&*]\s*)?(?<Receiver>[A-Za-z_][A-Za-z0-9_]*)' +
+    '\b(?!\s*\()(?=[^;\r\n]*;)'
+$sharedPtrAliasDeclarationPattern =
+    '(?m)^[ \t]*using\s+(?<Alias>[A-Za-z_][A-Za-z0-9_]*)\s*=\s*' +
+    'std::shared_ptr\s*<[^;\r\n]+>\s*;'
+$weakPtrReceiverDeclarationPattern =
+    '(?m)^[ \t]*' + $declarationQualifierPattern +
+    'std::weak_ptr\s*<[^;\r\n]+>\s*(?:[&*]\s*)?(?<Receiver>[A-Za-z_][A-Za-z0-9_]*)' +
+    '\b(?!\s*\()(?=[^;\r\n]*;)'
+$weakPtrAliasDeclarationPattern =
+    '(?m)^[ \t]*using\s+(?<Alias>[A-Za-z_][A-Za-z0-9_]*)\s*=\s*' +
+    'std::weak_ptr\s*<[^;\r\n]+>\s*;'
+$functionReceiverDeclarationPattern =
+    '(?m)^[ \t]*' + $declarationQualifierPattern +
+    'std::function\s*<(?<Signature>[^;\r\n]+)>\s*(?:[&*]\s*)?(?<Receiver>[A-Za-z_][A-Za-z0-9_]*)' +
+    '\b(?!\s*\()(?=[^;\r\n]*;)'
+$functionAliasDeclarationPattern =
+    '(?m)^[ \t]*using\s+(?<Alias>[A-Za-z_][A-Za-z0-9_]*)\s*=\s*' +
+    'std::function\s*<(?<Signature>[^;\r\n]+)>\s*;'
+$functionConstructionPattern =
+    '(?m)^[ \t]*' + $declarationQualifierPattern +
+    'std::function\s*<(?<Signature>[^;\r\n]+)>\s+' +
+    '(?<Destination>[A-Za-z_][A-Za-z0-9_]*)\s*' +
+    '(?<InitializerStart>;|\{|=|\((?!\s*\)))'
+
+# std::function의 forwarding callable 생성자는 default/copy/move 생성자와 다른 overload다.
+# initializer의 첫 식과 이미 수집한 std::function 수신자의 정확한 signature를 비교해 분류한다.
+function Get-FunctionConstructionKind {
+    param(
+        [Parameter(Mandatory = $true)] [string] $Source,
+        [Parameter(Mandatory = $true)] [System.Text.RegularExpressions.Match] $ConstructionMatch,
+        [Parameter(Mandatory = $true)] [string] $DestinationTypeKey,
+        [Parameter(Mandatory = $true)] [hashtable] $ReceiverTypeKeys
+    )
+
+    $initializerGroup = $ConstructionMatch.Groups['InitializerStart']
+    if (-not $initializerGroup.Success) {
+        throw 'std::function construction match lacks InitializerStart.'
+    }
+
+    $tailLength = [Math]::Min(4096, $Source.Length - $initializerGroup.Index)
+    $tail = $Source.Substring($initializerGroup.Index, $tailLength)
+    # 계약 검사 전 comment를 `#`로 치환했으므로 initializer 사이의 comment 줄을 trivia로 없앤다.
+    $tail = [regex]::Replace($tail, '(?m)#[^\r\n]*', '')
+    $tail = $tail.TrimStart()
+
+    if ($tail.StartsWith(';')) {
+        return 'Default'
+    }
+    if ($tail.StartsWith('=')) {
+        $tail = $tail.Substring(1).TrimStart()
+    }
+
+    $closingToken = ';'
+    if ($tail.StartsWith('{')) {
+        $tail = $tail.Substring(1).TrimStart()
+        $closingToken = '}'
+    } elseif ($tail.StartsWith('(')) {
+        $tail = $tail.Substring(1).TrimStart()
+        $closingToken = ')'
+    }
+
+    if ($tail.StartsWith($closingToken)) {
+        return 'Default'
+    }
+
+    $escapedClosingToken = [regex]::Escape($closingToken)
+    $moveMatch = [regex]::Match(
+        $tail,
+        '^std::move\s*\(\s*(?<Source>[A-Za-z_][A-Za-z0-9_]*)\s*\)\s*' +
+        $escapedClosingToken
+    )
+    if ($moveMatch.Success) {
+        $sourceName = $moveMatch.Groups['Source'].Value
+        if (
+            $ReceiverTypeKeys.ContainsKey($sourceName) -and
+            $ReceiverTypeKeys[$sourceName] -eq $DestinationTypeKey
+        ) {
+            return 'Move'
+        }
+    }
+
+    $copyMatch = [regex]::Match(
+        $tail,
+        '^(?<Source>[A-Za-z_][A-Za-z0-9_]*)\s*' + $escapedClosingToken
+    )
+    if ($copyMatch.Success) {
+        $sourceName = $copyMatch.Groups['Source'].Value
+        if (
+            $ReceiverTypeKeys.ContainsKey($sourceName) -and
+            $ReceiverTypeKeys[$sourceName] -eq $DestinationTypeKey
+        ) {
+            return 'Copy'
+        }
+    }
+
+    # 빈 initializer도 같은 specialization의 copy/move도 아니면 forwarding callable 대상 생성이다.
+    return 'Target'
+}
+
 # span/ospanstream은 기반 문자를 소유하지 않는다. 최신 학습 코드에서 생성된 정확한 수신자만
 # 추출해 domain 타입의 data/size/span 호출이나 일반 ostream 삽입을 잘못 잡지 않는다.
 $spanConstructionPattern =
@@ -151,7 +255,7 @@ $knownStandardMembers = [Collections.Generic.HashSet[string]]::new(
         'error', 'expired', 'extent', 'extract', 'fetch_add', 'file_size', 'find', 'front', 'get',
         'has_value', 'is_absolute', 'is_regular_file', 'join', 'joinable', 'lexically_normal', 'load',
         'insert', 'key', 'lock', 'mapped', 'merge', 'message', 'pop', 'pop_back', 'pop_front', 'push', 'push_back', 'push_front', 'release',
-        'notify_all', 'notify_one', 'reserve', 'reset', 'resize', 'resize_and_overwrite', 'size', 'span', 'store', 'str', 'substr', 'swap', 'tie', 'top', 'try_emplace', 'value', 'wait',
+        'notify_all', 'notify_one', 'reserve', 'reset', 'resize', 'resize_and_overwrite', 'size', 'span', 'store', 'str', 'substr', 'swap', 'tie', 'top', 'try_emplace', 'value', 'wait', 'weak_from_this',
         'value_or'
     )
 )
@@ -399,6 +503,16 @@ $contractPatterns = @(
     [pscustomobject]@{ Name = 'std::out_ptr'; Pattern = '(?m)^(?!\s*//)\s*[^\r\n]*std::out_ptr(?:\s*<[^;\r\n()]+>)?\s*\('; Readme = 'std::out_ptr(' },
     [pscustomobject]@{ Name = 'std::bind_back'; Pattern = '(?m)^(?![ \t]*//)[ \t]*[^\r\n]*\bstd::bind_back\s*\('; Readme = 'std::bind_back(' },
     [pscustomobject]@{ Name = 'bind_back result operator()'; BindBackInvocation = $true; Readme = 'bind_back-result::operator()' },
+    [pscustomobject]@{ Name = 'std::enable_shared_from_this default constructor'; Pattern = '(?m)^[ \t]*(?::|,)\s*std::enable_shared_from_this\s*<[^;\r\n{}()]+>\s*\{\s*\}'; Readme = 'std::enable_shared_from_this<T>' },
+    [pscustomobject]@{ Name = 'std::make_shared'; Pattern = '(?m)^(?!\s*//)\s*[^\r\n]*std::make_shared\s*<[^;\r\n()]+>\s*\('; Readme = 'std::make_shared<' },
+    [pscustomobject]@{ Name = 'enable_shared_from_this::weak_from_this'; Pattern = '(?m)^(?!\s*//)\s*[^\r\n]*\bweak_from_this\s*\('; Readme = 'weak_from_this(' },
+    [pscustomobject]@{ Name = 'weak_ptr::lock'; WeakPtrMember = 'lock'; Readme = 'weak_ptr::lock(' },
+    [pscustomobject]@{ Name = 'shared_ptr::reset'; SharedPtrMember = 'reset'; Readme = 'shared_ptr::reset(' },
+    [pscustomobject]@{ Name = 'std::function default constructor'; FunctionConstructionKind = 'Default'; Readme = 'std::function 기본 생성자' },
+    [pscustomobject]@{ Name = 'std::function copy constructor'; FunctionConstructionKind = 'Copy'; Readme = 'std::function 복사 생성자' },
+    [pscustomobject]@{ Name = 'std::function move constructor'; FunctionConstructionKind = 'Move'; Readme = 'std::function 이동 생성자' },
+    [pscustomobject]@{ Name = 'std::function target constructor'; FunctionConstructionKind = 'Target'; Readme = 'std::function 생성자' },
+    [pscustomobject]@{ Name = 'std::function::operator()'; FunctionInvocation = $true; Readme = 'function::operator()' },
     [pscustomobject]@{ Name = 'std::move'; Pattern = '(?m)^(?!\s*//)\s*[^\r\n]*std::move\s*\('; Readme = 'std::move(' },
     [pscustomobject]@{ Name = 'std::to_underlying'; Pattern = '(?m)^(?!\s*//)\s*[^\r\n]*std::to_underlying\s*\('; Readme = 'std::to_underlying(' },
     [pscustomobject]@{ Name = 'std::apply'; Pattern = '(?m)^(?!\s*//)\s*[^\r\n]*std::apply\s*\('; Readme = 'std::apply(' },
@@ -529,6 +643,198 @@ foreach ($file in Get-ChildItem -LiteralPath $latestDirectory.FullName -Filter '
         $bindBackReceiverNames |
             ForEach-Object { [regex]::Escape($_) }
     ) -join '|'
+    $sharedPtrAliasNames = @(
+        [regex]::Matches($contractSource, $sharedPtrAliasDeclarationPattern) |
+            ForEach-Object { $_.Groups['Alias'].Value } |
+            Sort-Object -Unique
+    )
+    $sharedPtrReceiverNames = @(
+        [regex]::Matches($contractSource, $sharedPtrReceiverDeclarationPattern) |
+            ForEach-Object { $_.Groups['Receiver'].Value }
+        if ($sharedPtrAliasNames.Count -gt 0) {
+            $sharedPtrAliasAlternation =
+                ($sharedPtrAliasNames | ForEach-Object { [regex]::Escape($_) }) -join '|'
+            [regex]::Matches(
+                $contractSource,
+                '(?m)^[ \t]*' + $declarationQualifierPattern + '(?:' +
+                $sharedPtrAliasAlternation + ')\s*(?:[&*]\s*)?' +
+                '(?<Receiver>[A-Za-z_][A-Za-z0-9_]*)\b(?!\s*\()(?=[^;\r\n]*;)'
+            ) | ForEach-Object { $_.Groups['Receiver'].Value }
+        }
+        # `auto owner{std::make_shared<T>(...)}`도 reset 수신자임을 보존한다.
+        [regex]::Matches(
+            $contractSource,
+            '(?m)^[ \t]*(?:const\s+)?auto\s+(?<Receiver>[A-Za-z_][A-Za-z0-9_]*)\s*' +
+            '(?:=\s*|\{\s*)std::make_shared\s*<'
+        ) | ForEach-Object { $_.Groups['Receiver'].Value }
+    ) | Sort-Object -Unique
+    $sharedPtrReceiverAlternation =
+        ($sharedPtrReceiverNames | ForEach-Object { [regex]::Escape($_) }) -join '|'
+    $weakPtrAliasNames = @(
+        [regex]::Matches($contractSource, $weakPtrAliasDeclarationPattern) |
+            ForEach-Object { $_.Groups['Alias'].Value } |
+            Sort-Object -Unique
+    )
+    $weakPtrReceiverNames = @(
+        [regex]::Matches($contractSource, $weakPtrReceiverDeclarationPattern) |
+            ForEach-Object { $_.Groups['Receiver'].Value }
+        if ($weakPtrAliasNames.Count -gt 0) {
+            $weakPtrAliasAlternation =
+                ($weakPtrAliasNames | ForEach-Object { [regex]::Escape($_) }) -join '|'
+            [regex]::Matches(
+                $contractSource,
+                '(?m)^[ \t]*' + $declarationQualifierPattern + '(?:' +
+                $weakPtrAliasAlternation + ')\s*(?:[&*]\s*)?' +
+                '(?<Receiver>[A-Za-z_][A-Za-z0-9_]*)\b(?!\s*\()(?=[^;\r\n]*;)'
+            ) | ForEach-Object { $_.Groups['Receiver'].Value }
+        }
+        # 명시 타입을 생략한 지역 변수와 lambda init-capture도 weak_from_this 결과 수신자다.
+        [regex]::Matches(
+            $contractSource,
+            '(?m)^[ \t]*(?:const\s+)?auto\s+(?<Receiver>[A-Za-z_][A-Za-z0-9_]*)\s*' +
+            '(?:=\s*|\{\s*)(?:this->)?weak_from_this\s*\('
+        ) | ForEach-Object { $_.Groups['Receiver'].Value }
+        [regex]::Matches(
+            $contractSource,
+            '\[\s*(?<Receiver>[A-Za-z_][A-Za-z0-9_]*)\s*=\s*' +
+            '(?:this->)?weak_from_this\s*\('
+        ) | ForEach-Object { $_.Groups['Receiver'].Value }
+    ) | Sort-Object -Unique
+    $weakPtrReceiverAlternation =
+        ($weakPtrReceiverNames | ForEach-Object { [regex]::Escape($_) }) -join '|'
+    # alias와 수신자의 정규화한 signature를 보관해야 같은 specialization의 copy/move만
+    # forwarding callable 생성자에서 제외할 수 있다. 다른 signature의 std::function은 callable 대상이다.
+    $functionAliasTypeKeys = @{}
+    foreach ($aliasMatch in [regex]::Matches($contractSource, $functionAliasDeclarationPattern)) {
+        $functionAliasTypeKeys[$aliasMatch.Groups['Alias'].Value] =
+            ($aliasMatch.Groups['Signature'].Value -replace '\s', '')
+    }
+    $functionAliasNames = @($functionAliasTypeKeys.Keys | Sort-Object)
+    $functionReceiverTypeKeys = @{}
+    foreach ($receiverMatch in [regex]::Matches($contractSource, $functionReceiverDeclarationPattern)) {
+        $functionReceiverTypeKeys[$receiverMatch.Groups['Receiver'].Value] =
+            ($receiverMatch.Groups['Signature'].Value -replace '\s', '')
+    }
+    if ($functionAliasNames.Count -gt 0) {
+        $functionAliasAlternation =
+            ($functionAliasNames | ForEach-Object { [regex]::Escape($_) }) -join '|'
+        $functionAliasReceiverPattern =
+            '(?m)^[ \t]*' + $declarationQualifierPattern +
+            '(?<Alias>' + $functionAliasAlternation + ')\s*(?:[&*]\s*)?' +
+            '(?<Receiver>[A-Za-z_][A-Za-z0-9_]*)\b(?!\s*\()(?=[^;\r\n]*;)'
+        foreach ($receiverMatch in [regex]::Matches($contractSource, $functionAliasReceiverPattern)) {
+            $functionReceiverTypeKeys[$receiverMatch.Groups['Receiver'].Value] =
+                $functionAliasTypeKeys[$receiverMatch.Groups['Alias'].Value]
+        }
+    }
+    $functionReceiverNames = @($functionReceiverTypeKeys.Keys | Sort-Object)
+    $functionReceiverAlternation =
+        ($functionReceiverNames | ForEach-Object { [regex]::Escape($_) }) -join '|'
+
+    $functionConstructionMatchesByKind = @{
+        Default = @()
+        Copy = @()
+        Move = @()
+        Target = @()
+    }
+
+    # 직접 타입을 쓴 변수 선언을 분류한다. plain 멤버 선언이 생성자 초기화 목록에서 다시 완성되면
+    # 선언 위치를 default 생성으로 중복 집계하지 않고 실제 초기화 위치만 아래에서 분류한다.
+    foreach ($constructionMatch in [regex]::Matches($contractSource, $functionConstructionPattern)) {
+        $destinationName = $constructionMatch.Groups['Destination'].Value
+        if (
+            $constructionMatch.Groups['InitializerStart'].Value -eq ';' -and
+            $contractSource -match (
+                '(?m)^[ \t]*(?::|,)\s*' + [regex]::Escape($destinationName) +
+                '\s*(?:\{|\((?!\s*\)))'
+            )
+        ) {
+            continue
+        }
+        $destinationTypeKey = $constructionMatch.Groups['Signature'].Value -replace '\s', ''
+        $kind = Get-FunctionConstructionKind `
+            -Source $contractSource `
+            -ConstructionMatch $constructionMatch `
+            -DestinationTypeKey $destinationTypeKey `
+            -ReceiverTypeKeys $functionReceiverTypeKeys
+        $functionConstructionMatchesByKind[$kind] += $constructionMatch
+    }
+
+    if ($functionAliasNames.Count -gt 0) {
+        $functionAliasVariableConstructionPattern =
+            '(?m)^[ \t]*' + $declarationQualifierPattern +
+            '(?<Alias>' + $functionAliasAlternation + ')\s+' +
+            '(?<Destination>[A-Za-z_][A-Za-z0-9_]*)\s*' +
+            '(?<InitializerStart>;|\{|=|\((?!\s*\)))'
+        foreach (
+            $constructionMatch in
+            [regex]::Matches($contractSource, $functionAliasVariableConstructionPattern)
+        ) {
+            $destinationName = $constructionMatch.Groups['Destination'].Value
+            if (
+                $constructionMatch.Groups['InitializerStart'].Value -eq ';' -and
+                $contractSource -match (
+                    '(?m)^[ \t]*(?::|,)\s*' + [regex]::Escape($destinationName) +
+                    '\s*(?:\{|\((?!\s*\)))'
+                )
+            ) {
+                continue
+            }
+            $destinationTypeKey =
+                $functionAliasTypeKeys[$constructionMatch.Groups['Alias'].Value]
+            $kind = Get-FunctionConstructionKind `
+                -Source $contractSource `
+                -ConstructionMatch $constructionMatch `
+                -DestinationTypeKey $destinationTypeKey `
+                -ReceiverTypeKeys $functionReceiverTypeKeys
+            $functionConstructionMatchesByKind[$kind] += $constructionMatch
+        }
+    }
+
+    # 명시적 임시 객체와 생성자 멤버 초기화 목록도 같은 네 overload 범주로 분류한다.
+    $functionDirectTemporaryPattern =
+        '(?m)\bstd::function\s*<(?<Signature>[^;\r\n]+)>\s*' +
+        '(?<InitializerStart>\{|\()'
+    foreach ($constructionMatch in [regex]::Matches($contractSource, $functionDirectTemporaryPattern)) {
+        $destinationTypeKey = $constructionMatch.Groups['Signature'].Value -replace '\s', ''
+        $kind = Get-FunctionConstructionKind `
+            -Source $contractSource `
+            -ConstructionMatch $constructionMatch `
+            -DestinationTypeKey $destinationTypeKey `
+            -ReceiverTypeKeys $functionReceiverTypeKeys
+        $functionConstructionMatchesByKind[$kind] += $constructionMatch
+    }
+    if ($functionAliasNames.Count -gt 0) {
+        $functionAliasTemporaryPattern =
+            '(?m)\b(?<Alias>' + $functionAliasAlternation + ')\s*' +
+            '(?<InitializerStart>\{|\()'
+        foreach ($constructionMatch in [regex]::Matches($contractSource, $functionAliasTemporaryPattern)) {
+            $destinationTypeKey =
+                $functionAliasTypeKeys[$constructionMatch.Groups['Alias'].Value]
+            $kind = Get-FunctionConstructionKind `
+                -Source $contractSource `
+                -ConstructionMatch $constructionMatch `
+                -DestinationTypeKey $destinationTypeKey `
+                -ReceiverTypeKeys $functionReceiverTypeKeys
+            $functionConstructionMatchesByKind[$kind] += $constructionMatch
+        }
+    }
+    if ($functionReceiverNames.Count -gt 0) {
+        $functionMemberInitializerPattern =
+            '(?m)^[ \t]*(?::|,)\s*' +
+            '(?<Destination>' + $functionReceiverAlternation + ')\s*' +
+            '(?<InitializerStart>\{|\((?!\s*\)))'
+        foreach ($constructionMatch in [regex]::Matches($contractSource, $functionMemberInitializerPattern)) {
+            $destinationTypeKey =
+                $functionReceiverTypeKeys[$constructionMatch.Groups['Destination'].Value]
+            $kind = Get-FunctionConstructionKind `
+                -Source $contractSource `
+                -ConstructionMatch $constructionMatch `
+                -DestinationTypeKey $destinationTypeKey `
+                -ReceiverTypeKeys $functionReceiverTypeKeys
+            $functionConstructionMatchesByKind[$kind] += $constructionMatch
+        }
+    }
     $vectorAliasNames = @(
         [regex]::Matches(
             $contractSource,
@@ -699,6 +1005,20 @@ foreach ($file in Get-ChildItem -LiteralPath $latestDirectory.FullName -Filter '
                 continue
             }
         }
+        $functionConstructionKindProperty =
+            $candidate.PSObject.Properties['FunctionConstructionKind']
+        if ($null -ne $functionConstructionKindProperty) {
+            # default/copy/move/forwarding-target 생성자를 이미 분리했으므로 해당 범주의 첫 식만 검사한다.
+            $functionConstructionMatches =
+                $functionConstructionMatchesByKind[$candidate.FunctionConstructionKind]
+            $selectedMatch =
+                $functionConstructionMatches |
+                Sort-Object Index -Unique |
+                Select-Object -First 1
+            if ($null -eq $selectedMatch) {
+                continue
+            }
+        }
         if ($null -ne $candidate.PSObject.Properties['VectorDefaultConstruction']) {
             # `vector<T> local;`은 실제 기본 생성이지만, `vector<T> member_;`가 생성자의 멤버 초기화 목록에서
             # move/fill 등 다른 생성자로 완성되는 경우는 기본 생성이 아니다. 빈 {}, ={}와 plain 선언을 모두
@@ -813,6 +1133,33 @@ foreach ($file in Get-ChildItem -LiteralPath $latestDirectory.FullName -Filter '
             }
             $candidatePattern =
                 '(?m)^(?!\s*//)\s*[^\r\n]*\b(?:' + $bindBackReceiverAlternation + ')\s*\('
+        }
+        $weakPtrMemberProperty = $candidate.PSObject.Properties['WeakPtrMember']
+        if ($null -ne $weakPtrMemberProperty) {
+            if ($weakPtrReceiverNames.Count -eq 0) {
+                continue
+            }
+            $candidatePattern =
+                '(?m)^(?!\s*//)\s*[^\r\n]*\b(?:' + $weakPtrReceiverAlternation +
+                ')\s*(?:\.|->)\s*' + [regex]::Escape($candidate.WeakPtrMember) + '\s*\('
+        }
+        $sharedPtrMemberProperty = $candidate.PSObject.Properties['SharedPtrMember']
+        if ($null -ne $sharedPtrMemberProperty) {
+            if ($sharedPtrReceiverNames.Count -eq 0) {
+                continue
+            }
+            $candidatePattern =
+                '(?m)^(?!\s*//)\s*[^\r\n]*\b(?:' + $sharedPtrReceiverAlternation +
+                ')\s*(?:\.|->)\s*' + [regex]::Escape($candidate.SharedPtrMember) + '\s*\('
+        }
+        if ($null -ne $candidate.PSObject.Properties['FunctionInvocation']) {
+            if ($functionReceiverNames.Count -eq 0) {
+                continue
+            }
+            # 이미 정확한 std::function/별칭 선언에서 얻은 이름만 호출 대상으로 삼아 domain 함수와
+            # 같은 이름을 오인하지 않는다. 일일 예제는 생성과 호출을 brace-init로 구분한다.
+            $candidatePattern =
+                '(?m)^(?!\s*//)\s*[^\r\n]*\b(?:' + $functionReceiverAlternation + ')\s*\('
         }
         $vectorMemberProperty = $candidate.PSObject.Properties['VectorMember']
         if ($null -ne $vectorMemberProperty) {
