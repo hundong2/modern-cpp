@@ -94,6 +94,7 @@
 | `std::weak_ptr` | shared control block의 비소유 관찰과 안전한 일시 승격 | [소유권](ownership-and-vocabulary-types.md) |
 | `std::enable_shared_from_this` | shared owner가 연결한 자기 control block의 weak 관찰자 제공 | [소유권](ownership-and-vocabulary-types.md) |
 | `std::optional`, `std::nullopt_t`, `std::nullopt`, `std::bad_optional_access` | 선택적 값, 빈 상태 태그 타입·객체와 검사형 접근 실패 예외 | [소유권](ownership-and-vocabulary-types.md) |
+| `std::optional::transform` | engaged 값만 투영하고 빈 상태는 건너뛰는 C++23 monadic 멤버 함수 템플릿 | [소유권](ownership-and-vocabulary-types.md) |
 | `std::expected`, `std::unexpected`, `std::expected::error` | 성공값 또는 오류값과 오류 대안 접근 | [소유권](ownership-and-vocabulary-types.md) |
 | `std::in_place` | `expected` 성공값을 내부 저장소에 직접 생성하는 태그 | [소유권](ownership-and-vocabulary-types.md) |
 | `expected::and_then`, `expected::transform` | 실패를 전파하고 성공값만 연결·변환하는 C++23 멤버 | [소유권](ownership-and-vocabulary-types.md) |

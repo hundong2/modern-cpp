@@ -39,6 +39,54 @@
 - 새 `invert`는 `set_zero -> set_one`, `set_one -> set_zero`로 바뀐다.
 - `set_zero` 뒤 `invert`는 `set_one`이지만, `invert` 뒤 `set_zero`는 `set_zero`다. 즉 합성은 일반적으로 교환법칙을 만족하지 않는다.
 
+### 구간 대입·덧셈·합의 비가환 태그
+
+CSES 1735처럼 **구간 대입**과 **구간 덧셈**이 함께 있으면 지연 태그를 다음 함수로 해석하면 합성 순서가 선명해진다.
+
+```text
+Tag = (has_assignment, assignment, addition)
+
+apply_tag(v, Tag):
+    base = (has_assignment ? assignment : v)
+    return base + addition
+```
+
+`has_assignment`를 별도 `bool`로 두는 이유는 대입값 `0`과 “대입 없음”을 구분하기 위해서다. CSES 1735의 입력 `x`는 양수지만, 값 자체를 센티널로 쓰지 않는 표현은 문제 변형과 재사용에도 안전하다.
+
+기존 태그 뒤에 새 명령이 도착했을 때의 합성은 다음과 같다.
+
+| 기존 미처리 함수 | 새 명령 | 합성 뒤 태그 | 이유 |
+|---|---|---|---|
+| 항등 함수 | `add(d)` | `(false, -, d)` | 원래 값에 `d`를 더한다. |
+| `add(a)` | `add(d)` | `(false, -, a+d)` | 덧셈끼리는 누적할 수 있다. |
+| `set(s)` 뒤 `add(a)` | `add(d)` | `(true, s, a+d)` | 대입 뒤 두 덧셈을 차례로 적용한다. |
+| 어떤 함수든 | `set(x)` | `(true, x, 0)` | 새 대입은 그보다 오래된 대입과 덧셈을 모두 지운다. |
+
+따라서 `add(3)` 뒤 `set(5)`는 항상 값 `5`를 만들지만, `set(5)` 뒤 `add(3)`은 값 `8`을 만든다. 이 반례 하나만으로도 두 연산의 합성이 교환법칙을 만족하지 않음을 확인할 수 있다.
+
+노드가 담당하는 닫힌 구간 길이를 `len`이라 할 때 노드 합과 태그는 함께 바뀌어야 한다.
+
+```text
+apply_assignment(node, x, len):
+    tree[node] = x * len
+    lazy[node] = (true, x, 0)
+
+apply_addition(node, d, len):
+    tree[node] += d * len
+    lazy[node].addition += d
+
+push(node):
+    if lazy[node].has_assignment:
+        두 자식에 assignment를 먼저 적용
+    if lazy[node].addition != 0:
+        두 자식에 addition을 나중에 적용
+    lazy[node] = 항등 태그
+```
+
+대입을 먼저, 덧셈을 나중에 내리는 순서는 단순한 구현 취향이 아니다. 태그가 나타내는 함수가 `set` 뒤 `add`이므로 이 순서를 뒤집으면 자식에 전달되는 함수 자체가 달라진다. 부모 `tree[node]`는 태그를 자식에게 내리기 전에도 이미 최신 논리 합이어야 하며, `push`는 부모 합을 다시 바꾸지 않고 자식 표현만 따라잡게 한다.
+
+공식 최대치에서는 한 원소가 모든 덧셈을 받으면 약 `2.00001 * 10^11`, 전체 합은 약 `4.00002 * 10^16`까지 커질 수 있다. 노드 합뿐 아니라 `assignment`, 누적 `addition`, `value * len`과 `delta * len`의 두 피연산자도 곱셈 전에 64비트 정수로 승격해야 한다.
+
 ## 단계별 절차
 
 ### 1. 빌드
@@ -108,9 +156,11 @@ query(node, left, right, query_left, query_right):
 
 ## 컴파일 가능한 C++ 뼈대
 
-다음 예제는 구간 덧셈과 구간 합을 구현한다. 오늘 문제의 대입·반전도 `apply`와 지연 연산 합성 규칙만 바꾸면 같은 탐색 구조를 재사용한다.
+다음 예제는 가장 단순한 구간 덧셈과 구간 합을 구현한다. 위의 대입·덧셈 변형은 `LazyTag`와 두 `apply` 함수로, 2026-08-17 문제의 대입·반전 변형은 네 상태 합성 규칙으로 같은 탐색 구조를 재사용한다.
 
 ```cpp
+// <cstddef>는 vector 인덱스로 명시 변환할 때 쓰는 std::size_t를 선언한다.
+#include <cstddef>
 // <iostream>은 실행 결과를 표준 출력으로 보여 주는 std::cout을 제공한다.
 #include <iostream>
 // <vector>는 원본 배열, 트리 합, 지연 덧셈 값을 소유한다.
@@ -320,7 +370,25 @@ int main() {
 
 ## 오늘 문제와의 연결
 
-2026-08-17의 [UVa 11402 Ahoy, Pirates!](../2026-08-17/icpc_problem.cpp)는 각 노드에 1의 개수와 네 지연 상태 `none`, `set_zero`, `set_one`, `invert`를 저장한다.
+### 2026-10-22 — CSES 1735 Range Updates and Sums
+
+오늘의 [CSES 1735 Range Updates and Sums](../2026-10-22/icpc_problem.cpp)는 구간 합을 유지하면서 구간 대입과 구간 덧셈을 모두 처리한다. 구현의 `LazyTag { has_assignment, assignment, addition }`은 위에서 정의한 함수를 그대로 값으로 보관한다.
+
+- `apply_assignment(node, value)`는 `tree[node] = value * length`로 바꾸고 태그를 `(true, value, 0)`으로 덮는다.
+- `apply_addition(node, delta)`는 `tree[node] += delta * length`와 `tag.addition += delta`를 함께 수행한다.
+- `push`는 대입을 두 자식에 먼저 적용하고 덧셈을 나중에 적용한 뒤 부모 태그를 항등 태그로 지운다.
+- 완전 포함 질의는 `push` 없이 이미 최신인 부모 합을 반환하고, 일부 포함 질의·갱신만 `push`한다.
+
+대회 중에는 다음 네 짧은 합성 반례를 손으로 확인하면 대부분의 태그 버그를 조기에 찾을 수 있다.
+
+1. `add(3) -> set(5)`의 결과는 이전 값과 무관하게 `5`다.
+2. `set(5) -> add(3)`의 결과는 `8`이다.
+3. `set(5) -> set(7)`의 결과는 `7`이다.
+4. `add(3) -> add(4)`는 `add(7)`과 같다.
+
+### 2026-08-17 — UVa 11402 Ahoy, Pirates!
+
+이전의 [UVa 11402 Ahoy, Pirates!](../2026-08-17/icpc_problem.cpp)는 각 노드에 1의 개수와 네 지연 상태 `none`, `set_zero`, `set_one`, `invert`를 저장한다.
 
 - `F`: 해당 노드 합을 구간 길이로 만들고 지연 상태를 `set_one`으로 덮어쓴다.
 - `E`: 해당 노드 합을 0으로 만들고 지연 상태를 `set_zero`로 덮어쓴다.
@@ -335,7 +403,9 @@ int main() {
 2. 범위 덧셈 예제에서 `[1,3] += 5` 뒤 루트·두 자식의 `tree`와 `lazy` 값을 손으로 적는다.
 3. `push`를 지운 뒤 부분 질의가 틀리는 최소 반례를 만든다.
 4. `set_zero`, `set_one`, `invert`, `none`의 4×4 합성 표를 작성한다. 행을 기존 연산, 열을 새 연산으로 정하고 순서를 바꾸지 않는다.
-5. 오늘 ICPC 코드에서 `set_zero -> invert -> invert`가 최종적으로 `set_zero`가 되는지 `compose` 호출을 따라간다.
-6. C++ 뼈대를 직접 컴파일해 `25`, `15`가 나오는지 확인하고 `[0,0] += -1` 테스트를 추가한다.
-7. 구간 합 타입을 `int`로 바꿨을 때 `N=100000`, 각 값과 갱신이 `10^9`이면 어떤 최댓값에서 오버플로하는지 계산한다.
-8. 재귀 함수 네 개 `apply`, `push`, `update`, `query`를 보지 않고 다시 쓰고 각 함수가 보존하는 불변식을 한 문장으로 붙인다.
+5. 2026-08-17 코드에서 `set_zero -> invert -> invert`가 최종적으로 `set_zero`가 되는지 `compose` 호출을 따라간다.
+6. 오늘 CSES 코드에서 `add(3) -> set(5)`와 `set(5) -> add(3)`을 각각 추적하고 결과가 왜 다른지 설명한다.
+7. `push`에서 덧셈을 대입보다 먼저 내렸을 때 틀리는 최소 반례를 만든다.
+8. C++ 뼈대를 직접 컴파일해 `25`, `15`가 나오는지 확인하고 `[0,0] += -1` 테스트를 추가한다.
+9. 구간 합 타입을 `int`로 바꿨을 때 `N=100000`, 각 값과 갱신이 `10^9`이면 어떤 최댓값에서 오버플로하는지 계산한다.
+10. 재귀 함수 네 개 `apply`, `push`, `update`, `query`를 보지 않고 다시 쓰고 각 함수가 보존하는 불변식을 한 문장으로 붙인다.

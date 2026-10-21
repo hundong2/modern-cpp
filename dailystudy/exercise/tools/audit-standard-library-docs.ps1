@@ -255,7 +255,7 @@ $knownStandardMembers = [Collections.Generic.HashSet[string]]::new(
         'error', 'expired', 'extent', 'extract', 'fetch_add', 'file_size', 'find', 'front', 'get',
         'has_value', 'is_absolute', 'is_regular_file', 'join', 'joinable', 'lexically_normal', 'load',
         'insert', 'key', 'lock', 'mapped', 'merge', 'message', 'pop', 'pop_back', 'pop_front', 'push', 'push_back', 'push_front', 'release',
-        'notify_all', 'notify_one', 'reserve', 'reset', 'resize', 'resize_and_overwrite', 'size', 'span', 'store', 'str', 'substr', 'swap', 'tie', 'top', 'try_emplace', 'value', 'wait', 'weak_from_this',
+        'notify_all', 'notify_one', 'reserve', 'reset', 'resize', 'resize_and_overwrite', 'size', 'span', 'store', 'str', 'substr', 'swap', 'tie', 'top', 'transform', 'try_emplace', 'value', 'wait', 'weak_from_this',
         'value_or'
     )
 )
@@ -488,6 +488,7 @@ $contractPatterns = @(
     [pscustomobject]@{ Name = 'std::optional default constructor'; Pattern = $optionalDefaultConstructionPattern; Readme = 'std::optional()' },
     [pscustomobject]@{ Name = 'optional::emplace'; OptionalMember = 'emplace'; Readme = 'optional::emplace(' },
     [pscustomobject]@{ Name = 'optional::value'; OptionalMember = 'value'; Readme = 'optional::value(' },
+    [pscustomobject]@{ Name = 'optional::transform'; OptionalMember = 'transform'; Readme = 'optional::transform(' },
     [pscustomobject]@{ Name = 'std::atomic_ref constructor'; AtomicRefConstruction = $true; Readme = 'std::atomic_ref<' },
     [pscustomobject]@{ Name = 'atomic_ref::load'; AtomicRefMember = 'load'; Readme = 'atomic_ref::load(' },
     [pscustomobject]@{ Name = 'atomic_ref::store'; AtomicRefMember = 'store'; Readme = 'atomic_ref::store(' },

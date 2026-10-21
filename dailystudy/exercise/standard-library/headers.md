@@ -39,7 +39,7 @@
 | `<mutex>` | `mutex`, `scoped_lock`, `unique_lock`, 일회 초기화 `once_flag`/`call_once` |
 | `<numbers>` | `pi_v` 등 수학 상수 템플릿 |
 | `<numeric>` | `accumulate`, `iota` 수치 알고리즘 |
-| `<optional>` | 선택적 값 `optional`, 빈 태그 `nullopt` |
+| `<optional>` | 선택적 값 `optional`, 빈 태그 `nullopt`, engaged 값만 투영하는 C++23 `optional::transform` |
 | `<queue>` | FIFO `queue`, 힙 `priority_queue` |
 | `<ranges>` | range 개념, views, customization point |
 | `<semaphore>` | C++20 계수형·이진 permit 동기화 객체 `counting_semaphore`, `binary_semaphore` |

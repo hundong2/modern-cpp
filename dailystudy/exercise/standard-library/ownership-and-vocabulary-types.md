@@ -170,6 +170,7 @@ deleter·allocator 정보가 들어갈 수 있다. 마지막 strong owner가 사
 - `operator*`와 `operator->`는 값 존재를 호출자가 보장해야 한다. 빈 상태 접근은 잘못이다.
 - `value()`는 값 참조를 반환하고 비어 있으면 `std::bad_optional_access`를 던진다.
 - `value_or(fallback)`는 값이 있으면 복사/이동한 값, 없으면 대체값을 값으로 반환한다.
+- C++23 `transform(f)`는 값이 있을 때만 그 값을 `f`로 변환해 새 `optional`에 소유하고, 비어 있으면 `f`를 실행하지 않은 채 빈 결과를 반환한다.
 - `std::nullopt_t`는 빈 상태를 선택하는 태그 타입이고 `std::nullopt`는 그 타입의 표준 상수 객체다. `optional(nullopt_t)`는 인자를 값으로 받아 상수 시간·무할당·`noexcept`로 disengaged 객체를 만들며 contained `T`를 생성하지 않는다.
 - `optional<reference_wrapper<T>>`는 선택적 비소유 참조를 표현하지만 원본 수명을 연장하지 않는다.
 
@@ -186,6 +187,70 @@ deleter·allocator 정보가 들어갈 수 있다. 마지막 strong owner가 사
 - `value()`는 빈 상태를 정의된 예외로 보고한다. 반면 `operator*`와 `operator->`는 값 존재 전제조건을 호출자가 지켜야 하므로 검사 없이 빈 optional에 적용하면 안 된다.
 - optional 객체 자체를 다른 스레드가 변경하는 동안 `value()`로 읽는 것은 안전하지 않다. [`../2026-09-08/main.cpp`](../2026-09-08/main.cpp)은 `std::call_once`의 returning→passive 동기화 뒤 cache를 다시 변경하지 않는 불변식으로 const reference 공유를 안전하게 만든다.
 - 오늘 `cache_.emplace(source_.load())`는 load 결과 prvalue를 contained Config/Report로 소유하고 반환 `T&`는 버린다. 이어 `const optional<T>&`로 바인딩한 `published_cache.value()`가 반환한 `const T&`는 Provider/Cache가 파괴되기 전까지만 유효하다.
+
+### C++23 `std::optional::transform` 호출 계약
+
+`std::optional::transform`은 engaged/disengaged 상태를 보존하면서 성공 값만 다른 타입으로 투영하는 C++23 멤버 함수 템플릿이다. 수신 객체의 cv/ref 한정에 따라 다음 네 overload 중 정확히 하나가 선택된다.
+
+```cpp
+template<class F> constexpr auto transform(F&& f) &;
+template<class F> constexpr auto transform(F&& f) const &;
+template<class F> constexpr auto transform(F&& f) &&;
+template<class F> constexpr auto transform(F&& f) const &&;
+```
+
+| 수신 식과 호출 전 상태 | callable에 전달되는 contained 식 | 선택 의미 |
+|---|---|---|
+| 수정 가능한 `optional<T>` lvalue | `T&` lvalue | 값을 빌려 읽거나 명시적으로 수정할 수 있다. |
+| `const optional<T>` lvalue | `const T&` lvalue | 값을 읽기 전용으로 빌린다. |
+| 수정 가능한 `optional<T>` xvalue | `T&&` xvalue | callable이 선택하면 contained 값에서 자원을 이동할 수 있다. |
+| `const optional<T>` xvalue | `const T&&` xvalue | const 때문에 일반적인 이동 생성자는 선택되지 않을 수 있다. |
+
+- **시그니처·인자:** `F&&`는 forwarding reference다. `f`의 lvalue/rvalue 성질을 보존해 즉시 한 번 이하 호출하며 `optional` 안에 callable을 저장하지 않는다. 함수 인자 식과 callable 객체 구성은 일반 호출 규칙에 따라 먼저 평가되지만, disengaged 수신자에서는 callable 본문을 호출하지 않는다. engaged 수신자에서는 위 표의 정확한 값 범주로 contained 값을 전달한다.
+- **반환형·빈 상태:** 각 overload는 `U = remove_cv_t<invoke_result_t<F, 전달되는-contained-식>>`에 해당하는 새 `optional<U>` prvalue를 반환한다. engaged이면 callable 결과로 `U`를 결과 저장소에 직접 생성하고, disengaged이면 빈 `optional<U>`를 반환한다. 빈 상태는 정상 분기이므로 `bad_optional_access`를 던지지 않는다. `U`는 C++23 `optional`의 유효한 contained 타입인 완전한 비배열 객체 타입이어야 하고 `in_place_t`나 `nullopt_t`여서는 안 되며, callable 결과에서 직접 초기화 가능해야 한다. `void`, 참조, 배열 같은 부적합한 결과는 미정의 동작이 아니라 컴파일 오류다. 직접 생성하므로 `U` 자체의 이동 가능성은 별도 필수 조건이 아니다.
+- **호출 뒤 상태·소유권:** lvalue overload는 callable이 받은 `T&`로 직접 수정하지 않는 한 수신자의 engaged 여부와 contained 값·소유권을 유지한다. rvalue overload도 수신자를 자동으로 disengaged 상태로 만들지 않는다. 다만 callable이 `T&&`에서 이동하면 수신자는 여전히 engaged이면서 contained `T`가 유효하지만 이동 후 값은 타입 계약에 따라 미지정일 수 있다. 결과 `optional<U>`는 `U`를 독립 소유하지만, `U` 자체가 pointer·`string_view`·`reference_wrapper` 같은 비소유 타입이면 원본 수명을 연장하지 않는다.
+- **복잡도·할당:** 상태 검사는 `O(1)`이고 callable은 0회 또는 1회 실행된다. 전체 시간은 `O(1) + f 실행 + U 직접 생성` 비용이다. `optional` 포장 자체는 별도 동적 할당을 요구하지 않지만 `f`나 `U`의 생성자가 문자열·컨테이너 저장소를 할당할 수 있다.
+- **무효화·수명:** `transform` 자체는 수신자의 contained 객체를 교체하거나 파괴하지 않으므로 기존 포인터·참조를 자동 무효화하지 않는다. 그러나 callable이 `T&`를 변경하거나 `T&&`에서 이동하는 동작의 무효화 규칙은 `T`가 정한다. 결과가 원본 내부를 빌리는 비소유 값이면 원본의 reset·대입·파괴 또는 내부 재할당 뒤 댕글링될 수 있으며, 임시 optional 내부를 가리키는 결과를 전체 식 밖에서 쓰면 안 된다.
+- **예외·오류·UB:** `f` 호출 또는 `U` 직접 생성이 던진 예외는 그대로 전파되며 이 함수는 일반적으로 `noexcept`가 아니다. 예외 전까지 callable이 수신자의 `T&`를 수정했거나 `T&&`에서 이동했다면 그 상태는 자동 rollback되지 않고 해당 연산의 예외 보장을 따른다. 빈 상태 자체는 오류도 UB도 아니다. 반면 callable이 받은 참조의 수명·자체 전제조건을 어기거나, 댕글링 결과를 역참조하거나, 다른 실행 흐름의 무동기 변경과 겹치면 해당 연산의 미정의 동작 또는 데이터 경쟁이 될 수 있다.
+- **스레드 보장:** `transform`은 잠금이나 원자적 snapshot을 제공하지 않는다. 적절히 게시된 서로 다른 optional 또는 변경되지 않는 같은 const optional의 동시 읽기는 `T`와 callable도 동시 읽기에 안전할 때 가능하다. 같은 optional의 contained 값을 한 실행 흐름이 수정·이동하는 동안 다른 실행 흐름이 읽거나 쓰면 외부 동기화가 필요하다.
+
+`transform`과 `and_then`은 빈 상태를 건너뛴다는 점은 같지만 callable 반환 계약이 다르다.
+
+| 연산 | callable의 정상 반환 | 최종 반환 | 선택 기준 |
+|---|---|---|---|
+| `transform(f)` | 보통 값 `U` | `optional<U>` | 성공 값을 순수하게 다른 값으로 투영한다. `f`가 `optional<U>`를 반환하면 결과는 중첩 `optional<optional<U>>`가 된다. |
+| `and_then(f)` | `optional<U>` | 그 `optional<U>` | 다음 단계도 실패·부재를 만들 수 있을 때 평탄하게 연결한다. |
+
+최소 실행 예제는 engaged 값에서 문자열을 만들고, 빈 값에서는 부수 효과 없이 빈 결과가 전파되는지 검증한다.
+
+```cpp
+#include <cassert>
+#include <optional>
+#include <string>
+
+int main() {
+    const std::optional<int> port{443};
+    int calls{0};
+
+    const auto label = port.transform([&calls](int value) {
+        ++calls;
+        return std::string{"tcp:"} + std::to_string(value);
+    });
+
+    const std::optional<int> missing{};
+    const auto skipped = missing.transform([&calls](int value) {
+        ++calls;
+        return value * 2;
+    });
+
+    assert(label.has_value());
+    assert(*label == "tcp:443");
+    assert(!skipped.has_value());
+    assert(calls == 1);
+}
+```
+
+오늘 [`../2026-10-22/main.cpp`](../2026-10-22/main.cpp)의 첫 `transform` 호출에서는 실제 수신자의 cv/ref와 lambda 식의 값 범주를 먼저 확인하고, 반환된 `optional<U>`를 저장하는지 즉시 소비하는지까지 호출 계약에 기록한다. 기계 실행 관점에서는 보통 engaged 상태 로드·조건 분기·callable 본문·결과 객체 구성이 후보지만, 실제 인라인·로드·분기·복사 생략은 CPU, ABI, 표준 라이브러리, 컴파일러와 최적화 옵션에 따라 달라진다.
 
 ## `std::expected<T, E>`와 `std::unexpected<E>` — `<expected>`
 
