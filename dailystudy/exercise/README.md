@@ -80,6 +80,7 @@
 | [2026-10-20](./2026-10-20/README.md) | `std::unordered_map::try_emplace` 멱등 레지스트리와 트리 센트로이드 | C++23 |
 | [2026-10-21](./2026-10-21/README.md) | `weak_from_this` 지연 콜백 수명 경계와 Hungarian 최소 비용 완전 배정 | C++23 |
 | [2026-10-22](./2026-10-22/README.md) | `std::optional::transform` 소유 DTO 투영과 대입·덧셈 Lazy Segment Tree | C++23 |
+| [2026-10-23](./2026-10-23/README.md) | `std::popcount` 권한 값 타입과 DAG word-bitset 전이 폐쇄 | C++23 |
 
 ## 표준 라이브러리 설명 찾기
 

@@ -9,7 +9,7 @@
 | `<array>` | 고정 크기 `std::array` |
 | `<atomic>` | 소유 원자 객체 `std::atomic`, 기존 저장소의 비소유 원자 뷰 `std::atomic_ref`, 메모리 순서 상수 |
 | `<barrier>` | C++20 반복 단계 동기화 객체 `std::barrier`와 도착 token |
-| `<bit>` | `bit_cast`, `byteswap`, `endian` 객체 표현·바이트 순서 도구 |
+| `<bit>` | `bit_cast`, `byteswap`, `popcount`, `endian` 객체 표현·바이트 순서·비트 개수 도구 |
 | `<cassert>` | 디버그 검증 매크로 `assert` (`NDEBUG`에서 제거 가능) |
 | `<charconv>` | 비예외 정수 파싱 `from_chars`와 `{ptr, ec}` 결과 |
 | `<chrono>` | duration, time_point, clock, 시간 리터럴 |

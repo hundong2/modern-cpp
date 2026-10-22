@@ -74,6 +74,7 @@
 |---|---|---|
 | `std::bit_cast` | 같은 크기 객체 표현을 새 값으로 복사 | [비트·바이트](bit-and-byte-utilities.md) |
 | `std::byteswap` | 정수의 바이트 순서를 반대로 변환 | [비트·바이트](bit-and-byte-utilities.md) |
+| `std::popcount` | 부호 없는 정수 값에서 1인 비트 수를 `int`로 반환 | [비트·바이트](bit-and-byte-utilities.md) |
 | `std::endian` | 구현의 바이트 순서를 표현하는 열거형 | [비트·바이트](bit-and-byte-utilities.md) |
 | `std::endian::native` | 구현의 스칼라 바이트 순서 | [비트·바이트](bit-and-byte-utilities.md) |
 | `std::endian::little`, `std::endian::big` | 알려진 작은/큰 바이트 순서 값 | [비트·바이트](bit-and-byte-utilities.md) |
