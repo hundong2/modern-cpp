@@ -39,8 +39,9 @@
 | `<mutex>` | `mutex`, `scoped_lock`, `unique_lock`, 일회 초기화 `once_flag`/`call_once` |
 | `<numbers>` | `pi_v` 등 수학 상수 템플릿 |
 | `<numeric>` | `accumulate`, `iota` 수치 알고리즘 |
-| `<optional>` | 선택적 값 `optional`, 빈 태그 `nullopt`, engaged 값만 투영하는 C++23 `optional::transform` |
+| `<optional>` | 선택적 값 `optional`, 빈 태그 `nullopt`, C++23 `optional::transform` 값 투영과 `optional::or_else` 부재 fallback |
 | `<queue>` | FIFO `queue`, 힙 `priority_queue` |
+| `<random>` | 실행 환경 entropy source `random_device`와 난수 engine·분포 |
 | `<ranges>` | range 개념, views, customization point |
 | `<semaphore>` | C++20 계수형·이진 permit 동기화 객체 `counting_semaphore`, `binary_semaphore` |
 | `<set>` | 정렬된 중복 허용 노드 컨테이너 `std::multiset`과 iterator 기반 삽입·탐색·삭제 |

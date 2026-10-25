@@ -2,26 +2,26 @@
 
 이 폴더는 날짜별 C++ 코드에 등장하는 표준 라이브러리 **타입, 함수, 함수 템플릿, 멤버 함수, 객체, 연산자, 용어**를 한곳에서 찾아볼 수 있게 관리한다. 코드 가까운 한글 주석은 “지금 이 줄이 하는 일”을 설명하고, 이 문서는 재사용 가능한 계약과 배경지식을 설명한다.
 
-2026-10-23 전체 감사 기준으로 77개 날짜 폴더의 C++ 파일 212개에서 고유 `std::` 심볼 197개, 표준 헤더 58개, 추적 멤버 이름 61개, 생성자·연산자 후보 5개를 대표 문서와 교차 검증한다.
+2026-10-26 전체 감사 기준으로 78개 날짜 폴더의 C++ 파일 215개에서 고유 `std::` 심볼 199개, 표준 헤더 59개, 추적 멤버 이름 62개, 생성자·연산자 후보 5개를 대표 문서와 교차 검증한다.
 
 ## 읽는 순서
 
 1. 날짜별 README의 `오늘 사용한 표준 라이브러리` 표에서 심볼과 헤더를 확인한다.
 2. 코드 바로 위 주석에서 현재 인자와 반환값이 프로그램 상태를 어떻게 바꾸는지 읽는다.
 3. 이 폴더의 대표 문서에서 복잡도, 수명, 무효화, 오류 조건까지 확인한다.
-4. [`by-date.md`](by-date.md)에서 77개 날짜 폴더의 212개 C++ 파일이 사용하는 심볼을 날짜별로 다시 찾는다.
+4. [`by-date.md`](by-date.md)에서 78개 날짜 폴더의 215개 C++ 파일이 사용하는 심볼을 날짜별로 다시 찾는다.
 5. [`../tools/audit-standard-library-docs.ps1`](../tools/audit-standard-library-docs.ps1)로 문서에 등록되지 않은 심볼이 있는지 검사한다.
 
 ## 문서 구성
 
 - [`terms.md`](terms.md): 반복자, 범위, 뷰, 술어, 비교자, 할당자, 소유권, 어휘 타입, 예외 보장, 미정의 동작 등 공통 용어
-- [`headers.md`](headers.md): 현재 코드가 포함하는 58개 표준 헤더와 실제 사용 선언
+- [`headers.md`](headers.md): 현재 코드가 포함하는 59개 표준 헤더와 실제 사용 선언
 - [`bit-and-byte-utilities.md`](bit-and-byte-utilities.md): `bit_cast`, `byteswap`, `popcount`, 엔디언, 고정 폭 정수와 바이트 표현
 - [`containers-and-views.md`](containers-and-views.md): `vector`, `array`, `map`, `multiset`, C++23 `flat_map`, `unordered_map`의 `try_emplace`, `unordered_set`, `queue`, `priority_queue`, `span`, `string`의 `resize_and_overwrite`, `string_view`와 주요 멤버 함수
 - [`algorithms-and-ranges.md`](algorithms-and-ranges.md): 정렬·`unique`, `lower_bound`/`upper_bound`·`equal_range` 이진 탐색, C++23 `ranges::contains` 존재 질의·`generator` 지연 input range·`fold_left` 값 축약·`views::enumerate` 위치 투영·`views::zip` 행 투영·`views::slide` 겹치는 창·`views::chunk_by` 인접 그룹, ranges/views 파이프라인과 `ranges::to` 소유 컨테이너 materialization
-- [`ownership-and-vocabulary-types.md`](ownership-and-vocabulary-types.md): 스마트 포인터, `enable_shared_from_this`/`weak_from_this` 지연 callback 수명 경계, `function` 타입 소거 callback, `any`, C++23 `optional::transform`, `expected`, `variant`, `pair`, `tuple`, `apply`, C++23 `bind_back`, 참조 래퍼와 타입 특성
+- [`ownership-and-vocabulary-types.md`](ownership-and-vocabulary-types.md): 스마트 포인터, `enable_shared_from_this`/`weak_from_this` 지연 callback 수명 경계, `function` 타입 소거 callback, `any`, C++23 `optional::transform`·`optional::or_else`, `expected`, `variant`, `pair`, `tuple`, `apply`, C++23 `bind_back`, 참조 래퍼와 타입 특성
 - [`concurrency-time-filesystem.md`](concurrency-time-filesystem.md): 원자 연산, 메모리 순서, 잠금, 일회 초기화, latch/barrier/semaphore 동기화, 스레드 취소, 시간, 파일 시스템, 오류 코드, 코루틴
-- [`io-parsing-and-utilities.md`](io-parsing-and-utilities.md): 표준·고정 버퍼·동기 스트림, 파싱, 이동/전달, 교환, C++23 `to_underlying` enum 경계, 수치 유틸리티, 종료 함수와 표준 상수
+- [`io-parsing-and-utilities.md`](io-parsing-and-utilities.md): 표준·고정 버퍼·동기 스트림, 파싱, 이동/전달, `random_device` entropy, C++23 `to_underlying` enum 경계, 수치 유틸리티와 종료 함수
 - [`symbol-index.md`](symbol-index.md): 현재 코드에서 찾은 표준 라이브러리 심볼의 가나다/알파벳 탐색표
 - [`by-date.md`](by-date.md): 날짜별 헤더·심볼 목록과 해당 코드 링크
 

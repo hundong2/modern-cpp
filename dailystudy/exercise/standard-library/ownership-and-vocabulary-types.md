@@ -179,12 +179,14 @@ deleter·allocator 정보가 들어갈 수 있다. 마지막 strong owner가 사
 | 대표 형태 | 수신 객체·각 입력 | 반환값 | 호출 뒤 상태·계약 |
 |---|---|---|---|
 | `std::optional()` (`constexpr optional() noexcept`) | 아직 구성되지 않은 `optional<T>` 목적 객체. 명시적 데이터 인자와 외부 소유권은 없다. | 생성자는 별도 반환값이 없다. | 빈 optional의 수명이 시작된다. contained `T`는 아직 존재하지 않으며 optional 자체가 동적 할당을 요구하지 않는다. |
+| `template<class U=T> constexpr explicit(...) optional(U&& value)` | 아직 구성되지 않은 `optional<T>` 목적 객체와 `T`를 구성할 수 있는 전달 인자. 값 범주와 소유권 이동 여부는 `U` 추론 및 선택된 `T` 생성자에 따른다. | 생성자는 별도 반환값이 없다. | `T`를 전달 인자로 direct-non-list-initialize해 engaged 상태가 된다. wrapper 자체는 별도 heap을 요구하지 않고, 비용·할당·예외는 `T` 생성에 따른다. 표준 선언에는 `noexcept` 명세가 없으므로 portable `noexcept(식)`이 true라고 요구할 수 없지만 구현은 예외 명세를 강화할 수 있다. 실패하면 완성된 optional 객체가 없고 외부 입력의 상태는 선택된 `T` 생성자 보장에 따른다. |
 | `template<class... Args> constexpr T& emplace(Args&&... args)` | 살아 있는 optional 수신 lvalue와 `T`를 구성할 수 있는 전달 인자 팩. 각 참조 인자 대상은 구성 중 살아 있어야 한다. | 새 contained `T`의 lvalue 참조를 반환한다. 호출자는 즉시 사용하거나 의도적으로 버릴 수 있다. | 기존 값이 있으면 먼저 파괴하고 전달 인자로 새 T를 직접 구성한다. 성공 뒤 값이 있다. T 생성이 던지면 optional은 비어 있고 과거 contained 참조·포인터는 무효다. |
 | `constexpr T& value() &` / `constexpr const T& value() const &` | 값을 가질 수도 있는 non-const/const optional lvalue. 데이터 인자는 없다. | contained T의 cv가 맞는 lvalue 참조를 반환한다. | 수신 상태와 소유권은 바뀌지 않는다. 비어 있으면 `std::bad_optional_access`를 던진다. 반환 참조는 optional 수명과 다음 reset/emplace/대입 중 먼저 오는 때까지만 유효하다. |
 
 - 기본 생성과 `value()`의 성공 경로는 `O(1)`·무할당이다. `emplace` 비용과 예외는 선택된 T 생성자 비용에 따르고 optional 자체가 별도 heap allocation을 요구하지는 않지만 T가 내부에서 할당할 수 있다.
 - `emplace`는 기존 값을 먼저 파괴하므로 새 T 생성 실패 시 옛 값을 보존하는 강한 보장을 주지 않는다. “옛 값 또는 새 값”이 필요하면 먼저 별도 candidate를 완성한 뒤 예외 없는 교체 전략을 설계한다.
 - `value()`는 빈 상태를 정의된 예외로 보고한다. 반면 `operator*`와 `operator->`는 값 존재 전제조건을 호출자가 지켜야 하므로 검사 없이 빈 optional에 적용하면 안 된다.
+- 오늘 `main.cpp`와 `problem.cpp`의 converting value constructor는 완성된 `Endpoint`/`string` 값을 optional 소유 저장소로 이동한다. 생성 전에는 wrapper 관찰자가 없으므로 무효화 대상도 없고, 결과 optional을 다른 thread와 변경 공유하려면 외부 동기화가 필요하다.
 - optional 객체 자체를 다른 스레드가 변경하는 동안 `value()`로 읽는 것은 안전하지 않다. [`../2026-09-08/main.cpp`](../2026-09-08/main.cpp)은 `std::call_once`의 returning→passive 동기화 뒤 cache를 다시 변경하지 않는 불변식으로 const reference 공유를 안전하게 만든다.
 - 오늘 `cache_.emplace(source_.load())`는 load 결과 prvalue를 contained Config/Report로 소유하고 반환 `T&`는 버린다. 이어 `const optional<T>&`로 바인딩한 `published_cache.value()`가 반환한 `const T&`는 Provider/Cache가 파괴되기 전까지만 유효하다.
 
@@ -252,6 +254,27 @@ int main() {
 
 오늘 [`../2026-10-22/main.cpp`](../2026-10-22/main.cpp)의 첫 `transform` 호출에서는 실제 수신자의 cv/ref와 lambda 식의 값 범주를 먼저 확인하고, 반환된 `optional<U>`를 저장하는지 즉시 소비하는지까지 호출 계약에 기록한다. 기계 실행 관점에서는 보통 engaged 상태 로드·조건 분기·callable 본문·결과 객체 구성이 후보지만, 실제 인라인·로드·분기·복사 생략은 CPU, ABI, 표준 라이브러리, 컴파일러와 최적화 옵션에 따라 달라진다.
 
+### C++23 `std::optional::or_else` 호출 계약
+
+`or_else`는 optional이 비어 있을 때만 같은 타입의 대체 optional을 만드는 C++23 멤버 함수 템플릿이다. `transform`이 **있는 값**을 바꾸는 반면, `or_else`는 **없는 경로**만 처리한다. contained 값을 callable에 전달하지 않으며 반환 타입도 `optional<T>` 그대로다.
+
+```cpp
+template<class F> constexpr optional or_else(F&& f) const &;
+template<class F> constexpr optional or_else(F&& f) &&;
+```
+
+- **수신 객체:** overload는 `const &`와 non-const `&&` 둘뿐이다. 수정 가능한/const lvalue와 const rvalue는 `const &` overload에 바인딩되어 engaged 값 `T`를 새 결과로 복사하며 `T`가 copy-constructible이어야 한다. 수정 가능한 rvalue만 `&&` overload를 선택해 engaged 값 `T`를 새 결과로 이동하며 `T`가 move-constructible이어야 한다. rvalue overload도 원본 optional을 자동으로 disengaged 상태로 만들지는 않는다. 실제 이동 생성 뒤 원본은 여전히 engaged지만 contained `T`가 유효한 이동 후 상태일 수 있다.
+- **시그니처·인자:** `F&&`는 forwarding reference이며 `F`는 호출 식의 함수 객체 타입/값 범주에서 추론된다. 함수 인자 식의 평가와 lambda 객체/캡처 구성은 수신자가 engaged여도 호출 진입 전에 일어난다. 다만 lambda **본문 호출**은 disengaged 경로에서만 최대 한 번 수행된다. 두 overload의 **Constraints**는 `F`가 무인자 `invocable`이고 `T`가 각각 `copy_constructible`(`const &`) 또는 `move_constructible`(`&&`)인 것이다. 별도 **Mandates**는 `is_same_v<remove_cvref_t<invoke_result_t<F>>, optional>`이 true인 것이다. `optional<U>`나 plain `T`, `void`를 반환하면 runtime 오류가 아니라 ill-formed 프로그램이며, Constraints 실패는 overload 참여 가능성을 제한하고 Mandates 위반은 별도 진단 대상이다. callable은 optional 안에 저장되지 않는다.
+- **반환값과 상태:** engaged 수신자에서는 callable을 호출하지 않고 contained 값을 복사(`const &`) 또는 이동(`&&`)한 engaged `optional<T>` prvalue를 반환한다. disengaged 수신자에서는 표준 효과 식 그대로 `std::forward<F>(f)()`의 `optional<T>` 결과를 반환한다. 호출자는 결과를 저장하거나 즉시 소비해야 하며, 원래 수신자의 상태 전환을 기대해서는 안 된다.
+- **소유권·수명:** 결과 optional이 `string`, `vector`, 사용자 소유 DTO 같은 `T`를 담으면 그 `T`의 복사/이동/대체 factory 계약에 따라 독립 값을 소유한다. 그러나 `T` 자체가 pointer·`string_view`·`reference_wrapper` 같은 비소유 타입이면 `or_else`가 pointee 수명을 늘려 주지 않는다. callable이 `[this]`나 reference를 캡처해도 호출 동안 그 대상이 살아 있어야 한다. 오늘 코드는 `string_view` 문자를 lambda 실행 중 `string`으로 복사해 결과를 입력 view와 분리한다.
+- **복잡도·할당·무효화:** 상태 검사는 `O(1)`, callable은 0회 또는 1회다. 전체 비용은 선택된 `T` 복사/이동 또는 callable과 그 반환 optional 생성 비용이다. optional wrapper 자체가 별도 heap 할당을 요구하지는 않지만 `T`/callable이 할당할 수 있다. 연산은 수신자의 contained 객체를 reset하지 않지만 rvalue 성공 경로의 이동이 `T` 내부 관찰자를 무효화할 수 있다.
+- **예외·오류·보장:** 함수 인자 식 평가와 lambda 객체/capture 구성은 `or_else`에 진입하기 전이므로, 그 과정의 예외는 수신자가 engaged여도 먼저 전파될 수 있다. `or_else` 자체도 일반적으로 `noexcept`가 아니며 engaged 경로의 `T` 복사/이동, 빈 경로의 callable 실행과 결과 생성 예외를 전파한다. 빈 상태는 정상 분기이며 `bad_optional_access`를 던지지 않는다. callable이 부분적인 외부 부수 효과 뒤 예외를 던지면 `or_else`가 이를 rollback하지 않는다. 반환된 빈 optional을 검사 없이 `operator*`로 읽으면 UB이고 `value()`는 `bad_optional_access`를 던진다.
+- **스레드 보장:** 내부 잠금이나 원자 snapshot을 제공하지 않는다. 변경되지 않는 적절히 게시된 const 수신자를 여러 실행 흐름이 읽을 수 있는지는 `T`와 callable의 동시 접근 계약에도 달려 있다. 같은 optional 또는 캡처 대상을 한쪽에서 수정하면서 다른 쪽에서 읽거나 이동하면 외부 동기화가 필요하다.
+
+오늘 [`../2026-10-26/main.cpp`](../2026-10-26/main.cpp)는 `find(service)`가 반환한 prvalue optional에 `&&` overload를 적용한다. 조회 성공이면 fallback lambda가 실행되지 않고 소유 Endpoint가 결과로 이동한다. 실패이면 lambda가 `service`와 fallback URL을 새 `std::string`으로 복사해 독립 Endpoint를 소유한다. [`../2026-10-26/problem.cpp`](../2026-10-26/problem.cpp)는 이름 있는 optional을 `std::move`로 xvalue로 만든 뒤 같은 overload를 선택하는 최소 예제다.
+
+기계 실행 관점에서는 engaged flag load, 조건 분기, 선택된 쪽의 생성과 결과 store가 후보가 된다. lambda가 구체 타입이고 호출 지점에 보이므로 인라인될 수 있지만, 실제 분기 제거·문자열 이동/copy·할당·명령열은 CPU, ABI, 표준 라이브러리, 컴파일러와 최적화 옵션에 따라 달라진다.
+
 ## `std::expected<T, E>`와 `std::unexpected<E>` — `<expected>`
 
 `expected<T,E>`는 성공 `T` 또는 실패 `E`를 **자기 저장소 안에 정확히 하나** 소유하는 C++23 클래스 템플릿이다. `unexpected<E>`는 실패 값을 명시적으로 싣는 별도 클래스 템플릿이다. `optional<T>`의 단순 부재와 달리 실패 이유가 호출 경계에 남는다. 오늘 [`../2026-09-17/main.cpp`](../2026-09-17/main.cpp)는 파싱 결과를 `expected<Config,ParseError>`로 반환하고, 성공 객체를 완성한 뒤에만 현재 설정을 교체한다.
@@ -286,6 +309,16 @@ int main() {
 - `std::get<I>(tuple)` 또는 `std::get<T>(tuple)`로 원소에 접근한다. 타입 기반 접근은 해당 타입이 정확히 한 번 있어야 한다.
 - `auto [left,right] = pair;`는 값을 복사할 수 있고 `auto& [left,right]`는 기존 원소에 참조 바인딩한다.
 - 우선순위 큐의 `(거리,정점)`처럼 작은 관계 값에 적합하지만 필드 의미가 중요하면 이름 있는 `struct`가 더 읽기 쉽다.
+
+### `std::pair<int,int>` 생성과 구조적 바인딩의 `std::get<I>`
+
+- **항목 종류·헤더·현재 역할:** `<utility>`의 `std::pair<T1,T2>`는 두 값을 직접 보관하는 class template이고 `std::get<I>`는 그 원소 참조를 돌려주는 함수 template overload다. 오늘 [`../2026-10-26/icpc_problem.cpp`](../2026-10-26/icpc_problem.cpp)의 `split`은 두 treap root index를 `pair<int,int>` 값으로 반환하며 구조적 바인딩이 두 이름으로 푼다. Node 객체나 arena 소유권은 복사하지 않는다.
+- **생성 overload·인자:** `return {int{kNull}, int{kNull}};`에는 대표 형태 `template<class U1=T1, class U2=T2> constexpr explicit(...) pair(U1&& x, U2&& y);`가 `T1=T2=U1=U2=int`로 선택된다. 두 인자는 `int` prvalue이고 pair의 `first`, `second`를 각각 값으로 초기화한다. 생성자는 별도 반환값 없이 반환 목적의 pair prvalue를 만들며 입력 tree 상태를 바꾸지 않는다.
+- **숨은 수신 객체와 선택된 `get`:** `auto [first,second]{split(...)};`는 먼저 반환 prvalue로 숨은 `pair<int,int>` 객체 `e`의 수명을 시작한다. `e`의 타입이 참조가 아니므로 tuple-like 구조적 바인딩은 `e`를 xvalue로 취급해 `get<0>(pair<int,int>&&)`와 `get<1>(pair<int,int>&&)`를 ADL로 찾는다. 대표 반환형은 각각 `tuple_element_t<I,pair<int,int>>&&`, 즉 `int&&`다.
+- **반환값과 사용:** 두 `get` 반환 참조가 binding을 각 pair subobject에 연결하고, 이름 식 `first`와 `second`는 이후 lvalue로 root index 값을 읽는다. `get` 자체는 int를 이동 생성하지 않으며, tree 함수로 넘길 때 기본 타입 값이 복사된다.
+- **상태·수명·무효화:** 생성 뒤 pair가 두 int 값을 소유하고 arena/tree는 그대로다. `get`은 pair를 변경하지 않는다. 숨은 `e`는 구조적 바인딩이 선언된 scope 끝까지 살아 두 binding을 유효하게 한다. scope 뒤 참조를 보관하면 dangling이지만 오늘은 root 값을 그 안에서만 사용한다. container iterator/reference를 만들거나 무효화하지 않는다.
+- **복잡도·할당·예외·UB:** int pair 생성과 각 위치 `get`은 `O(1)`·무할당이고 오늘 선택된 기본 타입 구성/접근은 예외를 만들지 않는다. `get<I>`는 `I<2`여야 하며 잘못된 index는 runtime 오류가 아니라 ill-formed다. 수명이 끝난 숨은 객체의 binding을 사용하면 UB다.
+- **thread 보장:** pair/get은 잠금이나 원자 snapshot을 제공하지 않는다. 오늘처럼 local pair를 한 thread에서 사용하는 데 공유 경쟁은 없다. 같은 pair subobject를 한쪽이 쓰는 동안 다른 thread가 무동기 읽거나 쓰면 데이터 경쟁이다.
 
 ### `std::get<I>(tuple)` — tuple 위치 접근 함수 템플릿
 

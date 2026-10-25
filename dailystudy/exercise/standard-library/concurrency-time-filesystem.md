@@ -315,6 +315,18 @@ int main() {
 - `std::chrono::duration_cast<To>(value)`는 시간 단위를 명시 변환한다. 더 거친 단위로 바꾸면 나머지가 잘릴 수 있다.
 - `std::chrono_literals`를 가져오면 `1500ms`, `2s` 같은 리터럴을 쓸 수 있다. 넓은 헤더/전역 namespace 오염을 피하고 작은 범위에서 사용한다.
 
+### `steady_clock::now` → `time_since_epoch` → `count` 호출 계약
+
+오늘 [`../2026-10-26/icpc_problem.cpp`](../2026-10-26/icpc_problem.cpp)는 고정 입력과 treap priority를 분리할 실행별 seed의 한 재료로 단조 clock tick을 읽는다. 이것은 시간 측정용 값이지 보안 entropy API가 아니며 `random_device` 결과와 함께 섞는다.
+
+- **항목 종류·헤더:** `<chrono>`의 `std::chrono::steady_clock`은 clock 요구를 만족하는 class다. `steady_clock::time_point`와 `steady_clock::duration`은 각각 시점과 tick 간격을 나타내는 class template 특수화/별칭이고, `duration::rep`은 tick 수의 산술 표현 타입이다.
+- **정확한 연쇄 시그니처:** `static time_point steady_clock::now() noexcept;`, `constexpr duration time_point::time_since_epoch() const;`, `constexpr rep duration::count() const;`를 차례로 쓴다. `now`는 static이라 수신 객체가 없고, 뒤 두 호출의 수신자는 앞 호출이 반환해 아직 full-expression 안에 살아 있는 time_point와 duration prvalue다.
+- **매개변수·값 범주·소유권:** 세 호출 모두 명시 데이터 인자가 없다. 중간 prvalue는 각 다음 `const` 관찰 멤버의 수신자가 되며 외부 clock, 운영체제 handle 또는 공유 저장소의 소유권을 가져오거나 넘기지 않는다.
+- **반환과 사용:** `now()`는 현재 단조 시점 값을, `time_since_epoch()`는 구현이 정한 epoch부터의 duration 값을, `count()`는 그 duration의 `rep` 값을 반환한다. 오늘 코드는 마지막 독립 산술값을 `uint64_t`로 변환해 seed에 즉시 사용하며 중간 값을 버리지 않고 다음 호출의 수신자로 소비한다.
+- **호출 뒤 상태·수명·무효화:** 프로그램의 clock 객체나 container는 바뀌지 않는다. 두 임시 값은 full-expression 끝에 파괴되지만 최종 `rep` 복사값은 그 수명과 독립이다. iterator/reference를 반환하거나 기존 관찰자를 무효화하는 연산이 아니다.
+- **복잡도·할당·예외:** 표준은 연쇄 전체의 점근 복잡도나 `now()` 구현의 system-call/할당 방식을 지정하지 않는다. `steady_clock::now()`는 명시적으로 `noexcept`다. 뒤 두 관찰자 선언에는 명시적 `noexcept`가 없어 언어의 `noexcept(식)` 판정은 별개지만, `steady_clock`이 만족하는 TrivialClock의 관련 시간 값 연산은 실제 예외를 던지지 않는다. clock의 `rep` 구체 타입은 unspecified이고 특정 CPU counter 명령이나 정확한 비용으로 단정하지 않는다.
+- **오류·전제조건·thread:** `steady_clock::is_steady`는 true라 반환 시점 값은 clock 진행에 따라 감소하지 않지만 epoch, tick 주기, 해상도와 구체 정수 값은 구현 의존이다. 이 값을 암호학적 난수나 달력 timestamp로 취급하면 설계 오류다. 독립 값 조회는 공유 C++ 객체 데이터 경쟁을 만들지 않지만 memory-order 동기화나 thread 사이 사건 게시를 제공하지 않는다.
+
 ## `std::filesystem`과 `std::error_code`
 
 - `std::filesystem::path`는 운영체제 경로 구문을 값으로 모델링한다. `/` 연산자는 구분자를 직접 이어 붙이는 대신 경로 요소를 결합한다.

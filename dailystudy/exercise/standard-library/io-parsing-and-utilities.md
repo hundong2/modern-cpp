@@ -187,6 +187,18 @@ int main() {
 }
 ```
 
+## 실행 환경 entropy `std::random_device` — `<random>`
+
+`std::random_device`는 **uniform random bit generator 요구를 만족하는 class**다. 구현이 비결정적 장치를 제공하면 그 장치를 사용할 수 있지만, 그런 장치가 없으면 implementation-defined pseudo-random engine으로 구현될 수 있다. 따라서 이름만 보고 매 실행의 비결정성이나 암호학적 안전성을 보장받는다고 해석하지 않는다. 오늘 [`../2026-10-26/icpc_problem.cpp`](../2026-10-26/icpc_problem.cpp)는 고정 입력과 treap priority seed를 분리하는 한 재료로 쓰고 `steady_clock` tick도 함께 섞는다.
+
+- **생성·수신 상태:** 기본 생성 `random_device()`는 새 장치 객체의 수명을 시작한다. `operator()()`의 수신자는 성공적으로 생성되어 아직 파괴되지 않은 non-const `random_device` lvalue여야 한다. 객체는 복사할 수 없고 오늘 코드는 함수 local owner 하나만 사용한다.
+- **시그니처·인자:** 대표 생성자는 `random_device()`이고 생성자 token을 받는 overload도 있다. 값 생성은 `result_type operator()();`이며 `result_type`은 `unsigned int`다. 두 호출 모두 오늘 형태에는 명시 데이터 인자가 없고 외부 entropy source의 소유권을 호출자에게 옮기지 않는다.
+- **반환·사후 상태:** 각 `operator()`는 `[min(), max()]` 범위의 산술 prvalue를 반환한다. 오늘은 두 값을 `uint64_t`로 확대해 seed bit에 즉시 사용한다. 장치 내부 또는 운영체제 entropy pool 상태는 구현 방식대로 전진할 수 있지만 반환 정수는 장치 객체 수명과 독립적으로 보관할 수 있다. 여러 표본의 통계적 독립성까지 별도 보장으로 확대하지 않는다.
+- **복잡도·할당·blocking:** 표준은 이 연산에 일반 점근 복잡도나 무할당·nonblocking 보장을 주지 않는다. 장치 열기, system call, 내부 자원 준비 또는 entropy 대기가 있을 수 있으므로 대량 난수마다 새 객체를 만들지 않고 seed용 소수 호출에 한정한다.
+- **수명·무효화:** 반환은 값이라 장치 파괴 뒤에도 유효하고 iterator/reference 무효화 개념은 없다. 장치 객체나 내부 native resource를 다른 객체가 빌리는 API가 아니며 block 끝 소멸로 구현 자원을 정리한다.
+- **예외·오류:** 장치 초기화 또는 난수 획득 실패는 구현이 예외로 보고할 수 있다. 오늘 seed 함수는 이 구간을 `try`/`catch (...)`로 감싸고 단조 시계 fallback을 사용하므로 seed 준비 실패가 풀이 전체를 종료하지 않는다. 빈 entropy나 낮은 `entropy()` 보고값을 UB로 해석하지 않되 보안 난수 요구에는 별도 검증된 시설을 쓴다.
+- **thread 보장:** 서로 다른 local 객체 사용은 공유 C++ 객체 경쟁을 만들지 않는다. 같은 `random_device` 객체를 여러 thread에서 무동기 호출할 수 있다고 가정하지 말고 필요하면 외부 동기화한다. 운영체제 source가 내부에서 공유되는지는 구현 세부이며 프로그램의 논리 동기화를 대신하지 않는다.
+
 ## 수치 도구
 
 ### `std::numeric_limits<T>` — `<limits>`

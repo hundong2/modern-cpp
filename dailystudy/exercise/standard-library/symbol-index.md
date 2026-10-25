@@ -96,6 +96,7 @@
 | `std::enable_shared_from_this` | shared owner가 연결한 자기 control block의 weak 관찰자 제공 | [소유권](ownership-and-vocabulary-types.md) |
 | `std::optional`, `std::nullopt_t`, `std::nullopt`, `std::bad_optional_access` | 선택적 값, 빈 상태 태그 타입·객체와 검사형 접근 실패 예외 | [소유권](ownership-and-vocabulary-types.md) |
 | `std::optional::transform` | engaged 값만 투영하고 빈 상태는 건너뛰는 C++23 monadic 멤버 함수 템플릿 | [소유권](ownership-and-vocabulary-types.md) |
+| `std::optional::or_else` | 빈 상태에서만 같은 `optional<T>` fallback factory를 실행하는 C++23 멤버 함수 템플릿 | [소유권](ownership-and-vocabulary-types.md) |
 | `std::expected`, `std::unexpected`, `std::expected::error` | 성공값 또는 오류값과 오류 대안 접근 | [소유권](ownership-and-vocabulary-types.md) |
 | `std::in_place` | `expected` 성공값을 내부 저장소에 직접 생성하는 태그 | [소유권](ownership-and-vocabulary-types.md) |
 | `expected::and_then`, `expected::transform` | 실패를 전파하고 성공값만 연결·변환하는 C++23 멤버 | [소유권](ownership-and-vocabulary-types.md) |
@@ -156,6 +157,7 @@
 |---|---|---|
 | `std::format` | 타입 검사 형식 문자열과 인자로 새 소유 문자열 생성 | [입출력](io-parsing-and-utilities.md) |
 | `std::bad_alloc` | 동적 할당 요청 실패를 나타내는 예외 타입 | [입출력](io-parsing-and-utilities.md) |
+| `std::random_device` | 비결정적 장치 또는 구현 정의 engine에서 seed용 unsigned 값을 얻는 entropy source | [입출력](io-parsing-and-utilities.md) |
 | `std::cin`, `std::cout`, `std::cerr` | 표준 입력·출력·오류 스트림 객체 | [입출력](io-parsing-and-utilities.md) |
 | `std::basic_ios` | stream 상태 비트와 명시적 bool 관찰을 제공하는 공통 기반 | [입출력](io-parsing-and-utilities.md) |
 | `std::ios` | `basic_ios<char>` 표준 별칭과 iostream 공통 상태 인터페이스 | [입출력](io-parsing-and-utilities.md) |
