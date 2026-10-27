@@ -82,12 +82,13 @@
 | [2026-10-22](./2026-10-22/README.md) | `std::optional::transform` 소유 DTO 투영과 대입·덧셈 Lazy Segment Tree | C++23 |
 | [2026-10-23](./2026-10-23/README.md) | `std::popcount` 권한 값 타입과 DAG word-bitset 전이 폐쇄 | C++23 |
 | [2026-10-26](./2026-10-26/README.md) | `std::optional::or_else` 소유 fallback과 암시적 트립 구간 뒤집기·합 | C++23 |
+| [2026-10-27](./2026-10-27/README.md) | `std::stop_callback` 취소 정리 수명과 함수형 그래프 최소 이동 질의 | C++23 |
 
 ## 표준 라이브러리 설명 찾기
 
 - [표준 라이브러리 학습 지도](./standard-library/README.md): 설명 품질 기준과 분야별 대표 문서
-- [날짜별 사용 색인](./standard-library/by-date.md): 현재 78개 날짜, 215개 C++ 파일의 헤더와 `std::` 심볼
-- [심볼 색인](./standard-library/symbol-index.md): 199개 현재 심볼의 역할과 상세 문서 링크
+- [날짜별 사용 색인](./standard-library/by-date.md): 현재 79개 날짜, 218개 C++ 파일의 헤더와 `std::` 심볼
+- [심볼 색인](./standard-library/symbol-index.md): 203개 현재 심볼의 역할과 상세 문서 링크
 - [공통 용어](./standard-library/terms.md): 반복자, 뷰, 술어, 소유권, 무효화, 예외 보장, 원자성
 - [표준 헤더](./standard-library/headers.md): 현재 사용하는 59개 헤더와 대표 선언
 

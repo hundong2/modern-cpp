@@ -96,6 +96,27 @@ $jthreadConstructionPattern =
     '(?m)^[ \t]*' + $declarationQualifierPattern +
     'std::jthread\s+[A-Za-z_][A-Za-z0-9_]*\s*(?:\{|\((?!\s*\)))'
 
+# stop_callback은 copy/move 불가라 보통 CTAD 직접 선언 또는 using 별칭의 direct-list-init으로 만든다.
+# 두 표기를 모두 추적해 실제 등록 생성자 첫 호출에 여섯 항목 계약이 있는지 검사한다.
+$stopCallbackAliasDeclarationPattern =
+    '(?m)^[ \t]*using\s+(?<Alias>[A-Za-z_][A-Za-z0-9_]*)\s*=\s*' +
+    'std::stop_callback\s*<[^;\r\n]+>\s*;'
+$stopCallbackDirectConstructionPattern =
+    '(?m)^(?![ \t]*#)[^\r\n]*\bstd::stop_callback(?:\s*<[^;\r\n]+>)?\s*' +
+    '(?:(?:const|volatile)\s+)*(?:[A-Za-z_][A-Za-z0-9_]*\s*)?(?:\{|\((?!\s*\)))'
+$stopSourceReceiverDeclarationPattern =
+    '(?m)^[ \t]*' + $declarationQualifierPattern +
+    'std::stop_source\s*(?:(?:const|volatile)\s+)*(?:[&*]\s*)?' +
+    '(?<Receiver>[A-Za-z_][A-Za-z0-9_]*)\b'
+$stopSourceAliasDeclarationPattern =
+    '(?m)^[ \t]*using\s+(?<Alias>[A-Za-z_][A-Za-z0-9_]*)\s*=\s*std::stop_source\s*;'
+$stopSourceDefaultDeclarationPattern =
+    '(?m)^[ \t]*' + $declarationQualifierPattern +
+    'std::stop_source\s*(?:(?:const|volatile)\s+)*(?<Receiver>[A-Za-z_][A-Za-z0-9_]*)\s*' +
+    '(?<Initializer>\{\s*\}|=\s*\{\s*\})?\s*;'
+$stopSourcePrvalueDefaultConstructionPattern =
+    '(?m)^(?![ \t]*#)[^\r\n]*\bstd::stop_source\s*\{\s*\}'
+
 # bind_back은 이름을 직접 적을 수 없는 wrapper를 auto로 받는다. 반환 수신자를 추출해
 # `std::`가 보이지 않는 첫 operator() 호출도 별도 계약 대상으로 검사한다.
 $bindBackReceiverDeclarationPattern =
@@ -252,10 +273,10 @@ $unorderedSetReceiverDeclarationPattern =
 $knownStandardMembers = [Collections.Generic.HashSet[string]]::new(
     [string[]]@(
         'acquire', 'append', 'arrive_and_wait', 'assign', 'at', 'back', 'begin', 'c_str', 'clear', 'contains', 'count_down', 'data', 'empty', 'emplace', 'emplace_back', 'end', 'erase',
-        'error', 'expired', 'extent', 'extract', 'fetch_add', 'file_size', 'find', 'front', 'get',
+        'error', 'expired', 'extent', 'extract', 'fetch_add', 'file_size', 'find', 'front', 'get', 'get_token',
         'has_value', 'is_absolute', 'is_regular_file', 'join', 'joinable', 'lexically_normal', 'load',
         'insert', 'key', 'lock', 'mapped', 'merge', 'message', 'pop', 'pop_back', 'pop_front', 'push', 'push_back', 'push_front', 'release',
-        'notify_all', 'notify_one', 'or_else', 'reserve', 'reset', 'resize', 'resize_and_overwrite', 'size', 'span', 'store', 'str', 'substr', 'swap', 'tie', 'top', 'transform', 'try_emplace', 'value', 'wait', 'weak_from_this',
+        'notify_all', 'notify_one', 'or_else', 'request_stop', 'reserve', 'reset', 'resize', 'resize_and_overwrite', 'size', 'span', 'stop_possible', 'stop_requested', 'store', 'str', 'substr', 'swap', 'tie', 'top', 'transform', 'try_emplace', 'value', 'wait', 'weak_from_this',
         'value_or'
     )
 )
@@ -495,6 +516,10 @@ $contractPatterns = @(
     [pscustomobject]@{ Name = 'atomic_ref::store'; AtomicRefMember = 'store'; Readme = 'atomic_ref::store(' },
     [pscustomobject]@{ Name = 'atomic_ref::fetch_add'; AtomicRefMember = 'fetch_add'; Readme = 'atomic_ref::fetch_add(' },
     [pscustomobject]@{ Name = 'std::jthread constructor'; Pattern = $jthreadConstructionPattern; Readme = 'std::jthread' },
+    [pscustomobject]@{ Name = 'std::stop_source default constructor'; StopSourceDefaultConstruction = $true; Readme = 'std::stop_source()' },
+    [pscustomobject]@{ Name = 'std::stop_source::get_token'; StopSourceMember = 'get_token'; Readme = 'stop_source::get_token(' },
+    [pscustomobject]@{ Name = 'std::stop_source::request_stop'; StopSourceMember = 'request_stop'; Readme = 'stop_source::request_stop(' },
+    [pscustomobject]@{ Name = 'std::stop_callback constructor'; StopCallbackConstruction = $true; Readme = 'std::stop_callback<' },
     [pscustomobject]@{ Name = 'std::span constructor'; Pattern = $spanConstructionPattern; Readme = 'std::span<char>' },
     [pscustomobject]@{ Name = 'std::ospanstream constructor'; Pattern = $ospanstreamConstructionPattern; Readme = 'std::ospanstream' },
     [pscustomobject]@{ Name = 'ospanstream::operator<<'; OspanstreamInsertion = $true; Readme = 'ostream::operator<<' },
@@ -958,6 +983,85 @@ foreach ($file in Get-ChildItem -LiteralPath $latestDirectory.FullName -Filter '
     ) | Sort-Object -Unique
     $unorderedSetReceiverAlternation =
         ($unorderedSetReceiverNames | ForEach-Object { [regex]::Escape($_) }) -join '|'
+    $stopCallbackAliasNames = @(
+        [regex]::Matches($contractSource, $stopCallbackAliasDeclarationPattern) |
+            ForEach-Object { $_.Groups['Alias'].Value } |
+            Sort-Object -Unique
+    )
+    $stopCallbackConstructionMatches = @(
+        [regex]::Matches($contractSource, $stopCallbackDirectConstructionPattern)
+        if ($stopCallbackAliasNames.Count -gt 0) {
+            $stopCallbackAliasAlternation =
+                ($stopCallbackAliasNames | ForEach-Object { [regex]::Escape($_) }) -join '|'
+            [regex]::Matches(
+                $contractSource,
+                '(?m)^[ \t]*' + $declarationQualifierPattern + '(?:' +
+                $stopCallbackAliasAlternation + ')\s*(?:(?:const|volatile)\s+)*' +
+                '[A-Za-z_][A-Za-z0-9_]*\s*' +
+                '(?:\{|\((?!\s*\)))'
+            )
+        }
+    )
+    $stopSourceAliasNames = @(
+        [regex]::Matches($contractSource, $stopSourceAliasDeclarationPattern) |
+            ForEach-Object { $_.Groups['Alias'].Value } |
+            Sort-Object -Unique
+    )
+    $stopSourceReceiverNames = @(
+        [regex]::Matches($contractSource, $stopSourceReceiverDeclarationPattern) |
+            ForEach-Object { $_.Groups['Receiver'].Value }
+        if ($stopSourceAliasNames.Count -gt 0) {
+            $stopSourceAliasAlternation =
+                ($stopSourceAliasNames | ForEach-Object { [regex]::Escape($_) }) -join '|'
+            [regex]::Matches(
+                $contractSource,
+                '(?m)^[ \t]*' + $declarationQualifierPattern + '(?:' +
+                $stopSourceAliasAlternation + ')\s*(?:(?:const|volatile)\s+)*' +
+                '(?:[&*]\s*)?' +
+                '(?<Receiver>[A-Za-z_][A-Za-z0-9_]*)\b'
+            ) | ForEach-Object { $_.Groups['Receiver'].Value }
+        }
+    ) | Sort-Object -Unique
+    $stopSourceReceiverAlternation =
+        ($stopSourceReceiverNames | ForEach-Object { [regex]::Escape($_) }) -join '|'
+    $stopSourceDefaultConstructionMatches = @(
+        [regex]::Matches($contractSource, $stopSourcePrvalueDefaultConstructionPattern)
+        $defaultDeclarations = @(
+            [regex]::Matches($contractSource, $stopSourceDefaultDeclarationPattern)
+            if ($stopSourceAliasNames.Count -gt 0) {
+                [regex]::Matches(
+                    $contractSource,
+                    '(?m)^[ \t]*' + $declarationQualifierPattern + '(?:' +
+                    $stopSourceAliasAlternation + ')\s*(?:(?:const|volatile)\s+)*' +
+                    '(?<Receiver>[A-Za-z_][A-Za-z0-9_]*)\s*' +
+                    '(?<Initializer>\{\s*\}|=\s*\{\s*\})?\s*;'
+                )
+            }
+        )
+        foreach ($defaultDeclaration in $defaultDeclarations) {
+            if (-not [string]::IsNullOrWhiteSpace(
+                $defaultDeclaration.Groups['Initializer'].Value
+            )) {
+                $defaultDeclaration
+                continue
+            }
+            $receiver = [regex]::Escape($defaultDeclaration.Groups['Receiver'].Value)
+            $memberInitializers = @([regex]::Matches(
+                $contractSource,
+                '(?m)^[ \t]*(?::|,)\s*' + $receiver +
+                '\s*(?<Initializer>\{[^}\r\n]*\}|\([^\)\r\n]*\))'
+            ))
+            if ($memberInitializers.Count -eq 0) {
+                $defaultDeclaration
+                continue
+            }
+            foreach ($memberInitializer in $memberInitializers) {
+                if ($memberInitializer.Groups['Initializer'].Value -match '^\{\s*\}$|^\(\s*\)$') {
+                    $memberInitializer
+                }
+            }
+        }
+    )
 
     foreach ($candidate in $contractPatterns) {
         # enumerate 구조적 바인딩에는 소스에 직접 보이지 않는 begin/end/*/++와 ADL std::get 호출이 있다.
@@ -1007,6 +1111,33 @@ foreach ($file in Get-ChildItem -LiteralPath $latestDirectory.FullName -Filter '
             if ($null -eq $selectedMatch) {
                 continue
             }
+        }
+        if ($null -ne $candidate.PSObject.Properties['StopCallbackConstruction']) {
+            $selectedMatch =
+                $stopCallbackConstructionMatches |
+                Sort-Object Index -Unique |
+                Select-Object -First 1
+            if ($null -eq $selectedMatch) {
+                continue
+            }
+        }
+        if ($null -ne $candidate.PSObject.Properties['StopSourceDefaultConstruction']) {
+            $selectedMatch =
+                $stopSourceDefaultConstructionMatches |
+                Sort-Object Index -Unique |
+                Select-Object -First 1
+            if ($null -eq $selectedMatch) {
+                continue
+            }
+        }
+        $stopSourceMemberProperty = $candidate.PSObject.Properties['StopSourceMember']
+        if ($null -ne $stopSourceMemberProperty) {
+            if ($stopSourceReceiverNames.Count -eq 0) {
+                continue
+            }
+            $candidatePattern =
+                '(?m)^(?![ \t]*#)[^\r\n]*\b(?:' + $stopSourceReceiverAlternation +
+                ')\s*(?:\.|->)\s*' + [regex]::Escape($candidate.StopSourceMember) + '\s*\('
         }
         $functionConstructionKindProperty =
             $candidate.PSObject.Properties['FunctionConstructionKind']

@@ -137,7 +137,8 @@
 | `std::once_flag`, `std::call_once` | 최초 성공 초기화 한 번과 결과 게시 동기화 | [동시성](concurrency-time-filesystem.md) |
 | `std::condition_variable` | mutex와 술어를 결합한 대기·깨우기 | [동시성](concurrency-time-filesystem.md) |
 | `std::shared_mutex`, `std::shared_lock` | 읽기 공유·쓰기 독점 잠금 | [동시성](concurrency-time-filesystem.md) |
-| `std::jthread`, `std::stop_token` | RAII 스레드와 협력적 취소 | [동시성](concurrency-time-filesystem.md) |
+| `std::jthread`, `std::stop_token` | RAII 스레드와 공유 취소 상태 관찰 | [동시성](concurrency-time-filesystem.md) |
+| `std::stop_source`, `std::stop_source::get_token`, `std::stop_source::request_stop`, `std::stop_callback` | 취소 요청 권한·token 발급과 수명 기반 동기 callback 등록 | [동시성](concurrency-time-filesystem.md) |
 | `std::latch` | 일회성 카운트다운 대기·동기화 | [동시성](concurrency-time-filesystem.md) |
 | `std::barrier` | 완료 함수를 포함한 반복 단계 동기화 | [동시성](concurrency-time-filesystem.md) |
 | `std::counting_semaphore` | counter 기반 동시 permit 상한과 release/acquire 동기화 | [동시성](concurrency-time-filesystem.md) |

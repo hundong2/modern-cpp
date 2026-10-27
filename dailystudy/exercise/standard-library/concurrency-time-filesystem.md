@@ -199,6 +199,28 @@ int main() {
 - `request_stop()`은 공유 중지 상태에 요청을 기록하고 요청을 처음 성공시켰는지 `bool`을 반환한다.
 - `sleep_for(duration)`는 최소한 지정 기간 정도 현재 스레드 실행을 양보하지만 정확한 기상 시각은 스케줄러에 따라 늦어질 수 있다.
 
+## `std::stop_source`, `std::stop_token`, `std::stop_callback` — `<stop_token>`의 공유 취소 상태
+
+`stop_source`는 취소를 **요청하는 소유 handle**, `stop_token`은 같은 stop state를 공유해 요청을 관찰하거나 callback을 등록하는 값 handle이다. `stop_callback<Callback>`은 자신의 수명 동안 callback 등록을 RAII로 소유한다. 취소 요청은 실행을 강제로 끊지 않으며, 같은 상태에서 한 번 `true`가 된 요청은 되돌릴 수 없다. 2026-10-27 자료는 polling 대신 외부 작업의 정리 함수를 등록하는 결정론적 예제로 이 세 역할을 분리한다.
+
+| 실제 형태 | 수신 객체와 호출 전 상태 | overload·각 인자 | 반환과 사후 상태 | 복잡도·할당·수명·오류·thread 계약 |
+|---|---|---|---|---|
+| `std::stop_source source{}` | 새 `stop_source` 목적 객체이며 아직 수신 객체는 없다. | 데이터 인자 없는 기본 생성자 `stop_source()`를 선택한다. `nostopstate` overload가 아니다. | 생성자는 별도 반환값이 없고, 성공하면 `stop_possible()==true`, `stop_requested()==false`인 새 stop state를 공유 소유한다. | 새 상태를 위한 할당이 가능하고 실패하면 `bad_alloc`을 던진다. source 복사본·그 token·등록 callback이 상태 수명을 공유한다. |
+| `source.get_token()` | stop state가 연결된 `const std::stop_source` 관찰 호출이다. | `std::stop_source::get_token`, 즉 `std::stop_token get_token() const noexcept`; 데이터 인자는 없다. | 같은 상태를 공유 소유하는 `stop_token` prvalue를 반환한다. source 상태와 요청 여부는 바뀌지 않는다. disengaged source라면 disengaged token을 반환한다. | 표준은 복잡도 상한을 따로 규정하지 않고 호출은 예외를 던지지 않는다. token은 source 객체 자체를 빌리지 않지만 같은 stop state를 공유하므로 source 객체보다 오래 살아도 된다. |
+| `std::stop_callback callback{token, fn}` | 새 callback 목적 객체이며 `token`은 연결됐거나 disengaged인 `stop_token`이다. | CTAD가 `Callback=decay_t<decltype(fn)>`를 정하고 `stop_callback(const stop_token&, Initializer&&)` 또는 rvalue-token overload를 고른다. `fn`은 인자 없는 호출이 가능하고 파괴 가능한 callable이어야 하며 값으로 callback 안에 구성된다. | 생성자는 별도 반환값이 없다. 아직 요청 전이면 등록되고 callback 객체가 상태를 공유 소유한다. 이미 요청됐다면 생성자를 실행하는 thread에서 `fn()`을 즉시 한 번 평가하고 목록에는 등록하지 않는다. stop 불가능 token이면 등록 효과가 없다. | callback 객체는 복사·이동 불가다. callable 구성 예외만 생성자 계약에 따르며, 오늘처럼 nothrow 구성 lambda의 호출이 예외로 빠지면 `noexcept` 경로에서 종료될 수 있으므로 callback은 `noexcept`로 만든다. callback이 빌린 대상은 callback 실행과 소멸 완료까지 살아 있어야 한다. |
+| `source.request_stop()` | 같은 stop state를 가리키고 아직 요청 전이거나 이미 요청된 non-const source다. | `std::stop_source::request_stop`, 즉 `bool request_stop() noexcept`; 데이터 인자는 없다. | 첫 성공 요청만 `true`; 상태를 requested로 원자적으로 바꾸고 현재 등록 callback들을 **동기적으로** 실행한 뒤 반환한다. 뒤 요청은 `false`이고 callback을 다시 실행하지 않는다. disengaged source도 `false`다. | 상태 판정·변경은 원자적이며 관련 관찰 함수와 data race를 만들지 않는다. callback 순서는 보장되지 않고, callback 하나가 오래 걸리면 요청 호출도 오래 걸린다. callback 예외가 빠지면 `terminate`다. |
+| `callback.~stop_callback()` | 수명이 끝나는 등록 객체다. | 인자·반환값 없는 소멸자다. | 아직 목록에 있으면 등록을 제거하고 callable을 파괴하며 상태 소유권을 놓는다. 이후 요청은 이 callback을 실행하지 않는다. | 다른 thread에서 이 callback이 실행 중이면 완료까지 기다린 뒤 callable을 파괴한다. 현재 thread에서 자기 callback이 실행 중인 특수 경우에는 자기 완료를 기다리지 않는다. 같은 상태의 다른 callback 완료까지 기다릴 필요는 없다. |
+
+### 불변식, 무효화와 실전 함정
+
+- callback 등록 객체는 **함수 자체가 아니라 등록의 수명**이다. block을 빠져 callback이 파괴된 뒤에는 token과 source가 살아 있어도 그 callback은 실행되지 않는다.
+- callback closure가 reference나 pointer를 캡처하면 그 대상 수명을 자동으로 늘리지 않는다. 오늘 코드는 정리 대상 owner를 callback보다 먼저 만들고 callback을 먼저 파괴하는 선언 역순으로 댕글링을 막는다.
+- `request_stop()`이 `true`를 반환할 때 관련 token/source의 `stop_requested()==true` 관찰과 동기화한다. 이것이 임의의 callback 대상 데이터에 대한 모든 동시 접근을 자동으로 안전하게 만드는 것은 아니다. callback과 다른 코드가 같은 비원자 객체를 동시에 쓴다면 별도 잠금·소유 프로토콜이 필요하다.
+- 이미 요청된 token으로 callback을 구성하면 생성자 안에서 즉시 실행된다. 따라서 생성 뒤 별도의 `start()`가 callback 불변식을 완성한다고 가정하거나, 아직 완전히 구성되지 않은 `this`를 참조하는 callback을 등록하지 않는다.
+- callback 실행 순서는 지정되지 않는다. 여러 callback 사이에 순서 의존성이 있다면 하나의 상위 callback에서 명시적으로 순서를 정하거나 별도 조정자를 둔다.
+- `request_stop()`의 추상 작업은 등록 callback 수와 callback 본문 비용에 선형이다. 구현은 공유 상태 load/store, 원자적 판정, callback 목록 순회와 동기화를 사용할 수 있지만 구체 lock·명령·할당은 ABI, 표준 라이브러리, CPU, 컴파일러와 최적화 옵션에 따라 다르다.
+- 오늘 연결: [`../2026-10-27/main.cpp`](../2026-10-27/main.cpp)는 pending 전송 취소를 callback 수명에 묶고 첫 요청/중복 요청을 분리한다. [`../2026-10-27/problem.cpp`](../2026-10-27/problem.cpp)는 요청 뒤 등록된 callback이 생성자 안에서 즉시 실행되는 경계를 검증한다.
+
 ## `std::promise<T>`와 `std::future<T>` — `<future>`
 
 `promise<T>`와 `future<T>`는 하나의 **공유 상태(shared state)** 를 사이에 둔 단일 생산자·단일 소비자 handle이다. 생산자는 값 또는 예외를 한 번 게시하고, 소비자는 결과를 한 번 꺼낸다. 큐처럼 여러 값을 흘리는 타입도, 작업 스레드 자체를 소유하는 타입도 아니다. 오늘 코드는 `jthread`가 실행 수명을, promise/future가 결과 수명과 동기화를 각각 맡도록 분리한다.

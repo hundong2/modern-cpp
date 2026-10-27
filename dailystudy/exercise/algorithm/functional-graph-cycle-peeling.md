@@ -135,3 +135,144 @@ int main() {
 [CSES 1751 Planets Cycles](https://cses.fi/problemset/task/1751/)에서는 모든 행성에 정확히 하나의 도착지가 있으므로 함수형 그래프 조건을 만족한다. [`../2026-09-17/icpc_problem.cpp`](../2026-09-17/icpc_problem.cpp)는 `peeled`를 큐와 역방향 DP 순서로 재사용하고, `indegree > 0`을 사이클 판별 불변식으로 쓴다. 공식 예제의 `1→2→4→1`은 길이 3, `3→3`은 길이 1, `5→4`는 꼬리 길이 1이라 답은 `3 3 1 3 4`다.
 
 직접 검증할 때는 자기 루프 하나, 단일 긴 사이클, 사이클에 여러 꼬리가 합쳐지는 경우, 모든 정점이 자기 루프인 경우를 먼저 살펴본다. 작은 무작위 그래프는 각 출발점에서 방문 여부 배열로 직접 시뮬레이션한 `O(n^2)` 결과와 비교할 수 있다.
+
+## 목적지까지의 최소 이동 질의: cycle coordinate + binary lifting
+
+### 정의와 적용 조건
+
+각 질의 `(a,b)`가 `next`를 몇 번 적용하면 `a`에서 `b`로 가는지 묻는다면 단순한 사이클 길이 대신 다음 메타데이터가 필요하다.
+
+- `component[v]`: `v`가 결국 도달하는 유일한 사이클 ID.
+- `depth[v]`: `v`에서 사이클까지의 거리. 사이클 정점은 0이다.
+- `position[v]`: 사이클 정점의 순환 방향 0-based 좌표. 트리 정점에서는 쓰지 않는다.
+- `cycle_length[id]`: 해당 사이클 길이.
+- `jump[k][v] = next^(2^k)(v)`: 정점을 거듭 올리는 binary lifting 표.
+
+이 확장도 **모든 정점의 출차수가 정확히 1**일 때만 적용한다. 출차수가 2 이상이면 도달 경로가 유일하지 않아 같은 깊이·조상 판정으로 최소 거리를 구할 수 없다.
+
+### 핵심 아이디어와 불변식
+
+1. 진입 차수 제거 뒤 남은 정점을 `next` 방향으로 한 바퀴 돌면 각 사이클의 ID, 좌표, 길이가 확정된다.
+2. 모든 사이클 정점을 동시 시작점으로 두고 **역간선** BFS를 하면, 처음 방문된 트리 정점의 `depth` 및 `component`는 정확하다. 함수형 그래프의 정점은 두 사이클로 흐를 수 없으므로 ID 충돌이 없다.
+3. `jump` 점화식은 2^(k-1)번 이동을 두 번 이어 2^k번 이동하는 함수 합성이다.
+4. `b` `depth>0`이면 `b`는 트리에 있다. 간선을 따라가면 depth가 매번 1씩 줄어드므로 `depth[a] >= depth[b]`이고 `advance(a, depth[a]-depth[b]) == b`일 때만 도달한다.
+5. `b` `depth==0`이면 `b`는 사이클에 있다. `entry = advance(a, depth[a])`로 진입점을 찾고, 사이클 거리는 `(position[b]-position[entry]+L)%L`이다.
+
+### 단계별 절차
+
+1. `next`, `indegree`, 역간선 목록을 만든다.
+2. 진입 차수 0 정점을 모두 제거해 사이클 정점만 남긴다.
+3. 방문하지 않은 남은 정점에서 `next`를 한 바퀴 따라가며 사이클 ID·좌표·길이를 기록한다.
+4. 사이클 정점을 모두 BFS 대기열에 넣고 역간선을 타며 `depth`/`component` 값을 전파한다.
+5. `jump[0]=next`를 두고 binary lifting 표를 채운다.
+6. 질의 두 정점의 `component`가 다르면 즉시 `-1`이다.
+7. 목적지가 트리인 경우와 사이클인 경우를 나누어 위 불변식으로 거리를 구한다.
+
+### 의사코드
+
+```text
+peel indegree-zero vertices
+for each unassigned remaining vertex s:
+    walk one cycle and assign component, position, cycle_length
+
+queue = all cycle vertices
+for v in queue order:
+    for p in reverse[v]:
+        if depth[p] is unassigned:
+            depth[p] = depth[v] + 1
+            component[p] = component[v]
+            queue.push(p)
+
+jump[0][v] = next[v]
+for k = 1..LOG-1:
+    jump[k][v] = jump[k-1][jump[k-1][v]]
+
+distance(a, b):
+    if component[a] != component[b]: return -1
+    if depth[b] > 0:
+        if depth[a] < depth[b]: return -1
+        d = depth[a] - depth[b]
+        return d if advance(a,d) == b else -1
+    entry = advance(a, depth[a])
+    L = cycle_length[component[a]]
+    return depth[a] + (position[b] - position[entry] + L) % L
+```
+
+### C++ 뼈대
+
+아래는 핵심 질의 공식만 보인다. 전처리가 위 불변식에 따라 `depth`, `component`, `position`, `cycle_length`, `jump`를 채웠다고 가정한다.
+
+```cpp
+#include <cstddef>
+#include <vector>
+
+int advance(const std::vector<std::vector<int>>& jump, int v, int steps) {
+    for (int bit{}; steps > 0; ++bit, steps >>= 1) {
+        if ((steps & 1) != 0) {
+            v = jump[static_cast<std::size_t>(bit)][static_cast<std::size_t>(v)];
+        }
+    }
+    return v;
+}
+
+int distance(
+    const std::vector<std::vector<int>>& jump,
+    const std::vector<int>& depth,
+    const std::vector<int>& component,
+    const std::vector<int>& position,
+    const std::vector<int>& cycle_length,
+    int a,
+    int b) {
+    if (component[static_cast<std::size_t>(a)] !=
+        component[static_cast<std::size_t>(b)]) return -1;
+    if (depth[static_cast<std::size_t>(b)] > 0) {
+        if (depth[static_cast<std::size_t>(a)] <
+            depth[static_cast<std::size_t>(b)]) return -1;
+        const int d{depth[static_cast<std::size_t>(a)] -
+                    depth[static_cast<std::size_t>(b)]};
+        return advance(jump, a, d) == b ? d : -1;
+    }
+    const int entry{advance(jump, a, depth[static_cast<std::size_t>(a)])};
+    const int length{cycle_length[static_cast<std::size_t>(
+        component[static_cast<std::size_t>(a)])]};
+    const int around{(position[static_cast<std::size_t>(b)] -
+                      position[static_cast<std::size_t>(entry)] + length) % length};
+    return depth[static_cast<std::size_t>(a)] + around;
+}
+```
+
+### 정확성 근거
+
+**보조정리 1 — 전처리 메타데이터가 정확하다.** 진입 차수 제거 정리로 남은 정점은 사이클 정점이다. 유일한 방향으로 한 바퀴 돌면 중복 없는 좌표와 정확한 길이를 얻는다. 역간선 BFS에서 기저 사이클의 depth는 0이고, 정확한 정점 `v`의 미방문 역간선 이웃 `p`는 `next[p]=v`이므로 depth가 정확히 하나 크며 같은 사이클로 흐른다. BFS 귀납으로 모든 값이 정확하다.
+
+**보조정리 2 — `advance(v,d)`는 정확히 `d`번 이동한다.** `jump[0]`은 1번 이동이다. `jump[k-1]`을 두 번 합성하므로 귀납적으로 `jump[k]`는 2^k번 이동이다. `d`의 이진 표현에서 설정된 비트의 이동을 순서대로 합성하면 합이 `d`다.
+
+**보조정리 3 — 트리 목적지 분기가 정확하다.** 트리 간선을 한 번 따라가면 depth가 하나씩 줄고, 사이클에 닿으면 다시 양수가 되지 않는다. 따라서 `a`에서 양의 depth인 `b`로 간다면 반드시 depth 차이만큼 이동해야 한다. 그 결과가 `b`일 때와 그때에만 경로에 `b`가 있으며, 함수형 경로가 유일하므로 그 거리가 최소이다.
+
+**보조정리 4 — 사이클 목적지 분기가 정확하다.** `depth[a]`번 이동하면 정확히 `a`의 사이클 진입점이다. 같은 component의 사이클은 모든 정점이 순환 방향으로 연결되며, 모듈러 좌표 차는 진입점에서 `b`까지의 유일한 최소 비음수 이동 횟수다. 두 구간을 합친 답이 정확하다.
+
+성분이 다른 경우에는 출발지의 유일한 열이 다른 사이클로 흐르므로 도달할 수 없다. 보조정리 1—4가 모든 분기를 덮으므로 질의 알고리즘은 정확하다.
+
+### 시간·공간 복잡도
+
+- 진입 차수 제거, 사이클 라벨링, 역간선 BFS는 합계 `O(n)`이다. 함수형 그래프의 간선은 정확히 n개다.
+- `jump` 구성은 `O(n log n)` 시간과 `O(n log n)` 공간이다.
+- 질의 하나는 최대 두 번의 `advance`를 하므로 `O(log n)`, q개 전체는 `O(q log n)`이다.
+- 총 시간은 `O((n+q)log n)`, 추가 공간은 `O(n log n)`이다. 재귀 호출 스택은 쓰지 않는다.
+
+### 흔한 실수와 변형
+
+1. 같은 component이면 모든 트리 정점 사이를 왕복할 수 있다고 오해한다. 간선은 사이클 방향으로만 흐른다.
+2. 사이클에서 트리 정점으로 나갈 수 있다고 착각한다. 역간선은 전처리용이지 실제 이동 방향이 아니다.
+3. `depth[a] < depth[b]`인데 음수 차이를 lifting한다.
+4. 목적지가 사이클인데 모듈러 좌표 차에 꼬리 depth를 더하지 않는다.
+5. `position[b]-position[entry]`가 음수일 수 있는데 길이를 더하지 않고 `%`를 한다.
+6. 사이클 정점을 BFS seed로 넣은 뒤, `depth!=-1`인 정점을 걸러내지 않아 사이클을 무한 재방문한다.
+7. k번 이동한 정점만 필요하면 component/position 없이 `jump`만으로 풀 수 있다. k가 64비트면 그 비트 폭만큼 level을 만든다.
+8. 사이클 진입점별 트리 내 조상 질의가 많다면 Euler tour interval/LCA 등을 결합할 수 있지만, 유일 successor 경로 판정에는 lifting 비교만으로 충분하다.
+
+### 오늘 문제와의 연결 — CSES 1160 Planets Queries II
+
+[CSES 1160 Planets Queries II](https://cses.fi/problemset/task/1160/)는 `n,q<=200000`에서 출발·목적 행성 질의의 최소 순간이동 횟수를 묻는다. [`../2026-10-27/icpc_problem.cpp`](../2026-10-27/icpc_problem.cpp)는 진입 차수 제거로 사이클을 격리하고, 역간선 BFS로 꼬리 깊이와 component를 붙이며, binary lifting과 사이클 좌표로 각 질의를 `O(log n)`에 답한다.
+
+경계 검증은 자기 루프, 하나의 긴 사이클, 같은 진입점으로 합쳐지는 두 꼬리, 같은 component이지만 서로 도달 불가능한 트리 정점, 사이클에서 트리로 가려는 질의, 서로 다른 component를 포함해야 한다. 작은 무작위 입력은 각 `(a,b)`마다 최대 n번 `next`를 직접 따라가는 oracle와 비교할 수 있다.
